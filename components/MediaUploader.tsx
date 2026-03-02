@@ -8,6 +8,7 @@ import { ImageCropper } from './ImageCropper'
 interface MediaUploaderProps {
   modelId: string
   onUploaded: () => void
+  mediaType?: 'photo' | 'video' | 'digital'
 }
 
 interface PendingFile {
@@ -16,7 +17,7 @@ interface PendingFile {
   originalFile: File
 }
 
-export function MediaUploader({ modelId, onUploaded }: MediaUploaderProps) {
+export function MediaUploader({ modelId, onUploaded, mediaType }: MediaUploaderProps) {
   const supabase = createClient()
   const [uploading, setUploading] = useState(false)
   const [progress, setProgress] = useState<string>('')
@@ -27,7 +28,7 @@ export function MediaUploader({ modelId, onUploaded }: MediaUploaderProps) {
     setProgress(`Uploading ${index + 1} of ${total}...`)
     const ext = filename.split('.').pop() || 'jpg'
     const path = `${modelId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
-    const type = blob.type.startsWith('video') ? 'video' : 'photo'
+    const type = mediaType || (blob.type.startsWith('video') ? 'video' : 'photo')
     const { error } = await supabase.storage.from('model-media').upload(path, blob, { contentType: blob.type })
     if (!error) {
       const { data: { publicUrl } } = supabase.storage.from('model-media').getPublicUrl(path)
@@ -93,7 +94,11 @@ export function MediaUploader({ modelId, onUploaded }: MediaUploaderProps) {
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    accept: { 'image/*': [], 'video/*': [] },
+    accept: mediaType === 'video'
+      ? { 'video/*': [] }
+      : mediaType === 'digital'
+      ? { 'image/*': [] }
+      : { 'image/*': [], 'video/*': [] },
     multiple: true,
   })
 

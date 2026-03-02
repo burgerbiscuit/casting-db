@@ -323,7 +323,7 @@ export default function ScoutPage() {
                   {form.ethnicity_broad.flatMap((b: string) => {
                     const specifics = ETHNICITY_MAP[b] || []
                     if (specifics.length === 0) return []
-                    return [...specifics, `Other ${b}`]
+                    return [...specifics, 'Other']
                   }).map(s => (
                     <button key={s} type="button"
                       onClick={() => set('ethnicity_specific', form.ethnicity_specific.includes(s) ? form.ethnicity_specific.filter((x:string) => x !== s) : [...form.ethnicity_specific, s])}

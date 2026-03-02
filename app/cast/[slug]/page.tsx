@@ -572,7 +572,7 @@ export default function CastPage({ params }: { params: { slug: string } }) {
                         {(form.ethnicity_broad as string[]).flatMap(b => {
                           const specifics = ETHNICITY_MAP[b] || []
                           if (specifics.length === 0) return []
-                          return [...specifics, `Other ${b}`]
+                          return [...specifics, 'Other']
                         }).map(s => (
                           <button key={s} type="button"
                             onClick={() => setForm(f => ({

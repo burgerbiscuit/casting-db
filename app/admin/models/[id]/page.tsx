@@ -262,7 +262,21 @@ export default function ModelProfile({ params }: { params: { id: string } }) {
 
       {activeTab === 'media' && (
         <div>
-          <MediaUploader modelId={id} onUploaded={loadMedia} />
+          {/* Sectioned uploads */}
+          <div className="grid grid-cols-3 gap-6 mb-8">
+            <div>
+              <p className="label mb-3">Photos</p>
+              <MediaUploader modelId={id} onUploaded={loadMedia} mediaType="photo" />
+            </div>
+            <div>
+              <p className="label mb-3">Video</p>
+              <MediaUploader modelId={id} onUploaded={loadMedia} mediaType="video" />
+            </div>
+            <div>
+              <p className="label mb-3">Digitals</p>
+              <MediaUploader modelId={id} onUploaded={loadMedia} mediaType="digital" />
+            </div>
+          </div>
 
           {media.length > 0 && (
             <div className="mt-4 mb-2 flex gap-6 text-[10px] text-neutral-400 tracking-wider uppercase">
