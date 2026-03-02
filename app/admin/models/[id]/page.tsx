@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback, use } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -24,6 +25,7 @@ const ETHNICITY_MAP: Record<string, string[]> = {
 export default function ModelProfile({ params }: { params: { id: string } }) {
   const { id } = params
   const supabase = createClient()
+  const router = useRouter()
   const [model, setModel] = useState<any>(null)
   const [media, setMedia] = useState<any[]>([])
   const [saving, setSaving] = useState(false)
@@ -72,6 +74,15 @@ export default function ModelProfile({ params }: { params: { id: string } }) {
     loadMedia()
   }
 
+  const deleteModel = async () => {
+    if (!confirm('Permanently delete this model and all their data? This cannot be undone.')) return
+    await supabase.from('presentation_models').delete().eq('model_id', model.id)
+    await supabase.from('project_models').delete().eq('model_id', model.id)
+    await supabase.from('model_media').delete().eq('model_id', model.id)
+    await supabase.from('models').delete().eq('id', model.id)
+    router.push('/admin/models')
+  }
+
   const deleteMedia = async (mediaId: string, storagePath: string) => {
     if (!confirm('Delete this file?')) return
     await supabase.storage.from('model-media').remove([storagePath])
@@ -104,9 +115,14 @@ export default function ModelProfile({ params }: { params: { id: string } }) {
           </h1>
           {model.agency && <p className="text-sm text-neutral-400">{model.agency}</p>}
         </div>
-        <Button onClick={saveModel} disabled={saving}>
-          {saving ? 'Saving...' : saved ? '✓ Saved' : 'Save Changes'}
-        </Button>
+        <div className="flex items-center gap-3">
+          <button onClick={deleteModel} className="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-600 transition-colors px-3 py-2">
+            <Trash2 size={12} /> Delete Model
+          </button>
+          <Button onClick={saveModel} disabled={saving}>
+            {saving ? 'Saving...' : saved ? '✓ Saved' : 'Save Changes'}
+          </Button>
+        </div>
       </div>
 
       {/* Tabs */}
