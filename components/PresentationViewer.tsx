@@ -1,5 +1,5 @@
 'use client'
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { ModelCard } from '@/components/ModelCard'
 import { LayoutGrid, ChevronLeft, ChevronRight, Heart } from 'lucide-react'
 
@@ -18,6 +18,7 @@ export function PresentationViewer({
 }: Props) {
   const [view, setView] = useState<'grid' | 'slides'>('grid')
   const [slideIndex, setSlideIndex] = useState(0)
+  const [followerCounts, setFollowerCounts] = useState<Record<string, string>>({})
   const [shortlists, setShortlists] = useState<Record<string, boolean>>(() => {
     const m: Record<string, boolean> = {}
     Object.keys(shortlistMap).forEach(k => { m[k] = true })
@@ -32,6 +33,23 @@ export function PresentationViewer({
     if (!aS && bS) return 1
     return 0
   })
+
+  // Fetch IG followers for current slide
+  useEffect(() => {
+    const model = sorted[slideIndex]?.models
+    if (!model?.instagram_handle) return
+    const handle = model.instagram_handle
+    if (followerCounts[handle]) return
+    fetch('/api/instagram/' + handle)
+      .then(r => r.json())
+      .then(d => {
+        if (d.follower_count) {
+          const n = d.follower_count
+          const fmt = n >= 1_000_000 ? (n/1_000_000).toFixed(1)+'M' : n >= 1_000 ? (n/1_000).toFixed(1)+'K' : String(n)
+          setFollowerCounts(prev => ({ ...prev, [handle]: fmt }))
+        }
+      }).catch(() => {})
+  }, [slideIndex, sorted])
 
   const current = sorted[slideIndex]
   const currentModel = current?.models
