@@ -76,7 +76,46 @@ export function PresentationViewer({
           <p className="label mb-6">{slideIndex + 1} / {presentationModels.length}</p>
 
           <div className="w-full max-w-4xl">
-            <div className="grid grid-cols-2 gap-10 items-start">
+            {/* Name on top */}
+            <h2 className="text-3xl font-light tracking-widest uppercase mb-4">
+              {currentModel.first_name} {currentModel.last_name}
+            </h2>
+            {/* Sizing row */}
+            {current.show_sizing && (
+              <div className="flex flex-wrap gap-6 text-sm mb-4">
+                {currentModel.height_ft && <div><span className="label block">Height</span>{currentModel.height_ft}&apos;{currentModel.height_in}&quot;</div>}
+                {currentModel.bust && <div><span className="label block">Bust</span>{currentModel.bust}</div>}
+                {currentModel.waist && <div><span className="label block">Waist</span>{currentModel.waist}</div>}
+                {currentModel.hips && <div><span className="label block">Hips</span>{currentModel.hips}</div>}
+                {currentModel.chest && <div><span className="label block">Chest</span>{currentModel.chest}</div>}
+                {currentModel.suit_size && <div><span className="label block">Suit</span>{currentModel.suit_size}</div>}
+                {currentModel.shoe_size && <div><span className="label block">Shoe</span>{currentModel.shoe_size}</div>}
+                {currentModel.dress_size && <div><span className="label block">Dress</span>{currentModel.dress_size}</div>}
+                {current.show_instagram && currentModel.instagram_handle && (
+                  <div><span className="label block">Instagram</span>
+                    <a href={'https://instagram.com/' + currentModel.instagram_handle} target="_blank" rel="noopener noreferrer" className="hover:underline">@{currentModel.instagram_handle}</a>
+                  </div>
+                )}
+                {current.show_portfolio && currentModel.portfolio_url && (
+                  <div><span className="label block">Portfolio</span>
+                    <a href={currentModel.portfolio_url.startsWith('http') ? currentModel.portfolio_url : 'https://' + currentModel.portfolio_url} target="_blank" rel="noopener noreferrer" className="hover:underline">Portfolio ↗</a>
+                  </div>
+                )}
+                {currentModel.agency && <div><span className="label block">Agency</span>{currentModel.agency}</div>}
+              </div>
+            )}
+            {current.admin_notes && <p className="text-sm text-neutral-500 italic border-l-2 border-neutral-200 pl-3 mb-4">{current.admin_notes}</p>}
+            {/* Two photos side by side */}
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              {currentMedia.filter((m) => m.is_visible).slice(0, 2).map((m) => (
+                <div key={m.id} className="aspect-[3/4] overflow-hidden bg-neutral-100">
+                  {m.type === 'video' ? <video src={m.public_url} className="w-full h-full object-cover" controls /> : <img src={m.public_url} alt="" className="w-full h-full object-cover" />}
+                </div>
+              ))}
+              {currentMedia.length === 0 && <div className="aspect-[3/4] bg-neutral-100 flex items-center justify-center text-neutral-300 text-xs col-span-2">No photos</div>}
+            </div>
+            <SlideActions presentationId={presentationId} modelId={current.model_id} clientId={clientId} initialShortlisted={!!shortlistMap[current.model_id]} initialNotes={shortlistMap[current.model_id]?.notes || ''} />
+            <div className="hidden">
               {/* Photos */}
               <div>
                 {currentMedia.length > 0 ? (
@@ -149,8 +188,7 @@ export function PresentationViewer({
                   initialShortlisted={!!shortlistMap[current.model_id]}
                   initialNotes={shortlistMap[current.model_id]?.notes || ''}
                 />
-              </div>
-            </div>
+</div>
 
             {/* Navigation */}
             <div className="flex items-center justify-between mt-10 pt-8 border-t border-neutral-100">
