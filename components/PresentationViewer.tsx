@@ -108,9 +108,9 @@ export function PresentationViewer({
 
       {/* Slides view */}
       {view === 'slides' && current && currentModel && (
-        <div onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+        <div onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} className="flex flex-col" style={{height: "calc(100vh - 180px)"}}>
           <p className="label mb-4">{slideIndex + 1} / {sorted.length}</p>
-          <div className="w-full">
+          <div className="w-full flex flex-col flex-1 min-h-0">
             {/* Name */}
             <h2 className="text-2xl md:text-3xl font-light tracking-widest uppercase mb-3">
               {currentModel.first_name} {currentModel.last_name}
@@ -149,17 +149,17 @@ export function PresentationViewer({
             {current.admin_notes && <p className="text-sm text-neutral-500 italic border-l-2 border-neutral-200 pl-3 mb-4">{current.admin_notes}</p>}
 
             {/* Photos with nav flush at bottom */}
-            <div>
-              <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col flex-1 min-h-0">
+              <div className="grid grid-cols-2 gap-3 flex-1 min-h-0">
                 {currentMedia.slice(0, 2).map((m: any) => (
-                  <div key={m.id} className="aspect-[3/4] overflow-hidden bg-neutral-100">
+                  <div key={m.id} className="h-full overflow-hidden bg-neutral-100">
                     {m.type === "video"
                       ? <video src={m.public_url} className="w-full h-full object-cover" controls />
                       : <img src={m.public_url} alt="" className="w-full h-full object-cover" />}
                   </div>
                 ))}
                 {currentMedia.length === 0 && (
-                  <div className="aspect-[3/4] bg-neutral-100 flex items-center justify-center text-neutral-300 text-xs col-span-2">No photos</div>
+                  <div className="h-full bg-neutral-100 flex items-center justify-center text-neutral-300 text-xs col-span-2">No photos</div>
                 )}
               </div>
               <div className="flex items-center justify-between mt-3">
