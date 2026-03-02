@@ -24,24 +24,11 @@ export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname
 
   if (path.startsWith('/admin') && path !== '/admin/login') {
-    if (!user) {
-      return NextResponse.redirect(new URL('/admin/login', request.url))
-    }
-    // Check team membership
-    const { data: member } = await supabase
-      .from('team_members')
-      .select('id')
-      .eq('user_id', user.id)
-      .single()
-    if (!member) {
-      return NextResponse.redirect(new URL('/admin/login', request.url))
-    }
+    if (!user) return NextResponse.redirect(new URL('/admin/login', request.url))
   }
 
   if (path.startsWith('/client') && path !== '/client/login') {
-    if (!user) {
-      return NextResponse.redirect(new URL('/client/login', request.url))
-    }
+    if (!user) return NextResponse.redirect(new URL('/client/login', request.url))
   }
 
   return supabaseResponse
