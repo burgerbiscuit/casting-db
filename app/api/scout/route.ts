@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 
 export async function POST(req: Request) {
   const body = await req.json()
-  const supabase = createServiceClient()
+  const supabase = await createServiceClient()
   const { data, error } = await supabase.from('models').insert({
     first_name: body.first_name,
     last_name: body.last_name,
@@ -29,6 +29,9 @@ export async function POST(req: Request) {
     notes: body.notes || null,
     source: 'scouting',
   }).select('id').single()
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) {
+    console.error('Scout insert error:', error.message)
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
   return NextResponse.json({ ok: true, id: data.id })
 }
