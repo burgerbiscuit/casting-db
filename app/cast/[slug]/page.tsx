@@ -51,6 +51,7 @@ const defaultForm = {
   languages: [] as string[],
   instagram_handle: '',
   portfolio_url: '',
+  website_url: '',
   skills: [] as string[],
   hobbies: [] as string[],
   email: '', phone: '', based_in: '', date_of_birth: '',
@@ -158,6 +159,7 @@ export default function CastPage({ params }: { params: { slug: string } }) {
         languages: data.languages || [],
         instagram_handle: data.instagram_handle || '',
         portfolio_url: data.portfolio_url || '',
+        website_url: data.website_url || '',
         skills: data.skills || [], hobbies: data.hobbies || [],
         email: data.email || '', phone: data.phone || '', based_in: data.based_in || '', date_of_birth: data.date_of_birth || '',
       })
@@ -180,6 +182,7 @@ export default function CastPage({ params }: { params: { slug: string } }) {
       languages: form.languages,
       instagram_handle: form.instagram_handle,
       portfolio_url: form.portfolio_url,
+      website_url: form.website_url || null,
       skills: form.skills, hobbies: form.hobbies,
       email: form.email || null, phone: form.phone || null, based_in: form.based_in || null, date_of_birth: form.date_of_birth || null,
       updated_at: new Date().toISOString(),
@@ -425,8 +428,10 @@ export default function CastPage({ params }: { params: { slug: string } }) {
                 onChange={e => setForm(f => ({ ...f, instagram_handle: e.target.value.replace('@', '') }))}
                 placeholder="yourhandle (no @)" />
 
-              <Input label="Portfolio / Website" value={form.portfolio_url}
+              <Input label="Portfolio URL" value={form.portfolio_url}
                 onChange={e => setForm(f => ({ ...f, portfolio_url: e.target.value }))} type="url" placeholder="https://..." />
+              <Input label="Website URL" value={form.website_url}
+                onChange={e => setForm(f => ({ ...f, website_url: e.target.value }))} type="url" placeholder="https://..." />
 
               <ChipInput
                 label="Languages Spoken"

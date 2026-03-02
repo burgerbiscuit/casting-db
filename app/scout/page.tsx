@@ -234,7 +234,8 @@ export default function ScoutPage() {
           {/* Instagram + Portfolio */}
           <div className="grid grid-cols-2 gap-4">
             <div><label className={lbl}>Instagram</label><input value={form.instagram_handle} onChange={e => set('instagram_handle', e.target.value.replace('@',''))} placeholder="yourhandle" className={inp} /></div>
-            <div><label className={lbl}>Portfolio / Website</label><input value={form.portfolio_url} onChange={e => set('portfolio_url', e.target.value)} className={inp} /></div>
+            <div><label className={lbl}>Portfolio URL</label><input value={form.portfolio_url} onChange={e => set('portfolio_url', e.target.value)} className={inp} /></div>
+            <div><label className={lbl}>Website URL</label><input value={(form as any).website_url || ''} onChange={e => set('website_url', e.target.value)} className={inp} /></div>
           </div>
 
           {/* Skills */}

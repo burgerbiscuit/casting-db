@@ -13,6 +13,7 @@ export async function POST(req: Request) {
     date_of_birth: body.date_of_birth || null,
     instagram_handle: body.instagram_handle || null,
     portfolio_url: body.portfolio_url || null,
+    website_url: body.website_url || null,
     agency: body.agency || null,
     based_in: body.based_in || null,
     height_ft: body.height_ft ? parseInt(body.height_ft) : null,
