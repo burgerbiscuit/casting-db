@@ -10,10 +10,11 @@ interface ModelCardProps {
   presentationId: string
   clientId: string
   initialShortlisted: boolean
+  onShortlistChange?: (v: boolean) => void
   initialNotes: string
 }
 
-export function ModelCard({ presentationModel, model, media, presentationId, clientId, initialShortlisted, initialNotes }: ModelCardProps) {
+export function ModelCard({ presentationModel, model, media, presentationId, clientId, initialShortlisted, initialNotes, onShortlistChange }: ModelCardProps) {
   const supabase = createClient()
   const [shortlisted, setShortlisted] = useState(initialShortlisted)
   const [notes, setNotes] = useState(initialNotes)
@@ -33,7 +34,7 @@ export function ModelCard({ presentationModel, model, media, presentationId, cli
 
   const toggleShortlist = async () => {
     const next = !shortlisted
-    setShortlisted(next)
+    setShortlisted(next); onShortlistChange?.(next)
     if (next) {
       await supabase.from('client_shortlists').upsert({
         presentation_id: presentationId,
