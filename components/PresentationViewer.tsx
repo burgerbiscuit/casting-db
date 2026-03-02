@@ -108,26 +108,17 @@ export function PresentationViewer({
 
       {/* Slides view */}
       {view === 'slides' && current && currentModel && (
-        <div className="flex flex-col items-center" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
-          {/* Progress + shortlist indicator */}
-          <div className="flex items-center justify-between w-full max-w-2xl mb-4">
-            <p className="label">{slideIndex + 1} / {sorted.length}</p>
-            {shortlists[current.model_id] && (
-              <span className="flex items-center gap-1 text-xs tracking-widest uppercase">
-                <Heart size={10} className="fill-black text-black" /> Shortlisted
-              </span>
-            )}
-          </div>
-
-          <div className="w-full max-w-2xl">
+        <div onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+          <p className="label mb-4">{slideIndex + 1} / {sorted.length}</p>
+          <div className="w-full">
             {/* Name */}
             <h2 className="text-2xl md:text-3xl font-light tracking-widest uppercase mb-3">
               {currentModel.first_name} {currentModel.last_name}
             </h2>
 
-            {/* Sizing row */}
-            {current.show_sizing && (
-              <div className="flex flex-wrap gap-4 text-sm mb-4">
+            {/* Info row flush left + shortlist inline */}
+            <div className="flex flex-wrap items-end gap-x-6 gap-y-2 text-sm mb-4">
+              {current.show_sizing && <>
                 {currentModel.height_ft && <div><span className="label block">Height</span>{currentModel.height_ft}&apos;{currentModel.height_in}&quot;</div>}
                 {currentModel.bust && <div><span className="label block">Bust</span>{currentModel.bust}</div>}
                 {currentModel.waist && <div><span className="label block">Waist</span>{currentModel.waist}</div>}
@@ -136,77 +127,68 @@ export function PresentationViewer({
                 {currentModel.suit_size && <div><span className="label block">Suit</span>{currentModel.suit_size}</div>}
                 {currentModel.shoe_size && <div><span className="label block">Shoe</span>{currentModel.shoe_size}</div>}
                 {currentModel.dress_size && <div><span className="label block">Dress</span>{currentModel.dress_size}</div>}
-                {current.show_instagram && currentModel.instagram_handle && (
-                  <div><span className="label block">Instagram</span>
-                    <a href={'https://instagram.com/' + currentModel.instagram_handle} target="_blank" rel="noopener noreferrer" className="hover:underline">@{currentModel.instagram_handle}</a>
-                  </div>
-                )}
-                {current.show_portfolio && currentModel.portfolio_url && (
-                  <div><span className="label block">Portfolio</span>
-                    <a href={currentModel.portfolio_url.startsWith('http') ? currentModel.portfolio_url : 'https://' + currentModel.portfolio_url} target="_blank" rel="noopener noreferrer" className="hover:underline">↗</a>
-                  </div>
-                )}
-                {currentModel.agency && <div><span className="label block">Agency</span>{currentModel.agency}</div>}
+              </>}
+              {current.show_instagram && currentModel.instagram_handle && (
+                <div><span className="label block">Instagram</span>
+                  <a href={"https://instagram.com/" + currentModel.instagram_handle} target="_blank" rel="noopener noreferrer" className="hover:underline">@{currentModel.instagram_handle}</a>
+                </div>
+              )}
+              {current.show_portfolio && currentModel.portfolio_url && (
+                <div><span className="label block">Portfolio</span>
+                  <a href={currentModel.portfolio_url.startsWith("http") ? currentModel.portfolio_url : "https://" + currentModel.portfolio_url} target="_blank" rel="noopener noreferrer" className="hover:underline">↗</a>
+                </div>
+              )}
+              {currentModel.agency && <div><span className="label block">Agency</span>{currentModel.agency}</div>}
+              <div className="ml-auto">
+                <SlideActions presentationId={presentationId} modelId={current.model_id} clientId={clientId}
+                  initialShortlisted={!!shortlists[current.model_id]} initialNotes={shortlistMap[current.model_id]?.notes || ""}
+                  onShortlistChange={(v) => handleShortlistChange(current.model_id, v)} compact={true} />
               </div>
-            )}
+            </div>
 
             {current.admin_notes && <p className="text-sm text-neutral-500 italic border-l-2 border-neutral-200 pl-3 mb-4">{current.admin_notes}</p>}
 
-            {/* Two photos side by side */}
-            <div className="grid grid-cols-2 gap-3 mb-4">
-              {currentMedia.slice(0, 2).map((m: any) => (
-                <div key={m.id} className="aspect-[3/4] overflow-hidden bg-neutral-100">
-                  {m.type === 'video'
-                    ? <video src={m.public_url} className="w-full h-full object-cover" controls />
-                    : <img src={m.public_url} alt="" className="w-full h-full object-cover" />}
-                </div>
-              ))}
-              {currentMedia.length === 0 && (
-                <div className="aspect-[3/4] bg-neutral-100 flex items-center justify-center text-neutral-300 text-xs col-span-2">No photos</div>
-              )}
-            </div>
-
-            {/* Shortlist button */}
-            <SlideActions
-              presentationId={presentationId}
-              modelId={current.model_id}
-              clientId={clientId}
-              initialShortlisted={!!shortlists[current.model_id]}
-              initialNotes={shortlistMap[current.model_id]?.notes || ''}
-              onShortlistChange={(v) => handleShortlistChange(current.model_id, v)}
-            />
-
-            {/* Navigation */}
-            <div className="flex items-center justify-between mt-8 pt-6 border-t border-neutral-100">
-              <button onClick={prev} disabled={slideIndex === 0}
-                className="flex items-center gap-2 text-xs tracking-widest uppercase disabled:opacity-20 hover:opacity-60 transition-opacity">
-                <ChevronLeft size={16} /> Prev
-              </button>
-
-              {/* Thumbnail strip */}
-              <div className="flex gap-1.5 overflow-x-auto max-w-[200px] md:max-w-sm">
-                {sorted.map((pm, i) => {
-                  const thumb = (mediaByModel[pm.model_id] || []).find((m: any) => m.is_visible && m.type === 'photo')
-                  return (
-                    <button key={pm.id} onClick={() => setSlideIndex(i)}
-                      className={`relative flex-shrink-0 w-9 h-9 overflow-hidden border-2 transition-colors ${i === slideIndex ? 'border-black' : 'border-transparent opacity-40 hover:opacity-70'}`}>
-                      {thumb
-                        ? <img src={thumb.public_url} alt="" className="w-full h-full object-cover" />
-                        : <div className="w-full h-full bg-neutral-100 flex items-center justify-center text-[8px] text-neutral-400">{pm.models?.first_name?.[0]}</div>}
-                      {shortlists[pm.model_id] && <div className="absolute top-0 right-0 w-2 h-2 bg-black rounded-full" />}
-                    </button>
-                  )
-                })}
+            {/* Photos with nav flush at bottom */}
+            <div>
+              <div className="grid grid-cols-2 gap-3">
+                {currentMedia.slice(0, 2).map((m: any) => (
+                  <div key={m.id} className="aspect-[3/4] overflow-hidden bg-neutral-100">
+                    {m.type === "video"
+                      ? <video src={m.public_url} className="w-full h-full object-cover" controls />
+                      : <img src={m.public_url} alt="" className="w-full h-full object-cover" />}
+                  </div>
+                ))}
+                {currentMedia.length === 0 && (
+                  <div className="aspect-[3/4] bg-neutral-100 flex items-center justify-center text-neutral-300 text-xs col-span-2">No photos</div>
+                )}
               </div>
-
-              <button onClick={next} disabled={slideIndex === sorted.length - 1}
-                className="flex items-center gap-2 text-xs tracking-widest uppercase disabled:opacity-20 hover:opacity-60 transition-opacity">
-                Next <ChevronRight size={16} />
-              </button>
+              <div className="flex items-center justify-between mt-3">
+                <button onClick={prev} disabled={slideIndex === 0}
+                  className="flex items-center gap-2 text-xs tracking-widest uppercase disabled:opacity-20 hover:opacity-60 transition-opacity">
+                  <ChevronLeft size={16} /> Prev
+                </button>
+                <div className="flex gap-1.5 overflow-x-auto max-w-xs">
+                  {sorted.map((pm, i) => {
+                    const thumb = (mediaByModel[pm.model_id] || []).find((m: any) => m.is_visible && m.type === "photo")
+                    const active = i === slideIndex
+                    return (
+                      <button key={pm.id} onClick={() => setSlideIndex(i)}
+                        className={["relative flex-shrink-0 w-9 h-9 overflow-hidden border-2 transition-colors", active ? "border-black" : "border-transparent opacity-40 hover:opacity-70"].join(" ")}>
+                        {thumb
+                          ? <img src={thumb.public_url} alt="" className="w-full h-full object-cover" />
+                          : <div className="w-full h-full bg-neutral-100 flex items-center justify-center text-[8px] text-neutral-400">{pm.models?.first_name?.[0]}</div>}
+                        {shortlists[pm.model_id] && <div className="absolute top-0 right-0 w-2 h-2 bg-black rounded-full" />}
+                      </button>
+                    )
+                  })}
+                </div>
+                <button onClick={next} disabled={slideIndex === sorted.length - 1}
+                  className="flex items-center gap-2 text-xs tracking-widest uppercase disabled:opacity-20 hover:opacity-60 transition-opacity">
+                  Next <ChevronRight size={16} />
+                </button>
+              </div>
             </div>
-
-            {/* Mobile swipe hint */}
-            <p className="text-center text-[10px] text-neutral-300 tracking-widest uppercase mt-4 md:hidden">swipe to navigate</p>
+            <p className="text-center text-[10px] text-neutral-300 tracking-widest uppercase mt-3 md:hidden">swipe to navigate</p>
           </div>
         </div>
       )}
@@ -214,8 +196,8 @@ export function PresentationViewer({
   )
 }
 
-function SlideActions({ presentationId, modelId, clientId, initialShortlisted, initialNotes, onShortlistChange }: {
-  presentationId: string, modelId: string, clientId: string, initialShortlisted: boolean, initialNotes: string, onShortlistChange?: (v: boolean) => void
+function SlideActions({ presentationId, modelId, clientId, initialShortlisted, initialNotes, onShortlistChange, compact }: {
+  presentationId: string, modelId: string, clientId: string, initialShortlisted: boolean, initialNotes: string, onShortlistChange?: (v: boolean) => void, compact?: boolean
 }) {
   const [shortlisted, setShortlisted] = useState(initialShortlisted)
   const [notes, setNotes] = useState(initialNotes)
@@ -240,10 +222,18 @@ function SlideActions({ presentationId, modelId, clientId, initialShortlisted, i
     await supabase.from('client_shortlists').upsert({ presentation_id: presentationId, model_id: modelId, client_id: clientId, notes: val })
   }
 
+  if (compact) return (
+    <button onClick={toggle}
+      className={[`flex items-center gap-1.5 px-3 py-2 text-xs tracking-widest uppercase border transition-colors`, shortlisted ? 'bg-black text-white border-black' : 'border-neutral-300 hover:border-black'].join(' ')}>
+      <Heart size={11} className={shortlisted ? 'fill-white text-white' : ''} />
+      {shortlisted ? 'Shortlisted' : 'Shortlist'}
+    </button>
+  )
+
   return (
     <div className="space-y-3">
       <button onClick={toggle}
-        className={`w-full py-3 text-xs tracking-widest uppercase border transition-colors flex items-center justify-center gap-2 ${shortlisted ? 'bg-black text-white border-black' : 'border-neutral-300 hover:border-black'}`}>
+        className={[`w-full py-3 text-xs tracking-widest uppercase border transition-colors flex items-center justify-center gap-2`, shortlisted ? 'bg-black text-white border-black' : 'border-neutral-300 hover:border-black'].join(' ')}>
         <Heart size={12} className={shortlisted ? 'fill-white text-white' : ''} />
         {shortlisted ? 'Shortlisted' : 'Add to Shortlist'}
       </button>
