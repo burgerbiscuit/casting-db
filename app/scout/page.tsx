@@ -10,7 +10,7 @@ export default function ScoutPage() {
   const [form, setForm] = useState({
     first_name: '', last_name: '', email: '', phone: '',
     gender: '', date_of_birth: '', instagram_handle: '', portfolio_url: '',
-    agency: '', height_ft: '', height_in: '', bust: '', waist: '', hips: '',
+    agency: '', based_in: '', height_ft: '', height_in: '', bust: '', waist: '', hips: '',
     chest: '', dress_size: '', shoe_size: '', suit_size: '',
     skills: [] as string[], notes: ''
   })
@@ -119,6 +119,11 @@ export default function ScoutPage() {
           </div>
 
           {/* Agency */}
+          <div>
+            <label className="label block mb-1">Based In (City, Country)</label>
+            <input value={form.based_in} onChange={e => set('based_in', e.target.value)} placeholder="e.g. New York, USA"
+              className="w-full border-b border-neutral-200 py-2 text-sm focus:outline-none focus:border-black bg-transparent" />
+          </div>
           <div>
             <label className="label block mb-1">Agency (if represented)</label>
             <input value={form.agency} onChange={e => set('agency', e.target.value)}

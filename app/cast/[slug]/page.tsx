@@ -53,7 +53,7 @@ const defaultForm = {
   portfolio_url: '',
   skills: [] as string[],
   hobbies: [] as string[],
-  email: '', phone: '',
+  email: '', phone: '', based_in: '',
 }
 
 export default function CastPage({ params }: { params: { slug: string } }) {
@@ -148,7 +148,7 @@ export default function CastPage({ params }: { params: { slug: string } }) {
         instagram_handle: data.instagram_handle || '',
         portfolio_url: data.portfolio_url || '',
         skills: data.skills || [], hobbies: data.hobbies || [],
-        email: data.email || '', phone: data.phone || '',
+        email: data.email || '', phone: data.phone || '', based_in: data.based_in || '',
       })
     }
     setIsReturning(true); setStep('form')
@@ -170,7 +170,7 @@ export default function CastPage({ params }: { params: { slug: string } }) {
       instagram_handle: form.instagram_handle,
       portfolio_url: form.portfolio_url,
       skills: form.skills, hobbies: form.hobbies,
-      email: form.email || null, phone: form.phone || null,
+      email: form.email || null, phone: form.phone || null, based_in: form.based_in || null,
       updated_at: new Date().toISOString(),
     }
 
@@ -426,6 +426,7 @@ export default function CastPage({ params }: { params: { slug: string } }) {
                 <p className="label">Optional Contact</p>
                 <Input label="Email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} type="email" />
                 <Input label="Phone" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} type="tel" />
+                <Input label="Based In (City, Country)" value={form.based_in} onChange={e => setForm(f => ({ ...f, based_in: e.target.value }))} placeholder="e.g. New York, USA" />
               </div>
             </div>
 
