@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { ChipInput } from '@/components/ChipInput'
 import { MediaUploader } from '@/components/MediaUploader'
-import { Eye, EyeOff, Trash2, Star } from 'lucide-react'
+import { Eye, EyeOff, Trash2, Star, Crop } from 'lucide-react'
+import { ImageCropper } from '@/components/ImageCropper'
 import Link from 'next/link'
 
 const ETHNICITY_MAP: Record<string, string[]> = {
@@ -58,6 +59,18 @@ export default function ModelProfile({ params }: { params: { id: string } }) {
     loadMedia()
   }
 
+  const handleCropSave = async (blob: Blob, filename: string) => {
+    if (!cropTarget) return
+    const supabase = createClient()
+    const ext = 'jpg'
+    const path = cropTarget.storagePath.replace(/\.[^.]+$/, '') + '_cropped.' + ext
+    await supabase.storage.from('model-media').upload(path, blob, { contentType: 'image/jpeg', upsert: true })
+    const { data: { publicUrl } } = supabase.storage.from('model-media').getPublicUrl(path)
+    await supabase.from('model_media').update({ public_url: publicUrl, storage_path: path }).eq('id', cropTarget.id)
+    setCropTarget(null)
+    loadMedia()
+  }
+
   const deleteMedia = async (mediaId: string, storagePath: string) => {
     if (!confirm('Delete this file?')) return
     await supabase.storage.from('model-media').remove([storagePath])
@@ -72,6 +85,15 @@ export default function ModelProfile({ params }: { params: { id: string } }) {
   )
 
   return (
+    <>
+    {cropTarget && (
+      <ImageCropper
+        src={cropTarget.url}
+        filename={cropTarget.storagePath.split('/').pop() || 'photo.jpg'}
+        onDone={handleCropSave}
+        onCancel={() => setCropTarget(null)}
+      />
+    )}
     <div>
       <div className="flex items-center justify-between mb-10">
         <div>
@@ -268,6 +290,12 @@ export default function ModelProfile({ params }: { params: { id: string } }) {
                       title="Use as second PDF photo">
                       <Star size={9} fill={m.is_pdf_secondary ? 'white' : 'none'} /> PDF 2
                     </button>
+                    {m.type === 'photo' && (
+                      <button onClick={() => setCropTarget({ id: m.id, url: m.public_url, storagePath: m.storage_path })}
+                        className="px-2 py-1.5 border border-neutral-200 text-neutral-400 hover:border-black transition-colors" title="Crop photo">
+                        <Crop size={10} />
+                      </button>
+                    )}
                     <button onClick={() => deleteMedia(m.id, m.storage_path)}
                       className="px-2 py-1.5 border border-neutral-200 text-neutral-300 hover:border-red-300 hover:text-red-400 transition-colors">
                       <Trash2 size={10} />
@@ -283,5 +311,6 @@ export default function ModelProfile({ params }: { params: { id: string } }) {
         </div>
       )}
     </div>
+    </>
   )
 }
