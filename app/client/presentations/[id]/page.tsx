@@ -2,14 +2,33 @@ import { createClient } from '@/lib/supabase/server'
 import { PresentationViewer } from '@/components/PresentationViewer'
 import Link from 'next/link'
 import { Download } from 'lucide-react'
+import { redirect } from 'next/navigation'
 
 export default async function PresentationView({ params }: { params: { id: string } }) {
   const { id } = params
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
+  if (!user) redirect('/client/login')
+
   const { data: presentation } = await supabase
     .from('presentations').select('*, projects(name)').eq('id', id).single()
+
+  if (!presentation) return <div>Presentation not found.</div>
+
+  // IDOR fix: verify the logged-in client has access to this presentation's project
+  const { data: access } = await supabase
+    .from('client_projects')
+    .select('id')
+    .eq('client_id', user.id)
+    .eq('project_id', presentation.project_id)
+    .single()
+
+  if (!access) {
+    // Also allow team members
+    const { data: member } = await supabase.from('team_members').select('id').eq('user_id', user.id).single()
+    if (!member) redirect('/client')
+  }
 
   const { data: presentationModels } = await supabase
     .from('presentation_models')
@@ -34,7 +53,11 @@ export default async function PresentationView({ params }: { params: { id: strin
     mediaByModel[m.model_id].push(m)
   })
 
-  if (!presentation) return <div>Presentation not found.</div>
+  // Strip admin_notes before passing to client-facing component
+  const sanitizedModels = (presentationModels || []).map((pm: any) => {
+    const { admin_notes, ...pmWithoutNotes } = pm
+    return pmWithoutNotes
+  })
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -51,7 +74,7 @@ export default async function PresentationView({ params }: { params: { id: strin
       </div>
 
       <PresentationViewer
-        presentationModels={presentationModels || []}
+        presentationModels={sanitizedModels}
         mediaByModel={mediaByModel}
         presentationId={id}
         clientId={user?.id || ''}

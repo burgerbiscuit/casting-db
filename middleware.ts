@@ -25,6 +25,13 @@ export async function middleware(request: NextRequest) {
 
   if (path.startsWith('/admin') && path !== '/admin/login') {
     if (!user) return NextResponse.redirect(new URL('/admin/login', request.url))
+    // Enforce team_member role for all /admin routes
+    const { data: member } = await supabase
+      .from('team_members')
+      .select('id')
+      .eq('user_id', user.id)
+      .single()
+    if (!member) return NextResponse.redirect(new URL('/admin/login', request.url))
   }
 
   if (path.startsWith('/client') && path !== '/client/login') {

@@ -1,12 +1,49 @@
 import { createServiceClient } from '@/lib/supabase/server'
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 
-export async function POST(req: Request) {
+// In-memory rate limit: max 5 submissions per IP per hour
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
+
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now()
+  const entry = rateLimitMap.get(ip)
+  if (!entry || now > entry.resetAt) {
+    rateLimitMap.set(ip, { count: 1, resetAt: now + 3600_000 })
+    return true
+  }
+  if (entry.count >= 5) return false
+  entry.count++
+  return true
+}
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+export async function POST(req: NextRequest) {
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+
+  if (!checkRateLimit(ip)) {
+    return NextResponse.json({ error: 'Too many submissions. Please try again later.' }, { status: 429 })
+  }
+
   const body = await req.json()
+
+  // Validate required fields
+  const firstName = (body.first_name || '').trim()
+  const lastName = (body.last_name || '').trim()
+  if (!firstName || !lastName) {
+    return NextResponse.json({ error: 'First name and last name are required.' }, { status: 400 })
+  }
+  if (firstName.length > 100 || lastName.length > 100) {
+    return NextResponse.json({ error: 'Name fields are too long.' }, { status: 400 })
+  }
+  if (body.email && !EMAIL_RE.test(body.email)) {
+    return NextResponse.json({ error: 'Invalid email address.' }, { status: 400 })
+  }
+
   const supabase = await createServiceClient()
   const { data, error } = await supabase.from('models').insert({
-    first_name: body.first_name,
-    last_name: body.last_name,
+    first_name: firstName,
+    last_name: lastName,
     email: body.email || null,
     phone: body.phone || null,
     gender: body.gender || null,
@@ -29,9 +66,10 @@ export async function POST(req: Request) {
     notes: body.notes || null,
     source: 'scouting',
   }).select('id').single()
+
   if (error) {
     console.error('Scout insert error:', error.message)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ error: 'Submission failed. Please try again.' }, { status: 500 })
   }
   return NextResponse.json({ ok: true, id: data.id })
 }

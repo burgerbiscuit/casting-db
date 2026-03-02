@@ -201,38 +201,35 @@ export default function CastPage({ params }: { params: { slug: string } }) {
       updated_at: new Date().toISOString(),
     }
 
-    let modelId = selectedModel?.id
-    if (isReturning && modelId) {
-      await supabase.from('models').update(modelData).eq('id', modelId)
-    } else {
-      const { data } = await supabase.from('models').insert(modelData).select('id').single()
-      modelId = data?.id
-    }
+    // Use service-role API route for all DB writes (removes need for open RLS policies)
+    const res = await fetch('/api/cast-signin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        modelData,
+        projectId: project.id,
+        modelId: selectedModel?.id,
+        isReturning,
+      }),
+    })
+    const result = await res.json()
+    const modelId = result.modelId
+
+    // Upload selfie photos via storage (uses anon key for storage bucket)
     if (modelId) {
-      await supabase.from('project_models').upsert({ project_id: project.id, model_id: modelId })
-      // Auto-add to the project's presentation if one exists
-      const { data: pres } = await supabase.from('presentations').select('id').eq('project_id', project.id).single()
-      if (pres) {
-        const { data: existing } = await supabase.from('presentation_models').select('id').eq('presentation_id', pres.id).eq('model_id', modelId).single()
-        if (!existing) {
-          const { data: lastPm } = await supabase.from('presentation_models').select('display_order').eq('presentation_id', pres.id).order('display_order', { ascending: false }).limit(1).single()
-          await supabase.from('presentation_models').insert({
-            presentation_id: pres.id,
-            model_id: modelId,
-            display_order: (lastPm?.display_order ?? -1) + 1,
-            show_sizing: true, show_instagram: true, show_portfolio: true, is_visible: true
+      for (const file of selfieFiles) {
+        const ext = file.name.split('.').pop() || 'jpg'
+        const storagePath = modelId + '/' + Date.now() + '-' + Math.random().toString(36).slice(2) + '.' + ext
+        const { error: upErr } = await supabase.storage.from('model-media').upload(storagePath, file)
+        if (!upErr) {
+          const { data: { publicUrl } } = supabase.storage.from('model-media').getPublicUrl(storagePath)
+          // Save media record via API too
+          await fetch('/api/cast-signin/media', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ modelId, storagePath, publicUrl }),
           })
         }
-      }
-    }
-    // Upload selfie photos
-    for (const file of selfieFiles) {
-      const ext = file.name.split('.').pop() || 'jpg'
-      const path = modelId + '/' + Date.now() + '-' + Math.random().toString(36).slice(2) + '.' + ext
-      const { error: upErr } = await supabase.storage.from('model-media').upload(path, file)
-      if (!upErr) {
-        const { data: { publicUrl } } = supabase.storage.from('model-media').getPublicUrl(path)
-        await supabase.from('model_media').insert({ model_id: modelId, storage_path: path, public_url: publicUrl, type: 'photo', is_visible: true })
       }
     }
     setSaving(false); setStep('done')
