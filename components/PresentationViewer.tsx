@@ -180,89 +180,89 @@ export function PresentationViewer({
 
       {view === 'slides' && current && currentModel && (
         <div onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} className="fixed inset-0 bg-white z-40 flex flex-col overflow-hidden">
-          {/* Top bar */}
-          <div className="flex items-center justify-between px-6 py-3 border-b border-neutral-100 flex-shrink-0">
-            <img src="/logo.jpg" alt="" className="h-5 w-auto" />
-            <p className="label">{slideIndex + 1} / {sorted.length}</p>
-            <button onClick={() => setView('grid')} className="text-xs tracking-widest uppercase hover:opacity-60 transition-opacity">✕ Exit Slides</button>
-          </div>
 
-          {/* Info row: ONE LINE */}
-          <div className="flex-shrink-0 px-6 py-2 border-b border-neutral-100 flex items-center overflow-hidden">
-            <span className="text-sm font-medium tracking-wider uppercase whitespace-nowrap">
+          {/* Centered header: brand → name → sizing */}
+          <div className="flex-shrink-0 text-center pt-4 pb-3 px-6 relative border-b border-neutral-100">
+            <img src="/logo.jpg" alt="" className="h-4 w-auto mx-auto mb-2 opacity-60" />
+            <h2 className="text-2xl md:text-3xl font-light tracking-[0.15em] uppercase leading-tight">
               {currentModel.first_name} {currentModel.last_name}
-            </span>
-            {getSizingParts(current, currentModel).map((part, i) => (
-              <span key={i} className="text-sm text-neutral-500 whitespace-nowrap">
-                <span className="mx-2 text-neutral-300">·</span>{part}
-              </span>
-            ))}
-            <div className="ml-auto flex-shrink-0 pl-4">
+            </h2>
+            <p className="text-xs text-neutral-500 mt-1 tracking-wider">
+              {getSizingParts(current, currentModel).join('  ·  ')}
+            </p>
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-3">
               <SlideActions presentationId={presentationId} modelId={current.model_id} clientId={clientId}
                 initialShortlisted={!!shortlists[current.model_id]} initialNotes={shortlistMap[current.model_id]?.notes || ""}
                 onShortlistChange={(v) => handleShortlistChange(current.model_id, v)} compact={true} model={currentModel} projectName={projectName} />
+              <button onClick={() => setView('grid')} className="text-xs tracking-widest uppercase text-neutral-400 hover:text-black transition-colors">✕</button>
             </div>
           </div>
 
-          {/* Main content */}
+          {/* Body: photos left + right panel */}
           <div className="flex flex-1 min-h-0 overflow-hidden">
 
-            {/* LEFT: photos flushed to left edge */}
-            <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
-              <div className="flex flex-1 min-h-0 gap-2 pl-0 pt-4 pb-0 pr-2 items-stretch overflow-hidden">
-                {currentMedia.length === 0 && (
-                  <div className="bg-neutral-100 flex items-center justify-center text-neutral-300 text-xs" style={{width:'calc(50% - 4px)', aspectRatio:'3/4'}}>No photos</div>
+            {/* Photos flush left */}
+            <div className="flex flex-1 min-w-0 gap-2 pt-4 pb-0 pl-0 pr-0 overflow-hidden">
+              {currentMedia.length === 0 && (
+                <div className="bg-neutral-100 flex items-center justify-center text-neutral-300 text-xs flex-1">No photos</div>
+              )}
+              {photoMedia.slice(0, 2).map((m: any, i: number) => (
+                <div key={m.id} className="bg-neutral-100 overflow-hidden flex-1" style={{maxWidth:'calc(50% - 4px)'}}>
+                  {m.type === 'video'
+                    ? <video src={m.public_url} className="w-full h-full object-cover" controls />
+                    : <img src={m.public_url} alt="" className="w-full h-full object-cover object-top" />}
+                </div>
+              ))}
+            </div>
+
+            {/* Right panel: always visible */}
+            <div className="w-48 xl:w-56 flex-shrink-0 flex flex-col px-5 py-5 justify-between">
+              {/* Private notes: option + rate */}
+              <div className="space-y-4 text-center">
+                {current.notes && (
+                  <p className="text-base font-medium tracking-wider">{current.notes}</p>
                 )}
-                {photoMedia.slice(0, 2).map((m: any) => (
-                  <div key={m.id} className="bg-neutral-100 overflow-hidden" style={{width:'calc(50% - 4px)', flexShrink:0, flexGrow:0, alignSelf:'stretch'}}>
-                    <img src={m.public_url} alt="" className="w-full h-full object-cover object-top" />
-                  </div>
-                ))}
+                {current.rate && (
+                  <p className="text-base font-medium tracking-wider">{current.rate}</p>
+                )}
+                {current.location && (
+                  <p className="text-sm text-neutral-500 tracking-wider">{current.location}</p>
+                )}
               </div>
-              {(videoMedia.length > 0 || digitalMedia.length > 0) && (
-                <div className="flex gap-2 pl-0 pt-2 pb-3 flex-shrink-0">
-                  {videoMedia.map((m: any) => (
-                    <button key={m.id} onClick={() => setMediaModal({ url: m.public_url, type: 'video' })}
-                      className="text-xs px-3 py-1.5 border border-neutral-300 hover:border-black transition-colors tracking-wider">
+
+              {/* Client notes + links at bottom */}
+              <div className="space-y-3">
+                <textarea
+                  value={clientNotes[current.model_id] || ''}
+                  onChange={e => handleClientNotesChange(current.model_id, e.target.value)}
+                  placeholder="Your notes..."
+                  rows={3}
+                  className="w-full text-sm bg-transparent resize-none focus:outline-none placeholder:text-neutral-300 leading-relaxed border-b border-neutral-200 pb-2"
+                />
+                <div className="space-y-1.5">
+                  {current.show_portfolio && currentModel.portfolio_url && (
+                    <a href={currentModel.portfolio_url.startsWith('http') ? currentModel.portfolio_url : 'https://' + currentModel.portfolio_url}
+                      target="_blank" rel="noopener noreferrer"
+                      className="block text-xs tracking-widest uppercase underline underline-offset-2 hover:opacity-60 transition-opacity">
+                      Portfolio ↗
+                    </a>
+                  )}
+                  {current.show_instagram && currentModel.instagram_handle && (
+                    <a href={"https://instagram.com/" + currentModel.instagram_handle}
+                      target="_blank" rel="noopener noreferrer"
+                      className="block text-xs tracking-widest uppercase underline underline-offset-2 hover:opacity-60 transition-opacity">
+                      Instagram ↗
+                    </a>
+                  )}
+                  {videoMedia.length > 0 && (
+                    <button onClick={() => setMediaModal({ url: videoMedia[0].public_url, type: 'video' })}
+                      className="block text-xs tracking-widest uppercase underline underline-offset-2 hover:opacity-60 transition-opacity">
                       ▶ Video
-                    </button>
-                  ))}
-                  {digitalMedia.length > 0 && (
-                    <button onClick={() => setMediaModal({ url: digitalMedia[0].public_url, type: 'digital' })}
-                      className="text-xs px-3 py-1.5 border border-neutral-300 hover:border-black transition-colors tracking-wider">
-                      📷 Digitals
                     </button>
                   )}
                 </div>
-              )}
-            </div>
-
-            {/* RIGHT: notes panel — only if private notes exist */}
-            {(current.notes || current.location || current.rate) && (
-              <div className="w-[220px] flex-shrink-0 border-l border-neutral-100 px-5 py-4 flex flex-col gap-4 overflow-y-auto">
-                {/* Private notes stacked on top */}
-                {(current.notes || current.location || current.rate) && (
-                  <div>
-                    <p className="label mb-2 text-xs">Private Notes</p>
-                    {current.notes && <p className="text-sm text-neutral-600 leading-relaxed mb-2">{current.notes}</p>}
-                    {current.location && <div><span className="label text-xs">Location</span><p className="text-sm">{current.location}</p></div>}
-                    {current.rate && <div className="mt-1"><span className="label text-xs">Rate</span><p className="text-sm">{current.rate}</p></div>}
-                  </div>
-                )}
-                {/* Client notes below */}
-                <div className="flex flex-col flex-1 min-h-0">
-                  <p className="label mb-2 text-xs">Your Notes</p>
-                  <textarea
-                    value={clientNotes[current.model_id] || ''}
-                    onChange={e => handleClientNotesChange(current.model_id, e.target.value)}
-                    placeholder="Add your notes..."
-                    className="flex-1 w-full text-sm bg-transparent resize-none focus:outline-none placeholder:text-neutral-300 leading-relaxed min-h-[80px]"
-                  />
-                  <p className="text-xs text-neutral-400 mt-1">— Client</p>
-                </div>
               </div>
-            )}
-
+            </div>
           </div>
 
           {/* Prev / Next bottom bar */}
