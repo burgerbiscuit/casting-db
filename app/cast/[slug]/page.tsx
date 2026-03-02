@@ -82,6 +82,7 @@ export default function CastPage({ params }: { params: { slug: string } }) {
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState(defaultForm)
   const [agencySuggestions, setAgencySuggestions] = useState<string[]>([])
+  const [agencyContacts, setAgencyContacts] = useState<any[]>([])
   const [boardSuggestions, setBoardSuggestions] = useState<string[]>([])
   const [agentNameSuggestions, setAgentNameSuggestions] = useState<string[]>([])
   const [basedInSuggestions, setBasedInSuggestions] = useState<string[]>([])
@@ -128,10 +129,25 @@ export default function CastPage({ params }: { params: { slug: string } }) {
   }
 
   const searchAgencies = async (q: string) => {
-    if (!q) { setAgencySuggestions([]); return }
-    const { data } = await supabase.from('models').select('agency').ilike('agency', `%${q}%`).not('agency', 'is', null).limit(10)
-    const unique = [...new Set((data || []).map((r: any) => r.agency).filter(Boolean))]
+    if (!q) { setAgencySuggestions([]); setAgencyContacts([]); return }
+    const { data } = await supabase
+      .from('agency_contacts')
+      .select('agency_name')
+      .ilike('agency_name', `%${q}%`)
+      .limit(20)
+    const unique = [...new Set((data || []).map((r: any) => r.agency_name).filter(Boolean))]
     setAgencySuggestions(unique)
+  }
+
+  const loadAgentContacts = async (agencyName: string) => {
+    if (!agencyName) { setAgencyContacts([]); return }
+    const { data } = await supabase
+      .from('agency_contacts')
+      .select('agent_name, board, email, cell_phone')
+      .ilike('agency_name', agencyName)
+      .not('agent_name', 'is', null)
+      .order('board')
+    setAgencyContacts(data || [])
   }
 
   const searchBoards = async (q: string) => {
@@ -482,7 +498,7 @@ export default function CastPage({ params }: { params: { slug: string } }) {
                   <div className="absolute top-full left-0 right-0 bg-white border border-neutral-200 z-10 shadow-sm">
                     {agencySuggestions.map(a => (
                       <button key={a} type="button"
-                        onClick={() => { setForm(f => ({ ...f, agency: a })); setShowAgencySuggestions(false) }}
+                        onClick={() => { setForm(f => ({ ...f, agency: a, agent_name: '', board: '' })); setShowAgencySuggestions(false); loadAgentContacts(a) }}
                         className="w-full px-4 py-2 text-left text-sm hover:bg-neutral-50 border-b border-neutral-100 last:border-0">
                         {a}
                       </button>
@@ -490,6 +506,24 @@ export default function CastPage({ params }: { params: { slug: string } }) {
                   </div>
                 )}
               </div>
+
+              {/* Agent picker from agency_contacts */}
+              {agencyContacts.length > 0 && (
+                <div>
+                  <p className="label mb-2">Select Your Agent</p>
+                  <div className="space-y-1 max-h-48 overflow-y-auto border border-neutral-200">
+                    {agencyContacts.map((ac, i) => (
+                      <button key={i} type="button"
+                        onClick={() => setForm(f => ({ ...f, agent_name: ac.agent_name || '', board: ac.board || '' }))}
+                        className={`w-full px-4 py-2.5 text-left text-sm border-b border-neutral-100 last:border-0 transition-colors ${form.agent_name === ac.agent_name ? 'bg-black text-white' : 'hover:bg-neutral-50'}`}>
+                        <span className="font-medium">{ac.agent_name}</span>
+                        {ac.board && <span className="ml-2 text-xs opacity-60">{ac.board}</span>}
+                        {ac.email && <span className="block text-xs opacity-50 mt-0.5">{ac.email}</span>}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Board with autocomplete */}
               <div className="relative">
