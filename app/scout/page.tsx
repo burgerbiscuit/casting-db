@@ -117,7 +117,8 @@ export default function ScoutPage() {
       <div className="text-center max-w-sm">
         <img src="/logo.jpg" alt="" className="h-8 w-auto mx-auto mb-10" />
         <h2 className="text-2xl font-light tracking-widest uppercase mb-4">Thank You</h2>
-        <p className="text-sm text-neutral-500">Your submission has been received. We'll be in touch if there's a fit.</p>
+        <p className="text-sm text-neutral-500 mb-6">Your submission has been received. We'll be in touch if there's a fit.</p>
+        <a href="https://www.instagram.com/tashatongpreechacasting" target="_blank" rel="noopener noreferrer" className="text-sm tracking-widest uppercase underline underline-offset-4 hover:opacity-60 transition-opacity">Follow us on Instagram for casting updates</a>
       </div>
     </div>
   )
