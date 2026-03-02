@@ -18,6 +18,17 @@ const SKILL_SUGGESTIONS = ['Acting','Dancing','Singing','Modeling','Athletics','
 
 const HEIGHT_FT = [4,5,6,7]
 const HEIGHT_IN = [0,1,2,3,4,5,6,7,8,9,10,11]
+const SHOE_SIZES = [
+  {us: '4', eu: '34'}, {us: '4.5', eu: '34-35'}, {us: '5', eu: '35'},
+  {us: '5.5', eu: '35-36'}, {us: '6', eu: '36'}, {us: '6.5', eu: '36-37'},
+  {us: '7', eu: '37'}, {us: '7.5', eu: '37-38'}, {us: '8', eu: '38'},
+  {us: '8.5', eu: '38-39'}, {us: '9', eu: '39'}, {us: '9.5', eu: '39-40'},
+  {us: '10', eu: '40'}, {us: '10.5', eu: '40-41'}, {us: '11', eu: '41'},
+  {us: '11.5', eu: '41-42'}, {us: '12', eu: '42'}, {us: '12.5', eu: '42-43'},
+  {us: '13', eu: '43'}, {us: '14', eu: '44'}, {us: '15', eu: '45'},
+]
+const heightToCm = (ft: number, inches: number) => Math.round((ft * 30.48) + (inches * 2.54))
+
 
 export default function ScoutPage() {
   const supabase = createClient()
@@ -187,7 +198,16 @@ export default function ScoutPage() {
               <div><label className={lbl}>Suit Size</label><input value={form.suit_size} onChange={e => set('suit_size', e.target.value)} className={inp} /></div>
             </div>
           )}
-          <div><label className={lbl}>Shoe Size</label><input value={form.shoe_size} onChange={e => set('shoe_size', e.target.value)} className={inp} /></div>
+          <div>
+            <label className={lbl}>Shoe Size (US)</label>
+            <select value={form.shoe_size} onChange={e => set('shoe_size', e.target.value)}
+              className="w-full border-b border-neutral-300 bg-transparent py-2 text-sm focus:outline-none">
+              <option value="">Select...</option>
+              {SHOE_SIZES.map(s => (
+                <option key={s.us} value={s.us}>US {s.us} / EU {s.eu}</option>
+              ))}
+            </select>
+          </div>
 
           {/* Agency autocomplete */}
           <div className="relative">

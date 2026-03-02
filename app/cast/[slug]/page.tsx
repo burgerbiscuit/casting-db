@@ -10,6 +10,17 @@ type Gender = 'female' | 'male' | 'non-binary' | ''
 
 const HEIGHT_FT = [4,5,6,7]
 const HEIGHT_IN = [0,1,2,3,4,5,6,7,8,9,10,11]
+const SHOE_SIZES = [
+  {us: '4', eu: '34'}, {us: '4.5', eu: '34-35'}, {us: '5', eu: '35'},
+  {us: '5.5', eu: '35-36'}, {us: '6', eu: '36'}, {us: '6.5', eu: '36-37'},
+  {us: '7', eu: '37'}, {us: '7.5', eu: '37-38'}, {us: '8', eu: '38'},
+  {us: '8.5', eu: '38-39'}, {us: '9', eu: '39'}, {us: '9.5', eu: '39-40'},
+  {us: '10', eu: '40'}, {us: '10.5', eu: '40-41'}, {us: '11', eu: '41'},
+  {us: '11.5', eu: '41-42'}, {us: '12', eu: '42'}, {us: '12.5', eu: '42-43'},
+  {us: '13', eu: '43'}, {us: '14', eu: '44'}, {us: '15', eu: '45'},
+]
+const heightToCm = (ft: number, inches: number) => Math.round((ft * 30.48) + (inches * 2.54))
+
 
 // Ethnicity: broad category -> specific options
 const ETHNICITY_MAP: Record<string, string[]> = {
@@ -327,6 +338,7 @@ export default function CastPage({ params }: { params: { slug: string } }) {
                     </select>
                   </div>
                 </div>
+                <p className="text-xs text-neutral-400 mt-1">{heightToCm(form.height_ft, form.height_in)} cm</p>
               </div>
 
               {/* Female sizing */}
@@ -360,7 +372,16 @@ export default function CastPage({ params }: { params: { slug: string } }) {
                 </div>
               )}
 
-              <Input label="Shoe Size" value={form.shoe_size} onChange={e => setForm(f => ({ ...f, shoe_size: e.target.value }))} />
+              <div>
+                <label className="label block mb-1">Shoe Size (US)</label>
+                <select value={form.shoe_size} onChange={e => setForm(f => ({ ...f, shoe_size: e.target.value }))}
+                  className="w-full border-b border-neutral-300 bg-transparent py-2 text-sm focus:outline-none">
+                  <option value="">Select...</option>
+                  {SHOE_SIZES.map(s => (
+                    <option key={s.us} value={s.us}>US {s.us} / EU {s.eu}</option>
+                  ))}
+                </select>
+              </div>
 
               {/* Agency with autocomplete */}
               <div className="relative">
