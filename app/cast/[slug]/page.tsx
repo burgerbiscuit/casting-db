@@ -494,7 +494,7 @@ export default function CastPage({ params }: { params: { slug: string } }) {
                   onFocus={() => { if (form.agency) { searchAgencies(form.agency); setShowAgencySuggestions(true) } }}
                   placeholder="Agency name or Freelance"
                 />
-                {showAgencySuggestions && agencySuggestions.length > 0 && (
+                {showAgencySuggestions && (agencySuggestions.length > 0 || form.agency.length > 1) && (
                   <div className="absolute top-full left-0 right-0 bg-white border border-neutral-200 z-10 shadow-sm">
                     {agencySuggestions.map(a => (
                       <button key={a} type="button"
@@ -503,6 +503,13 @@ export default function CastPage({ params }: { params: { slug: string } }) {
                         {a}
                       </button>
                     ))}
+                    {form.agency && !agencySuggestions.map(a => a.toLowerCase()).includes(form.agency.toLowerCase()) && (
+                      <button type="button"
+                        onClick={() => { setShowAgencySuggestions(false); setAgencyContacts([]) }}
+                        className="w-full px-4 py-2 text-left text-sm text-neutral-400 hover:bg-neutral-50 italic border-t border-neutral-100">
+                        + Use "{form.agency}" as new agency
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
@@ -521,6 +528,11 @@ export default function CastPage({ params }: { params: { slug: string } }) {
                         {ac.email && <span className="block text-xs opacity-50 mt-0.5">{ac.email}</span>}
                       </button>
                     ))}
+                    <button type="button"
+                      onClick={() => setForm(f => ({ ...f, agent_name: '', board: '' }))}
+                      className="w-full px-4 py-2.5 text-left text-sm text-neutral-400 hover:bg-neutral-50 italic">
+                      + My agent isn't listed — enter manually
+                    </button>
                   </div>
                 </div>
               )}
