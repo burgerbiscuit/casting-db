@@ -113,12 +113,25 @@ export default function ScoutPage() {
   const lbl = 'label block mb-1'
 
   if (step === 'done') return (
-    <div className="min-h-screen flex items-center justify-center bg-white px-6">
-      <div className="text-center max-w-sm">
-        <img src="/logo.jpg" alt="" className="h-8 w-auto mx-auto mb-10" />
-        <h2 className="text-2xl font-light tracking-widest uppercase mb-4">Thank You</h2>
-        <p className="text-sm text-neutral-500 mb-6">Your submission has been received. We'll be in touch if there's a fit.</p>
-        <a href="https://www.instagram.com/tashatongpreecha" target="_blank" rel="noopener noreferrer" className="text-sm tracking-widest uppercase underline underline-offset-4 hover:opacity-60 transition-opacity">Follow us on Instagram for casting updates</a>
+    <div className="min-h-screen flex flex-col bg-white">
+      <header className="px-8 py-6 border-b border-neutral-100">
+        <img src="/logo.jpg" alt="Tasha Tongpreecha Casting" className="h-8 w-auto" />
+      </header>
+      <div className="flex-1 flex items-center justify-center px-6">
+        <div className="text-center max-w-sm">
+          <h2 className="text-2xl font-light tracking-widest uppercase mb-4">Thank You</h2>
+          <p className="text-sm text-neutral-500 mb-8">Your submission has been received. We'll be in touch if there's a fit.</p>
+          <div className="space-y-4">
+            <a href="https://www.instagram.com/tashatongpreecha" target="_blank" rel="noopener noreferrer"
+              className="block text-sm tracking-widest uppercase underline underline-offset-4 hover:opacity-60 transition-opacity">
+              Follow @tashatongpreecha on Instagram
+            </a>
+            <a href="https://www.tashatongpreecha.com" target="_blank" rel="noopener noreferrer"
+              className="block text-sm tracking-widest uppercase text-neutral-400 hover:text-black transition-colors">
+              ← Back to Website
+            </a>
+          </div>
+        </div>
       </div>
     </div>
   )
