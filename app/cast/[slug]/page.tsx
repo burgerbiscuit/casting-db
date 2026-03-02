@@ -295,7 +295,7 @@ export default function CastPage({ params }: { params: { slug: string } }) {
     <main className="min-h-screen bg-white">
       <div className="max-w-lg mx-auto px-6 py-16">
         <div className="text-center mb-12">
-          <img src="/logo.jpg" alt="Tasha Tongpreecha Casting" className="h-6 w-auto" />
+          <img src="/logo.jpg" alt="Tasha Tongpreecha Casting" className="h-6 w-auto mx-auto" />
           {project && step !== 'landing' && (
             <p className="text-xs text-neutral-400 tracking-widest uppercase mt-2">{project.name}</p>
           )}
@@ -337,22 +337,37 @@ export default function CastPage({ params }: { params: { slug: string } }) {
         {step === 'confirm' && selectedModel && (
           <div className="text-center">
             <h2 className="text-xl font-light tracking-widest uppercase mb-10">Is This You?</h2>
-            <div className="border border-neutral-200 mb-8 overflow-hidden w-1/3 mx-auto">
+            <div className="border border-neutral-200 mb-8 overflow-hidden max-w-[220px] mx-auto">
               {modelPhoto ? (
-                <img src={modelPhoto} alt={selectedModel.first_name} className="w-full aspect-square object-cover" />
+                <img src={modelPhoto} alt={selectedModel.first_name} className="w-full aspect-[3/4] object-cover object-top" />
               ) : (
-                <div className="w-full aspect-square bg-neutral-100 flex items-center justify-center text-neutral-300 text-2xl font-light">
+                <div className="w-full aspect-[3/4] bg-neutral-100 flex items-center justify-center text-neutral-300 text-2xl font-light">
                   {selectedModel.first_name?.[0]}{selectedModel.last_name?.[0]}
                 </div>
               )}
-              <div className="p-6">
-                <p className="text-xl font-light tracking-wider uppercase mb-1">{selectedModel.first_name} {selectedModel.last_name}</p>
-                {selectedModel.agency && <p className="text-sm text-neutral-500">{selectedModel.agency}</p>}
+              <div className="p-4">
+                <p className="text-sm font-medium tracking-wider uppercase leading-snug">{selectedModel.first_name} {selectedModel.last_name}</p>
+                {selectedModel.agency && <p className="text-xs text-neutral-500 mt-1">{selectedModel.agency}</p>}
               </div>
             </div>
-            <div className="flex gap-4 justify-center">
+            <div className="flex gap-4 justify-center mb-8">
               <Button onClick={confirmReturning}>Yes, This Is Me</Button>
-              <Button variant="secondary" onClick={() => { setSelectedModel(null); setModelPhoto(null); setIsReturning(false); setStep('form') }}>Not Me</Button>
+              <Button variant="secondary" onClick={() => setStep('not-me')}>Not Me</Button>
+            </div>
+          </div>
+        )}
+
+        {step === 'not-me' && (
+          <div className="text-center">
+            <h2 className="text-xl font-light tracking-widest uppercase mb-4">No Problem</h2>
+            <p className="text-sm text-neutral-500 mb-10">What would you like to do?</p>
+            <div className="flex flex-col gap-4 max-w-xs mx-auto">
+              <Button onClick={() => { setSelectedModel(null); setModelPhoto(null); setIsReturning(false); setFirstName(''); setLastName(''); setStep('name') }}>
+                Search My Name Again
+              </Button>
+              <Button variant="secondary" onClick={() => { setSelectedModel(null); setModelPhoto(null); setIsReturning(false); setStep('form') }}>
+                I'm New — Add Me
+              </Button>
             </div>
           </div>
         )}
