@@ -205,40 +205,20 @@ export function PresentationViewer({
           {/* Main content */}
           <div className="flex flex-1 min-h-0 overflow-hidden">
 
-            {/* LEFT: admin private notes, always visible, full height */}
-            <div className="w-[280px] flex-shrink-0 border-r border-neutral-100 px-5 py-4 overflow-y-auto">
-              <p className="label mb-2 text-xs">Private Notes</p>
-              {current.notes
-                ? <p className="text-sm text-neutral-600 leading-relaxed">{current.notes}</p>
-                : <p className="text-sm text-neutral-300 italic">Private notes</p>}
-              {current.location && (
-                <div className="mt-4 pt-3 border-t border-neutral-100">
-                  <span className="label block text-xs">Location</span>
-                  <p className="text-sm">{current.location}</p>
-                </div>
-              )}
-              {current.rate && (
-                <div className="mt-2">
-                  <span className="label block text-xs">Rate</span>
-                  <p className="text-sm">{current.rate}</p>
-                </div>
-              )}
-            </div>
-
-            {/* CENTER: photos flushed left, 3:4 */}
-            <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
-              <div className="flex flex-1 min-h-0 gap-2 p-4 justify-start items-stretch overflow-hidden">
+            {/* LEFT: photos flushed to left edge */}
+            <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
+              <div className="flex flex-1 min-h-0 gap-2 pl-0 pt-4 pb-0 pr-2 items-stretch overflow-hidden">
                 {currentMedia.length === 0 && (
-                  <div className="bg-neutral-100 flex items-center justify-center text-neutral-300 text-xs flex-shrink-0" style={{aspectRatio:'3/4', height:'100%'}}>No photos</div>
+                  <div className="bg-neutral-100 flex items-center justify-center text-neutral-300 text-xs" style={{width:'calc(50% - 4px)', aspectRatio:'3/4'}}>No photos</div>
                 )}
                 {photoMedia.slice(0, 2).map((m: any) => (
-                  <div key={m.id} className="bg-neutral-100 overflow-hidden flex-shrink-0" style={{aspectRatio:'3/4', height:'100%', maxHeight:'100%'}}>
+                  <div key={m.id} className="bg-neutral-100 overflow-hidden" style={{width:'calc(50% - 4px)', flexShrink:0, flexGrow:0, alignSelf:'stretch'}}>
                     <img src={m.public_url} alt="" className="w-full h-full object-cover object-top" />
                   </div>
                 ))}
               </div>
               {(videoMedia.length > 0 || digitalMedia.length > 0) && (
-                <div className="flex gap-2 px-4 pb-3 flex-shrink-0">
+                <div className="flex gap-2 pl-0 pt-2 pb-3 flex-shrink-0">
                   {videoMedia.map((m: any) => (
                     <button key={m.id} onClick={() => setMediaModal({ url: m.public_url, type: 'video' })}
                       className="text-xs px-3 py-1.5 border border-neutral-300 hover:border-black transition-colors tracking-wider">
@@ -255,17 +235,31 @@ export function PresentationViewer({
               )}
             </div>
 
-            {/* RIGHT: client notes */}
-            <div className="w-[200px] flex-shrink-0 border-l border-neutral-100 px-4 py-4 flex flex-col">
-              <p className="label mb-2 text-xs">Your Notes</p>
-              <textarea
-                value={clientNotes[current.model_id] || ''}
-                onChange={e => handleClientNotesChange(current.model_id, e.target.value)}
-                placeholder="Add your notes..."
-                className="flex-1 w-full text-sm bg-transparent resize-none focus:outline-none placeholder:text-neutral-300 leading-relaxed"
-              />
-              <p className="text-xs text-neutral-400 mt-2">— Client</p>
-            </div>
+            {/* RIGHT: notes panel — only if private notes exist */}
+            {(current.notes || current.location || current.rate || current.client_notes) && (
+              <div className="w-[220px] flex-shrink-0 border-l border-neutral-100 px-5 py-4 flex flex-col gap-4 overflow-y-auto">
+                {/* Private notes stacked on top */}
+                {(current.notes || current.location || current.rate) && (
+                  <div>
+                    <p className="label mb-2 text-xs">Private Notes</p>
+                    {current.notes && <p className="text-sm text-neutral-600 leading-relaxed mb-2">{current.notes}</p>}
+                    {current.location && <div><span className="label text-xs">Location</span><p className="text-sm">{current.location}</p></div>}
+                    {current.rate && <div className="mt-1"><span className="label text-xs">Rate</span><p className="text-sm">{current.rate}</p></div>}
+                  </div>
+                )}
+                {/* Client notes below */}
+                <div className="flex flex-col flex-1 min-h-0">
+                  <p className="label mb-2 text-xs">Your Notes</p>
+                  <textarea
+                    value={clientNotes[current.model_id] || ''}
+                    onChange={e => handleClientNotesChange(current.model_id, e.target.value)}
+                    placeholder="Add your notes..."
+                    className="flex-1 w-full text-sm bg-transparent resize-none focus:outline-none placeholder:text-neutral-300 leading-relaxed min-h-[80px]"
+                  />
+                  <p className="text-xs text-neutral-400 mt-1">— Client</p>
+                </div>
+              </div>
+            )}
 
           </div>
 
