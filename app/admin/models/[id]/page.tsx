@@ -83,6 +83,11 @@ export default function ModelProfile({ params }: { params: { id: string } }) {
     router.push('/admin/models')
   }
 
+  const markReviewed = async (val: boolean) => {
+    await supabase.from('models').update({ reviewed: val }).eq('id', model.id)
+    setModel((m: any) => ({ ...m, reviewed: val }))
+  }
+
   const deleteMedia = async (mediaId: string, storagePath: string) => {
     if (!confirm('Delete this file?')) return
     await supabase.storage.from('model-media').remove([storagePath])
@@ -116,6 +121,17 @@ export default function ModelProfile({ params }: { params: { id: string } }) {
           {model.agency && <p className="text-sm text-neutral-400">{model.agency}</p>}
         </div>
         <div className="flex items-center gap-3">
+          {!model.reviewed ? (
+            <button onClick={() => markReviewed(true)}
+              className="flex items-center gap-1.5 text-xs bg-amber-500 text-white hover:bg-amber-600 transition-colors px-3 py-2 rounded-sm tracking-wider uppercase">
+              ✓ Mark as Reviewed
+            </button>
+          ) : (
+            <button onClick={() => markReviewed(false)}
+              className="flex items-center gap-1.5 text-xs text-green-600 hover:text-neutral-500 transition-colors px-3 py-2 tracking-wider uppercase">
+              ✓ Reviewed
+            </button>
+          )}
           <button onClick={deleteModel} className="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-600 transition-colors px-3 py-2">
             <Trash2 size={12} /> Delete Model
           </button>
