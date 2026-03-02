@@ -68,6 +68,23 @@ export default async function ProjectDetail({ params }: { params: { id: string }
         </form>
       </div>
 
+      {/* Project details */}
+      {(project.shoot_date || project.client_name || project.location || project.specs || (project.presentation_rounds?.length > 0)) && (
+        <div className="border border-neutral-100 p-6 mb-8 grid grid-cols-2 md:grid-cols-4 gap-6">
+          {project.client_name && <div><p className="label mb-1">Client</p><p className="text-sm">{project.client_name}</p></div>}
+          {project.location && <div><p className="label mb-1">Location</p><p className="text-sm">{project.location}</p></div>}
+          {project.shoot_date && <div><p className="label mb-1">Shoot Date</p><p className="text-sm">{new Date(project.shoot_date).toLocaleDateString('en-US', {month:'long',day:'numeric',year:'numeric'})}</p></div>}
+          {project.presentation_rounds?.length > 0 && (
+            <div><p className="label mb-1">Presentation Rounds</p>
+              {project.presentation_rounds.map((r: any, i: number) => (
+                <p key={i} className="text-sm">{r.label}: {new Date(r.date).toLocaleDateString('en-US', {month:'short',day:'numeric'})}</p>
+              ))}
+            </div>
+          )}
+          {project.specs && <div className="col-span-2 md:col-span-4"><p className="label mb-1">Specs</p><p className="text-sm text-neutral-600 whitespace-pre-wrap">{project.specs}</p></div>}
+        </div>
+      )}
+
       {/* Two key links */}
       <div className="grid grid-cols-2 gap-4 mb-12">
         <div className="border border-neutral-200 p-6">
