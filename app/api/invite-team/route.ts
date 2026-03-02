@@ -1,6 +1,5 @@
 import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
-import { randomBytes } from 'crypto'
 
 export async function POST(request: NextRequest) {
   // Auth check: must be an authenticated team member
@@ -14,26 +13,25 @@ export async function POST(request: NextRequest) {
   if (!email) return NextResponse.json({ error: 'Email required' }, { status: 400 })
 
   const serviceSupabase = await createServiceClient()
-  const tempPassword = randomBytes(16).toString('hex')
 
   try {
-    const { data, error } = await serviceSupabase.auth.admin.createUser({
-      email,
-      password: tempPassword,
-      email_confirm: true,
+    // inviteUserByEmail sends a real invite email with a magic link
+    const { data, error } = await serviceSupabase.auth.admin.inviteUserByEmail(email, {
+      redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || 'https://cast.tashatongpreecha.com'}/admin`,
     })
 
     if (error) return NextResponse.json({ error: error.message }, { status: 400 })
 
-    await serviceSupabase.from('team_members').insert({
+    // Upsert team_members record
+    await serviceSupabase.from('team_members').upsert({
       user_id: data.user.id,
       name: name || email,
       email,
       role: role || 'member',
-    })
+    }, { onConflict: 'user_id' })
 
     return NextResponse.json({ success: true, userId: data.user.id })
-  } catch (e) {
-    return NextResponse.json({ error: 'Failed to invite team member' }, { status: 500 })
+  } catch (e: any) {
+    return NextResponse.json({ error: e.message || 'Failed to invite team member' }, { status: 500 })
   }
 }
