@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/Input'
 import { ChipInput } from '@/components/ChipInput'
 
 type Step = 'loading' | 'landing' | 'name' | 'confirm' | 'form' | 'done'
-type Gender = 'female' | 'male' | 'non-binary' | 'other' | '' | 'non-binary' | ''
+type Gender = 'female' | 'male' | 'non-binary' | 'other' | ''
 
 const HEIGHT_FT = [4,5,6,7]
 const HEIGHT_IN = [0,1,2,3,4,5,6,7,8,9,10,11]
@@ -21,8 +21,6 @@ const SHOE_SIZES = [
 ]
 const heightToCm = (ft: number, inches: number) => Math.round((ft * 30.48) + (inches * 2.54))
 
-
-// Ethnicity: broad category -> specific options
 const ETHNICITY_MAP: Record<string, string[]> = {
   'Asian': ['Thai', 'Japanese', 'Korean', 'Chinese', 'Filipino', 'Vietnamese', 'Indonesian', 'Malaysian', 'Singaporean', 'Cambodian', 'Burmese', 'Laotian'],
   'South Asian': ['Indian', 'Pakistani', 'Bangladeshi', 'Sri Lankan', 'Nepali'],
@@ -32,8 +30,8 @@ const ETHNICITY_MAP: Record<string, string[]> = {
   'Middle Eastern': ['Lebanese', 'Iranian/Persian', 'Egyptian', 'Turkish', 'Moroccan', 'Israeli', 'Iraqi', 'Syrian', 'Jordanian', 'Emirati', 'Saudi'],
   'Pacific Islander': ['Hawaiian', 'Samoan', 'Tongan', 'Fijian', 'Maori'],
   'Indigenous': ['Native American', 'First Nations', 'Aboriginal Australian'],
-  'Mixed': ['Mixed'],
-  'Other': ['Other'],
+  'Mixed': [],
+  'Other': [],
 }
 
 const SKILL_SUGGESTIONS = [
@@ -51,13 +49,12 @@ const defaultForm = {
   gender: '' as Gender,
   gender_other: '',
   height_ft: 5, height_in: 7,
-  // Female sizing
   bust: '', waist: '', hips: '', dress_size: '',
-  // Male sizing
   chest: '', suit_size: '', inseam: '',
-  // Shared
   shoe_size: '',
   agency: '',
+  board: '',
+  agent_name: '',
   ethnicity_broad: [] as string[],
   ethnicity_specific: [] as string[],
   ethnicity_other: '',
@@ -67,6 +64,7 @@ const defaultForm = {
   website_url: '',
   skills: [] as string[],
   hobbies: [] as string[],
+  notes: '',
   email: '', phone: '', based_in: '', date_of_birth: '',
 }
 
@@ -84,12 +82,22 @@ export default function CastPage({ params }: { params: { slug: string } }) {
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState(defaultForm)
   const [agencySuggestions, setAgencySuggestions] = useState<string[]>([])
+  const [boardSuggestions, setBoardSuggestions] = useState<string[]>([])
+  const [agentNameSuggestions, setAgentNameSuggestions] = useState<string[]>([])
   const [basedInSuggestions, setBasedInSuggestions] = useState<string[]>([])
   const [showBasedInSuggestions, setShowBasedInSuggestions] = useState(false)
   const [selfieFiles, setSelfieFiles] = useState<File[]>([])
   const [selfiePreviewUrls, setSelfiePreviewUrls] = useState<string[]>([])
   const [showAgencySuggestions, setShowAgencySuggestions] = useState(false)
+  const [showBoardSuggestions, setShowBoardSuggestions] = useState(false)
+  const [showAgentNameSuggestions, setShowAgentNameSuggestions] = useState(false)
+  // Friends & Family
+  const [friendSearch, setFriendSearch] = useState('')
+  const [friendResults, setFriendResults] = useState<any[]>([])
+  const [relatedModels, setRelatedModels] = useState<string[]>([])
+  const [relatedModelNames, setRelatedModelNames] = useState<Record<string, string>>({})
   const debounceRef = useRef<any>(null)
+  const friendDebounceRef = useRef<any>(null)
 
   useEffect(() => {
     supabase.from('projects').select('*').eq('slug', slug).single().then(({ data }) => {
@@ -116,10 +124,23 @@ export default function CastPage({ params }: { params: { slug: string } }) {
 
   const searchAgencies = async (q: string) => {
     if (!q) { setAgencySuggestions([]); return }
-    const { data } = await supabase
-      .from('models').select('agency').ilike('agency', `%${q}%`).not('agency', 'is', null).limit(10)
+    const { data } = await supabase.from('models').select('agency').ilike('agency', `%${q}%`).not('agency', 'is', null).limit(10)
     const unique = [...new Set((data || []).map((r: any) => r.agency).filter(Boolean))]
     setAgencySuggestions(unique)
+  }
+
+  const searchBoards = async (q: string) => {
+    if (!q) { setBoardSuggestions([]); return }
+    const { data } = await supabase.from('models').select('board').ilike('board', `%${q}%`).not('board', 'is', null).limit(10)
+    const unique = [...new Set((data || []).map((r: any) => r.board).filter(Boolean))]
+    setBoardSuggestions(unique)
+  }
+
+  const searchAgentNames = async (q: string) => {
+    if (!q) { setAgentNameSuggestions([]); return }
+    const { data } = await supabase.from('models').select('agent_name').ilike('agent_name', `%${q}%`).not('agent_name', 'is', null).limit(10)
+    const unique = [...new Set((data || []).map((r: any) => r.agent_name).filter(Boolean))]
+    setAgentNameSuggestions(unique)
   }
 
   const searchBasedIn = async (q: string) => {
@@ -129,27 +150,43 @@ export default function CastPage({ params }: { params: { slug: string } }) {
     setBasedInSuggestions(unique)
   }
 
+  const searchFriends = async (q: string) => {
+    if (!q || q.length < 2) { setFriendResults([]); return }
+    const { data } = await supabase
+      .from('models')
+      .select('id, first_name, last_name')
+      .or(`first_name.ilike.%${q}%,last_name.ilike.%${q}%`)
+      .limit(8)
+    setFriendResults(data || [])
+  }
+
+  const onFriendSearchChange = (q: string) => {
+    setFriendSearch(q)
+    clearTimeout(friendDebounceRef.current)
+    friendDebounceRef.current = setTimeout(() => searchFriends(q), 300)
+  }
+
+  const selectFriend = (model: any) => {
+    if (!relatedModels.includes(model.id)) {
+      setRelatedModels(prev => [...prev, model.id])
+      setRelatedModelNames(prev => ({ ...prev, [model.id]: `${model.first_name} ${model.last_name}` }))
+    }
+    setFriendSearch('')
+    setFriendResults([])
+  }
+
+  const removeFriend = (id: string) => {
+    setRelatedModels(prev => prev.filter(x => x !== id))
+  }
+
   const selectSuggestion = async (model: any) => {
     setSelectedModel(model); setFirstName(model.first_name); setLastName(model.last_name)
     setSuggestions([])
-    // Fetch PDF primary photo
     const { data: photoData } = await supabase
-      .from('model_media')
-      .select('public_url')
-      .eq('model_id', model.id)
-      .eq('is_pdf_primary', true)
-      .single()
+      .from('model_media').select('public_url').eq('model_id', model.id).eq('is_pdf_primary', true).single()
     if (!photoData) {
-      // Fall back to first visible photo
       const { data: fallback } = await supabase
-        .from('model_media')
-        .select('public_url')
-        .eq('model_id', model.id)
-        .eq('is_visible', true)
-        .eq('type', 'photo')
-        .order('display_order')
-        .limit(1)
-        .single()
+        .from('model_media').select('public_url').eq('model_id', model.id).eq('is_visible', true).eq('type', 'photo').order('display_order').limit(1).single()
       setModelPhoto(fallback?.public_url || null)
     } else {
       setModelPhoto(photoData.public_url)
@@ -162,18 +199,23 @@ export default function CastPage({ params }: { params: { slug: string } }) {
     if (data) {
       setForm({
         gender: (data.gender || '') as Gender,
+        gender_other: data.gender_other || '',
         height_ft: data.height_ft || 5, height_in: data.height_in || 7,
         bust: data.bust || '', waist: data.waist || '', hips: data.hips || '', dress_size: data.dress_size || '',
         chest: data.chest || '', suit_size: data.suit_size || '', inseam: data.inseam || '',
         shoe_size: data.shoe_size || '',
         agency: data.agency || '',
+        board: data.board || '',
+        agent_name: data.agent_name || '',
         ethnicity_broad: data.ethnicity_broad ? (Array.isArray(data.ethnicity_broad) ? data.ethnicity_broad : data.ethnicity_broad.split(',').map((s:string)=>s.trim())) : [],
         ethnicity_specific: data.ethnicity_specific ? (Array.isArray(data.ethnicity_specific) ? data.ethnicity_specific : data.ethnicity_specific.split(',').map((s:string)=>s.trim())) : [],
+        ethnicity_other: data.ethnicity_other || '',
         languages: data.languages || [],
         instagram_handle: data.instagram_handle || '',
         portfolio_url: data.portfolio_url || '',
         website_url: data.website_url || '',
         skills: data.skills || [], hobbies: data.hobbies || [],
+        notes: data.notes || '',
         email: data.email || '', phone: data.phone || '', based_in: data.based_in || '', date_of_birth: data.date_of_birth || '',
       })
     }
@@ -185,37 +227,35 @@ export default function CastPage({ params }: { params: { slug: string } }) {
     const modelData = {
       first_name: firstName, last_name: lastName,
       gender: form.gender === 'other' && form.gender_other ? form.gender_other : form.gender,
+      gender_other: form.gender_other,
       height_ft: form.height_ft, height_in: form.height_in,
       bust: form.bust, waist: form.waist, hips: form.hips, dress_size: form.dress_size,
       chest: form.chest, suit_size: form.suit_size, inseam: form.inseam,
       shoe_size: form.shoe_size,
       agency: form.agency,
+      board: form.board || null,
+      agent_name: form.agent_name || null,
       ethnicity_broad: Array.isArray(form.ethnicity_broad) ? form.ethnicity_broad.join(',') : form.ethnicity_broad,
       ethnicity_specific: Array.isArray(form.ethnicity_specific) ? form.ethnicity_specific.join(',') : form.ethnicity_specific,
+      ethnicity_other: form.ethnicity_other || null,
       languages: form.languages,
       instagram_handle: form.instagram_handle,
       portfolio_url: form.portfolio_url,
       website_url: form.website_url || null,
       skills: form.skills, hobbies: form.hobbies,
+      notes: form.notes || null,
       email: form.email || null, phone: form.phone || null, based_in: form.based_in || null, date_of_birth: form.date_of_birth || null,
       updated_at: new Date().toISOString(),
     }
 
-    // Use service-role API route for all DB writes (removes need for open RLS policies)
     const res = await fetch('/api/cast-signin', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        modelData,
-        projectId: project.id,
-        modelId: selectedModel?.id,
-        isReturning,
-      }),
+      body: JSON.stringify({ modelData, projectId: project.id, modelId: selectedModel?.id, isReturning }),
     })
     const result = await res.json()
     const modelId = result.modelId
 
-    // Upload selfie photos via storage (uses anon key for storage bucket)
     if (modelId) {
       for (const file of selfieFiles) {
         const ext = file.name.split('.').pop() || 'jpg'
@@ -223,7 +263,6 @@ export default function CastPage({ params }: { params: { slug: string } }) {
         const { error: upErr } = await supabase.storage.from('model-media').upload(storagePath, file)
         if (!upErr) {
           const { data: { publicUrl } } = supabase.storage.from('model-media').getPublicUrl(storagePath)
-          // Save media record via API too
           await fetch('/api/cast-signin/media', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -231,9 +270,20 @@ export default function CastPage({ params }: { params: { slug: string } }) {
           })
         }
       }
+      // Save friends & family relationships
+      for (const relId of relatedModels) {
+        await supabase.from('model_relationships').insert({
+          model_id: modelId,
+          related_model_id: relId,
+          relationship_type: 'friend_family',
+        })
+      }
     }
     setSaving(false); setStep('done')
   }
+
+  // Helper: does any selected ethnicity-specific value need a text input?
+  const hasOtherSpecific = (form.ethnicity_specific as string[]).some(s => s.startsWith('Other '))
 
   if (step === 'loading') return (
     <div className="min-h-screen flex items-center justify-center">
@@ -327,7 +377,9 @@ export default function CastPage({ params }: { params: { slug: string } }) {
                   ))}
                 </div>
                 {form.gender === 'other' && (
-                  <Input label="Please specify" value={form.gender_other} onChange={e => setForm(f => ({ ...f, gender_other: e.target.value }))} placeholder="e.g. Gender fluid" className="mt-3" />
+                  <div className="mt-3">
+                    <Input label="Please specify" value={form.gender_other} onChange={e => setForm(f => ({ ...f, gender_other: e.target.value }))} placeholder="e.g. Gender fluid" />
+                  </div>
                 )}
               </div>
 
@@ -373,8 +425,6 @@ export default function CastPage({ params }: { params: { slug: string } }) {
                   <Input label="Inseam" value={form.inseam} onChange={e => setForm(f => ({ ...f, inseam: e.target.value }))} placeholder='e.g. 32"' />
                 </div>
               )}
-
-              {/* Male sizing */}
               {(form.gender === 'male') && (
                 <div className="grid grid-cols-2 gap-4">
                   <Input label="Chest" value={form.chest} onChange={e => setForm(f => ({ ...f, chest: e.target.value }))} placeholder='e.g. 40"' />
@@ -421,7 +471,59 @@ export default function CastPage({ params }: { params: { slug: string } }) {
                 )}
               </div>
 
-              {/* Ethnicity - multi-select two tier */}
+              {/* Board with autocomplete */}
+              <div className="relative">
+                <Input
+                  label="Board"
+                  value={form.board}
+                  onChange={e => {
+                    setForm(f => ({ ...f, board: e.target.value }))
+                    searchBoards(e.target.value)
+                    setShowBoardSuggestions(true)
+                  }}
+                  onFocus={() => { if (form.board) { searchBoards(form.board); setShowBoardSuggestions(true) } }}
+                  placeholder="Board name (if applicable)"
+                />
+                {showBoardSuggestions && boardSuggestions.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 bg-white border border-neutral-200 z-10 shadow-sm">
+                    {boardSuggestions.map(a => (
+                      <button key={a} type="button"
+                        onClick={() => { setForm(f => ({ ...f, board: a })); setShowBoardSuggestions(false) }}
+                        className="w-full px-4 py-2 text-left text-sm hover:bg-neutral-50 border-b border-neutral-100 last:border-0">
+                        {a}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Agent Name with autocomplete */}
+              <div className="relative">
+                <Input
+                  label="Agent Name"
+                  value={form.agent_name}
+                  onChange={e => {
+                    setForm(f => ({ ...f, agent_name: e.target.value }))
+                    searchAgentNames(e.target.value)
+                    setShowAgentNameSuggestions(true)
+                  }}
+                  onFocus={() => { if (form.agent_name) { searchAgentNames(form.agent_name); setShowAgentNameSuggestions(true) } }}
+                  placeholder="Your agent's name"
+                />
+                {showAgentNameSuggestions && agentNameSuggestions.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 bg-white border border-neutral-200 z-10 shadow-sm">
+                    {agentNameSuggestions.map(a => (
+                      <button key={a} type="button"
+                        onClick={() => { setForm(f => ({ ...f, agent_name: a })); setShowAgentNameSuggestions(false) }}
+                        className="w-full px-4 py-2 text-left text-sm hover:bg-neutral-50 border-b border-neutral-100 last:border-0">
+                        {a}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Ethnicity */}
               <div>
                 <p className="label mb-3">Ethnicity</p>
                 <p className="text-xs text-neutral-400 mb-3">Select all that apply.</p>
@@ -441,11 +543,22 @@ export default function CastPage({ params }: { params: { slug: string } }) {
                       </button>
                     ))}
                   </div>
+                  {(form.ethnicity_broad as string[]).includes('Other') && (
+                    <div className="mb-4">
+                      <Input label="Please specify (Ethnicity)" value={form.ethnicity_other}
+                        onChange={e => setForm(f => ({ ...f, ethnicity_other: e.target.value }))}
+                        placeholder="Please specify your ethnicity" />
+                    </div>
+                  )}
                   {(form.ethnicity_broad as string[]).length > 0 && (
                     <>
                       <label className="label block mb-2">More Specific</label>
                       <div className="flex flex-wrap gap-2">
-                        {(form.ethnicity_broad as string[]).flatMap(b => ETHNICITY_MAP[b] || []).map(s => (
+                        {(form.ethnicity_broad as string[]).flatMap(b => {
+                          const specifics = ETHNICITY_MAP[b] || []
+                          if (specifics.length === 0) return []
+                          return [...specifics, `Other ${b}`]
+                        }).map(s => (
                           <button key={s} type="button"
                             onClick={() => setForm(f => ({
                               ...f,
@@ -458,6 +571,13 @@ export default function CastPage({ params }: { params: { slug: string } }) {
                           </button>
                         ))}
                       </div>
+                      {hasOtherSpecific && (
+                        <div className="mt-3">
+                          <Input label="Please specify (specific background)" value={form.ethnicity_other}
+                            onChange={e => setForm(f => ({ ...f, ethnicity_other: e.target.value }))}
+                            placeholder="Please specify" />
+                        </div>
+                      )}
                     </>
                   )}
                 </div>
@@ -497,6 +617,40 @@ export default function CastPage({ params }: { params: { slug: string } }) {
               <ChipInput label="Hobbies" value={form.hobbies}
                 onChange={hobbies => setForm(f => ({ ...f, hobbies }))}
                 placeholder="e.g. Cooking, Travel — press Enter" />
+
+              {/* Friends & Family */}
+              <div className="border-t border-neutral-100 pt-6">
+                <p className="label mb-2">Friends & Family</p>
+                <p className="text-xs text-neutral-400 mb-3">Search for a friend or family member in our database.</p>
+                {relatedModels.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {relatedModels.map(id => (
+                      <span key={id} className="flex items-center gap-1 px-3 py-1.5 bg-black text-white text-xs">
+                        {relatedModelNames[id] || id}
+                        <button type="button" onClick={() => removeFriend(id)} className="ml-1 hover:opacity-60">✕</button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <div className="relative">
+                  <input
+                    value={friendSearch}
+                    onChange={e => onFriendSearchChange(e.target.value)}
+                    placeholder="Search by name..."
+                    className="w-full border-b border-neutral-300 bg-transparent py-2 text-sm focus:outline-none focus:border-black"
+                  />
+                  {friendResults.length > 0 && (
+                    <div className="absolute top-full left-0 right-0 bg-white border border-neutral-200 z-10 shadow-sm">
+                      {friendResults.map(m => (
+                        <button key={m.id} type="button" onClick={() => selectFriend(m)}
+                          className="w-full px-4 py-2 text-left text-sm hover:bg-neutral-50 border-b border-neutral-100 last:border-0">
+                          {m.first_name} {m.last_name}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
 
               <div className="border-t border-neutral-100 pt-6 space-y-4">
                 <p className="label">Photos (Optional)</p>
@@ -539,6 +693,18 @@ export default function CastPage({ params }: { params: { slug: string } }) {
                 </div>
                 <Input label="Date of Birth" value={form.date_of_birth} onChange={e => setForm(f => ({ ...f, date_of_birth: e.target.value }))} type="date" />
               </div>
+
+              {/* Anything else */}
+              <div>
+                <label className="label block mb-1">Anything else?</label>
+                <textarea
+                  value={form.notes}
+                  onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
+                  placeholder="Anything else you'd like us to know? The more we know about you, the easier it will be to get you booked!"
+                  rows={3}
+                  className="w-full border-b border-neutral-200 bg-transparent py-2 text-sm focus:outline-none focus:border-black resize-none"
+                />
+              </div>
             </div>
 
             <div className="mt-10 flex gap-4">
@@ -558,7 +724,7 @@ export default function CastPage({ params }: { params: { slug: string } }) {
                 setFirstName(''); setLastName('');
                 setSelectedModel(null); setModelPhoto(null);
                 setIsReturning(false); setForm(defaultForm);
-                setSuggestions([]); setStep('name');
+                setSuggestions([]); setRelatedModels([]); setRelatedModelNames({}); setStep('name');
               }}
               className="text-xs tracking-widest uppercase border border-black px-6 py-3 hover:bg-black hover:text-white transition-colors"
             >

@@ -25,7 +25,6 @@ export async function middleware(request: NextRequest) {
 
   if (path.startsWith('/admin') && path !== '/admin/login') {
     if (!user) return NextResponse.redirect(new URL('/admin/login', request.url))
-    // Enforce team_member role for all /admin routes
     const { data: member } = await supabase
       .from('team_members')
       .select('id')
@@ -36,6 +35,21 @@ export async function middleware(request: NextRequest) {
 
   if (path.startsWith('/client') && path !== '/client/login') {
     if (!user) return NextResponse.redirect(new URL('/client/login', request.url))
+    // Allow team members access to /client routes as well
+    const { data: isMember } = await supabase
+      .from('team_members')
+      .select('id')
+      .eq('user_id', user.id)
+      .single()
+    if (!isMember) {
+      // Check if they have a client profile
+      const { data: clientProfile } = await supabase
+        .from('client_profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .single()
+      if (!clientProfile) return NextResponse.redirect(new URL('/client/login', request.url))
+    }
   }
 
   return supabaseResponse

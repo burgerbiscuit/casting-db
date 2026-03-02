@@ -37,6 +37,10 @@ export default function ScoutPage() {
   const [error, setError] = useState('')
   const [agencySuggestions, setAgencySuggestions] = useState<string[]>([])
   const [showAgency, setShowAgency] = useState(false)
+  const [boardSuggestions, setBoardSuggestions] = useState<string[]>([])
+  const [showBoard, setShowBoard] = useState(false)
+  const [agentNameSuggestions, setAgentNameSuggestions] = useState<string[]>([])
+  const [showAgentName, setShowAgentName] = useState(false)
   const [basedInSuggestions, setBasedInSuggestions] = useState<string[]>([])
   const [showBasedIn, setShowBasedIn] = useState(false)
   const [selfieFiles, setSelfieFiles] = useState<File[]>([])
@@ -45,14 +49,15 @@ export default function ScoutPage() {
   const [form, setForm] = useState({
     first_name: '', last_name: '', email: '', phone: '',
     gender: '',
-  gender_other: '', date_of_birth: '',
-    instagram_handle: '', portfolio_url: '',
-    agency: '', based_in: '',
+    gender_other: '',
+    date_of_birth: '',
+    instagram_handle: '', portfolio_url: '', website_url: '',
+    agency: '', board: '', agent_name: '', based_in: '',
     height_ft: 5, height_in: 7,
     bust: '', waist: '', hips: '', chest: '', dress_size: '', shoe_size: '', suit_size: '', inseam: '',
     ethnicity_broad: [] as string[], ethnicity_specific: [] as string[],
     ethnicity_other: '',
-  languages: [] as string[],
+    languages: [] as string[],
     skills: [] as string[], hobbies: [] as string[],
     notes: '',
   })
@@ -63,6 +68,18 @@ export default function ScoutPage() {
     if (!q) { setAgencySuggestions([]); return }
     const { data } = await supabase.from('models').select('agency').ilike('agency', `%${q}%`).not('agency', 'is', null).limit(10)
     setAgencySuggestions([...new Set((data || []).map((r: any) => r.agency).filter(Boolean))])
+  }
+
+  const searchBoards = async (q: string) => {
+    if (!q) { setBoardSuggestions([]); return }
+    const { data } = await supabase.from('models').select('board').ilike('board', `%${q}%`).not('board', 'is', null).limit(10)
+    setBoardSuggestions([...new Set((data || []).map((r: any) => r.board).filter(Boolean))])
+  }
+
+  const searchAgentNames = async (q: string) => {
+    if (!q) { setAgentNameSuggestions([]); return }
+    const { data } = await supabase.from('models').select('agent_name').ilike('agent_name', `%${q}%`).not('agent_name', 'is', null).limit(10)
+    setAgentNameSuggestions([...new Set((data || []).map((r: any) => r.agent_name).filter(Boolean))])
   }
 
   const searchBasedIn = async (q: string) => {
@@ -89,7 +106,6 @@ export default function ScoutPage() {
       })
       const { id: modelId } = await res.json()
       if (!res.ok) throw new Error('Submission failed')
-      // Upload photos
       if (modelId) {
         for (const file of selfieFiles) {
           const ext = file.name.split('.').pop() || 'jpg'
@@ -111,6 +127,8 @@ export default function ScoutPage() {
 
   const inp = 'w-full border-b border-neutral-200 py-2 text-sm focus:outline-none focus:border-black bg-transparent'
   const lbl = 'label block mb-1'
+
+  const hasOtherSpecific = form.ethnicity_specific.some(s => s.startsWith('Other '))
 
   if (step === 'done') return (
     <div className="min-h-screen flex flex-col bg-white">
@@ -163,6 +181,13 @@ export default function ScoutPage() {
                 </button>
               ))}
             </div>
+            {form.gender === 'other' && (
+              <div className="mt-3">
+                <label className={lbl}>Please specify</label>
+                <input value={form.gender_other} onChange={e => set('gender_other', e.target.value)}
+                  placeholder="e.g. Gender fluid" className={inp} />
+              </div>
+            )}
           </div>
 
           {/* Height */}
@@ -182,6 +207,7 @@ export default function ScoutPage() {
                 </select>
               </div>
             </div>
+            <p className="text-xs text-neutral-400 mt-1">{heightToCm(form.height_ft, form.height_in)} cm</p>
           </div>
 
           {/* Sizing */}
@@ -238,6 +264,38 @@ export default function ScoutPage() {
             )}
           </div>
 
+          {/* Board autocomplete */}
+          <div className="relative">
+            <label className={lbl}>Board</label>
+            <input value={form.board} onChange={e => { set('board', e.target.value); searchBoards(e.target.value); setShowBoard(true) }}
+              onFocus={() => { if (form.board) { searchBoards(form.board); setShowBoard(true) } }}
+              placeholder="Board name (if applicable)" className={inp} />
+            {showBoard && boardSuggestions.length > 0 && (
+              <div className="absolute top-full left-0 right-0 bg-white border border-neutral-200 z-10 shadow-sm">
+                {boardSuggestions.map(a => (
+                  <button key={a} type="button" onClick={() => { set('board', a); setShowBoard(false) }}
+                    className="w-full px-4 py-2 text-left text-sm hover:bg-neutral-50 border-b border-neutral-100 last:border-0">{a}</button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Agent Name autocomplete */}
+          <div className="relative">
+            <label className={lbl}>Agent Name</label>
+            <input value={form.agent_name} onChange={e => { set('agent_name', e.target.value); searchAgentNames(e.target.value); setShowAgentName(true) }}
+              onFocus={() => { if (form.agent_name) { searchAgentNames(form.agent_name); setShowAgentName(true) } }}
+              placeholder="Your agent's name" className={inp} />
+            {showAgentName && agentNameSuggestions.length > 0 && (
+              <div className="absolute top-full left-0 right-0 bg-white border border-neutral-200 z-10 shadow-sm">
+                {agentNameSuggestions.map(a => (
+                  <button key={a} type="button" onClick={() => { set('agent_name', a); setShowAgentName(false) }}
+                    className="w-full px-4 py-2 text-left text-sm hover:bg-neutral-50 border-b border-neutral-100 last:border-0">{a}</button>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* Ethnicity */}
           <div>
             <p className="label mb-3">Ethnicity</p>
@@ -251,16 +309,37 @@ export default function ScoutPage() {
                 </button>
               ))}
             </div>
-            {form.ethnicity_broad.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {form.ethnicity_broad.flatMap((b: string) => ETHNICITY_MAP[b] || []).map(s => (
-                  <button key={s} type="button"
-                    onClick={() => set('ethnicity_specific', form.ethnicity_specific.includes(s) ? form.ethnicity_specific.filter((x:string) => x !== s) : [...form.ethnicity_specific, s])}
-                    className={`text-xs px-3 py-2 border transition-colors ${form.ethnicity_specific.includes(s) ? 'bg-black text-white border-black' : 'border-neutral-300 hover:border-black'}`}>
-                    {s}
-                  </button>
-                ))}
+            {form.ethnicity_broad.includes('Other') && (
+              <div className="mb-3">
+                <label className={lbl}>Please specify (Ethnicity)</label>
+                <input value={form.ethnicity_other} onChange={e => set('ethnicity_other', e.target.value)}
+                  placeholder="Please specify your ethnicity" className={inp} />
               </div>
+            )}
+            {form.ethnicity_broad.length > 0 && (
+              <>
+                <label className="label block mb-2">More Specific</label>
+                <div className="flex flex-wrap gap-2">
+                  {form.ethnicity_broad.flatMap((b: string) => {
+                    const specifics = ETHNICITY_MAP[b] || []
+                    if (specifics.length === 0) return []
+                    return [...specifics, `Other ${b}`]
+                  }).map(s => (
+                    <button key={s} type="button"
+                      onClick={() => set('ethnicity_specific', form.ethnicity_specific.includes(s) ? form.ethnicity_specific.filter((x:string) => x !== s) : [...form.ethnicity_specific, s])}
+                      className={`text-xs px-3 py-2 border transition-colors ${form.ethnicity_specific.includes(s) ? 'bg-black text-white border-black' : 'border-neutral-300 hover:border-black'}`}>
+                      {s}
+                    </button>
+                  ))}
+                </div>
+                {hasOtherSpecific && (
+                  <div className="mt-3">
+                    <label className={lbl}>Please specify (specific background)</label>
+                    <input value={form.ethnicity_other} onChange={e => set('ethnicity_other', e.target.value)}
+                      placeholder="Please specify" className={inp} />
+                  </div>
+                )}
+              </>
             )}
           </div>
 
@@ -271,7 +350,7 @@ export default function ScoutPage() {
           <div className="grid grid-cols-2 gap-4">
             <div><label className={lbl}>Instagram</label><input value={form.instagram_handle} onChange={e => set('instagram_handle', e.target.value.replace('@',''))} placeholder="yourhandle" className={inp} /></div>
             <div><label className={lbl}>Portfolio URL</label><input value={form.portfolio_url} onChange={e => set('portfolio_url', e.target.value)} className={inp} /></div>
-            <div><label className={lbl}>Website URL</label><input value={(form as any).website_url || ''} onChange={e => set('website_url', e.target.value)} className={inp} /></div>
+            <div><label className={lbl}>Website URL</label><input value={form.website_url} onChange={e => set('website_url', e.target.value)} className={inp} /></div>
           </div>
 
           {/* Skills */}
@@ -334,10 +413,12 @@ export default function ScoutPage() {
             </div>
           </div>
 
-          {/* Notes */}
+          {/* Notes - Task 4 */}
           <div>
-            <label className={lbl}>Anything else you'd like us to know?</label>
-            <textarea value={form.notes} onChange={e => set('notes', e.target.value)} rows={3} className="w-full border-b border-neutral-200 py-2 text-sm focus:outline-none focus:border-black bg-transparent resize-none" />
+            <label className={lbl}>Anything else?</label>
+            <textarea value={form.notes} onChange={e => set('notes', e.target.value)} rows={3}
+              placeholder="Anything else you'd like us to know? The more we know about you, the easier it will be to get you booked!"
+              className="w-full border-b border-neutral-200 py-2 text-sm focus:outline-none focus:border-black bg-transparent resize-none" />
           </div>
 
           {error && <p className="text-xs text-red-500">{error}</p>}
