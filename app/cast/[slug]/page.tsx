@@ -70,6 +70,10 @@ export default function CastPage({ params }: { params: { slug: string } }) {
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState(defaultForm)
   const [agencySuggestions, setAgencySuggestions] = useState<string[]>([])
+  const [basedInSuggestions, setBasedInSuggestions] = useState<string[]>([])
+  const [showBasedInSuggestions, setShowBasedInSuggestions] = useState(false)
+  const [selfieFiles, setSelfieFiles] = useState<File[]>([])
+  const [selfiePreviewUrls, setSelfiePreviewUrls] = useState<string[]>([])
   const [showAgencySuggestions, setShowAgencySuggestions] = useState(false)
   const debounceRef = useRef<any>(null)
 
@@ -102,6 +106,13 @@ export default function CastPage({ params }: { params: { slug: string } }) {
       .from('models').select('agency').ilike('agency', `%${q}%`).not('agency', 'is', null).limit(10)
     const unique = [...new Set((data || []).map((r: any) => r.agency).filter(Boolean))]
     setAgencySuggestions(unique)
+  }
+
+  const searchBasedIn = async (q: string) => {
+    if (!q) { setBasedInSuggestions([]); return }
+    const { data } = await supabase.from('models').select('based_in').ilike('based_in', q + '%').not('based_in', 'is', null).limit(8)
+    const unique = [...new Set((data || []).map((r: any) => r.based_in).filter(Boolean))]
+    setBasedInSuggestions(unique)
   }
 
   const selectSuggestion = async (model: any) => {
@@ -182,6 +193,16 @@ export default function CastPage({ params }: { params: { slug: string } }) {
       modelId = data?.id
     }
     if (modelId) await supabase.from('project_models').upsert({ project_id: project.id, model_id: modelId })
+    // Upload selfie photos
+    for (const file of selfieFiles) {
+      const ext = file.name.split('.').pop() || 'jpg'
+      const path = modelId + '/' + Date.now() + '-' + Math.random().toString(36).slice(2) + '.' + ext
+      const { error: upErr } = await supabase.storage.from('model-media').upload(path, file)
+      if (!upErr) {
+        const { data: { publicUrl } } = supabase.storage.from('model-media').getPublicUrl(path)
+        await supabase.from('model_media').insert({ model_id: modelId, storage_path: path, public_url: publicUrl, type: 'photo', is_visible: true })
+      }
+    }
     setSaving(false); setStep('done')
   }
 
@@ -269,7 +290,7 @@ export default function CastPage({ params }: { params: { slug: string } }) {
               <div>
                 <p className="label mb-3">Gender</p>
                 <div className="flex gap-3">
-                  {(['female', 'male', 'non-binary'] as Gender[]).map(g => (
+                  {(['female', 'male', 'non-binary', 'other'] as Gender[]).map(g => (
                     <button key={g} type="button" onClick={() => setForm(f => ({ ...f, gender: g }))}
                       className={`flex-1 py-2 text-xs border tracking-wider uppercase transition-colors ${form.gender === g ? 'bg-black text-white border-black' : 'border-neutral-300 hover:border-black'}`}>
                       {g}
@@ -300,12 +321,23 @@ export default function CastPage({ params }: { params: { slug: string } }) {
               </div>
 
               {/* Female sizing */}
-              {(form.gender === 'female' || form.gender === 'non-binary' || form.gender === '') && (
+              {(form.gender === 'female') && (
                 <div className="grid grid-cols-2 gap-4">
                   <Input label="Bust" value={form.bust} onChange={e => setForm(f => ({ ...f, bust: e.target.value }))} placeholder='e.g. 34"' />
                   <Input label="Waist" value={form.waist} onChange={e => setForm(f => ({ ...f, waist: e.target.value }))} placeholder='e.g. 26"' />
                   <Input label="Hips" value={form.hips} onChange={e => setForm(f => ({ ...f, hips: e.target.value }))} placeholder='e.g. 36"' />
                   <Input label="Dress Size" value={form.dress_size} onChange={e => setForm(f => ({ ...f, dress_size: e.target.value }))} />
+                </div>
+              )}
+              {(form.gender === 'non-binary' || form.gender === 'other') && (
+                <div className="grid grid-cols-2 gap-4">
+                  <Input label="Bust" value={form.bust} onChange={e => setForm(f => ({ ...f, bust: e.target.value }))} placeholder='e.g. 34"' />
+                  <Input label="Chest" value={form.chest} onChange={e => setForm(f => ({ ...f, chest: e.target.value }))} placeholder='e.g. 40"' />
+                  <Input label="Waist" value={form.waist} onChange={e => setForm(f => ({ ...f, waist: e.target.value }))} placeholder='e.g. 26"' />
+                  <Input label="Hips" value={form.hips} onChange={e => setForm(f => ({ ...f, hips: e.target.value }))} placeholder='e.g. 36"' />
+                  <Input label="Dress Size" value={form.dress_size} onChange={e => setForm(f => ({ ...f, dress_size: e.target.value }))} />
+                  <Input label="Suit Size" value={form.suit_size} onChange={e => setForm(f => ({ ...f, suit_size: e.target.value }))} placeholder='e.g. 40R' />
+                  <Input label="Inseam" value={form.inseam} onChange={e => setForm(f => ({ ...f, inseam: e.target.value }))} placeholder='e.g. 32"' />
                 </div>
               )}
 
@@ -423,10 +455,44 @@ export default function CastPage({ params }: { params: { slug: string } }) {
                 placeholder="e.g. Cooking, Travel — press Enter" />
 
               <div className="border-t border-neutral-100 pt-6 space-y-4">
+                <p className="label">Photos (Optional)</p>
+                <p className="text-xs text-neutral-400">Upload up to 2 photos of yourself.</p>
+                <div className="flex gap-3">
+                  {[0, 1].map(i => (
+                    <label key={i} className="flex-1 aspect-[3/4] border-2 border-dashed border-neutral-200 flex items-center justify-center cursor-pointer hover:border-black transition-colors overflow-hidden relative">
+                      <input type="file" accept="image/*" className="hidden" onChange={e => {
+                        const file = e.target.files?.[0]
+                        if (!file) return
+                        const newFiles = [...selfieFiles]; newFiles[i] = file; setSelfieFiles(newFiles)
+                        const newUrls = [...selfiePreviewUrls]; newUrls[i] = URL.createObjectURL(file); setSelfiePreviewUrls(newUrls)
+                      }} />
+                      {selfiePreviewUrls[i]
+                        ? <img src={selfiePreviewUrls[i]} className="w-full h-full object-cover" alt="" />
+                        : <span className="text-xs text-neutral-300 tracking-widest uppercase">+ Photo {i + 1}</span>}
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="border-t border-neutral-100 pt-6 space-y-4">
                 <p className="label">Optional Contact</p>
                 <Input label="Email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} type="email" />
                 <Input label="Phone" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} type="tel" />
-                <Input label="Based In (City, Country)" value={form.based_in} onChange={e => setForm(f => ({ ...f, based_in: e.target.value }))} placeholder="e.g. New York, USA" />
+                <div className="relative">
+                  <Input label="Based In (City, Country)" value={form.based_in}
+                    onChange={e => { setForm(f => ({ ...f, based_in: e.target.value })); searchBasedIn(e.target.value); setShowBasedInSuggestions(true) }}
+                    onFocus={() => { if (form.based_in) { searchBasedIn(form.based_in); setShowBasedInSuggestions(true) } }}
+                    placeholder="e.g. New York, USA" />
+                  {showBasedInSuggestions && basedInSuggestions.length > 0 && (
+                    <div className="absolute top-full left-0 right-0 bg-white border border-neutral-200 z-10 shadow-sm">
+                      {basedInSuggestions.map(a => (
+                        <button key={a} type="button"
+                          onClick={() => { setForm(f => ({ ...f, based_in: a })); setShowBasedInSuggestions(false) }}
+                          className="w-full px-4 py-2 text-left text-sm hover:bg-neutral-50 border-b border-neutral-100 last:border-0">{a}</button>
+                      ))}
+                    </div>
+                  )}
+                </div>
                 <Input label="Date of Birth" value={form.date_of_birth} onChange={e => setForm(f => ({ ...f, date_of_birth: e.target.value }))} type="date" />
               </div>
             </div>
