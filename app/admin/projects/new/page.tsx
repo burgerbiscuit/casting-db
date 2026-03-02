@@ -35,16 +35,25 @@ export default function NewProject() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true); setError('')
-    const { error } = await supabase.from('projects').insert({
+    const { data: proj, error } = await supabase.from('projects').insert({
       name, slug, description,
       client_name: clientName || null,
       location: location || null,
       shoot_date: shootDate || null,
       specs: specs || null,
       presentation_rounds: presRounds.filter(r => r.date),
-    })
-    if (error) { setError(error.message); setLoading(false) }
-    else router.push('/admin/projects')
+    }).select('id, name').single()
+    if (error) { setError(error.message); setLoading(false); return }
+
+    // Auto-create a presentation for every new project
+    if (proj) {
+      await supabase.from('presentations').insert({
+        project_id: proj.id,
+        name: proj.name,
+        is_published: false,
+      })
+    }
+    router.push('/admin/projects')
   }
 
   return (

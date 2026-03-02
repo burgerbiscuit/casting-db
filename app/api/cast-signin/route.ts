@@ -19,8 +19,17 @@ export async function POST(req: NextRequest) {
 
     if (modelId) {
       await supabase.from('project_models').upsert({ project_id: projectId, model_id: modelId })
-      // Auto-add to the project's presentation if one exists
-      const { data: pres } = await supabase.from('presentations').select('id').eq('project_id', projectId).single()
+      // Auto-add to the project's presentation — create one if it doesn't exist yet
+      let { data: pres } = await supabase.from('presentations').select('id').eq('project_id', projectId).single()
+      if (!pres) {
+        const { data: proj } = await supabase.from('projects').select('name').eq('id', projectId).single()
+        const { data: newPres } = await supabase.from('presentations').insert({
+          project_id: projectId,
+          name: proj?.name || 'Presentation',
+          is_published: false,
+        }).select('id').single()
+        pres = newPres
+      }
       if (pres) {
         const { data: existing } = await supabase.from('presentation_models').select('id').eq('presentation_id', pres.id).eq('model_id', modelId).single()
         if (!existing) {
