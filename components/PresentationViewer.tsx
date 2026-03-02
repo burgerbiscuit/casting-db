@@ -238,7 +238,7 @@ export function PresentationViewer({
             </div>
 
             {/* RIGHT: notes panel — only if private notes exist */}
-            {(current.notes || current.location || current.rate || current.client_notes) && (
+            {(current.notes || current.location || current.rate) && (
               <div className="w-[220px] flex-shrink-0 border-l border-neutral-100 px-5 py-4 flex flex-col gap-4 overflow-y-auto">
                 {/* Private notes stacked on top */}
                 {(current.notes || current.location || current.rate) && (
