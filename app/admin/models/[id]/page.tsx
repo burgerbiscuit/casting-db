@@ -29,6 +29,7 @@ export default function ModelProfile({ params }: { params: { id: string } }) {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [activeTab, setActiveTab] = useState<'profile' | 'media'>('profile')
+  const [cropTarget, setCropTarget] = useState<{url: string, storagePath: string, id: string} | null>(null)
 
   const loadModel = useCallback(async () => {
     const { data } = await supabase.from('models').select('*').eq('id', id).single()

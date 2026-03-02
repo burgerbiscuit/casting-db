@@ -52,7 +52,6 @@ export default function ScoutPage() {
     bust: '', waist: '', hips: '', chest: '', dress_size: '', shoe_size: '', suit_size: '', inseam: '',
     ethnicity_broad: [] as string[], ethnicity_specific: [] as string[],
     ethnicity_other: '',
-  ethnicity_other: '',
   languages: [] as string[],
     skills: [] as string[], hobbies: [] as string[],
     notes: '',

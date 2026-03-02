@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/Input'
 import { ChipInput } from '@/components/ChipInput'
 
 type Step = 'loading' | 'landing' | 'name' | 'confirm' | 'form' | 'done'
-type Gender = 'female' | 'male' | 'non-binary' | ''
+type Gender = 'female' | 'male' | 'non-binary' | 'other' | '' | 'non-binary' | ''
 
 const HEIGHT_FT = [4,5,6,7]
 const HEIGHT_IN = [0,1,2,3,4,5,6,7,8,9,10,11]
@@ -60,7 +60,6 @@ const defaultForm = {
   agency: '',
   ethnicity_broad: [] as string[],
   ethnicity_specific: [] as string[],
-  ethnicity_other: '',
   ethnicity_other: '',
   languages: [] as string[],
   instagram_handle: '',

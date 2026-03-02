@@ -85,7 +85,7 @@ export default function ModelsPage() {
               ) : (
                 <div className="w-full h-full flex flex-col items-center justify-center text-neutral-300">
                   <div className="w-12 h-12 rounded-full border-2 border-neutral-200 flex items-center justify-center text-lg font-light mb-2">
-                    {m.first_name[0]}{m.last_name[0]}
+                    {m.first_name?.[0]}{m.last_name?.[0]}
                   </div>
                   <p className="text-[10px] tracking-wider uppercase">No photo</p>
                 </div>
