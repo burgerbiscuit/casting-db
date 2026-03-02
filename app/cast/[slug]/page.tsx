@@ -208,7 +208,23 @@ export default function CastPage({ params }: { params: { slug: string } }) {
       const { data } = await supabase.from('models').insert(modelData).select('id').single()
       modelId = data?.id
     }
-    if (modelId) await supabase.from('project_models').upsert({ project_id: project.id, model_id: modelId })
+    if (modelId) {
+      await supabase.from('project_models').upsert({ project_id: project.id, model_id: modelId })
+      // Auto-add to the project's presentation if one exists
+      const { data: pres } = await supabase.from('presentations').select('id').eq('project_id', project.id).single()
+      if (pres) {
+        const { data: existing } = await supabase.from('presentation_models').select('id').eq('presentation_id', pres.id).eq('model_id', modelId).single()
+        if (!existing) {
+          const { data: lastPm } = await supabase.from('presentation_models').select('display_order').eq('presentation_id', pres.id).order('display_order', { ascending: false }).limit(1).single()
+          await supabase.from('presentation_models').insert({
+            presentation_id: pres.id,
+            model_id: modelId,
+            display_order: (lastPm?.display_order ?? -1) + 1,
+            show_sizing: true, show_instagram: true, show_portfolio: true, is_visible: true
+          })
+        }
+      }
+    }
     // Upload selfie photos
     for (const file of selfieFiles) {
       const ext = file.name.split('.').pop() || 'jpg'

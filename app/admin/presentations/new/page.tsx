@@ -23,7 +23,19 @@ function NewPresentationForm() {
     e.preventDefault()
     setLoading(true)
     const { data } = await supabase.from('presentations').insert({ project_id: projectId, name }).select('id').single()
-    if (data) router.push(`/admin/presentations/${data.id}`)
+    if (data) {
+      // Auto-add all models already signed into this project
+      const { data: pms } = await supabase.from('project_models').select('model_id').eq('project_id', projectId)
+      if (pms && pms.length > 0) {
+        await supabase.from('presentation_models').insert(
+          pms.map((pm: any, i: number) => ({
+            presentation_id: data.id, model_id: pm.model_id,
+            display_order: i, show_sizing: true, show_instagram: true, show_portfolio: true, is_visible: true
+          }))
+        )
+      }
+      router.push(`/admin/presentations/${data.id}`)
+    }
   }
 
   return (
