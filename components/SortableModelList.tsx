@@ -12,6 +12,9 @@ interface PresentationModel {
   show_instagram: boolean
   show_portfolio: boolean
   admin_notes: string
+  location: string
+  rate: string
+  client_notes: string
   is_visible: boolean
   models: { first_name: string; last_name: string; agency: string }
 }
@@ -30,6 +33,7 @@ function SortableItem({ item, onRemove, onFieldChange }: {
 }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: item.id })
   const style = { transform: CSS.Transform.toString(transform), transition }
+  const inp = 'w-full border-b border-neutral-200 bg-transparent py-1 text-xs focus:outline-none focus:border-black resize-none placeholder:text-neutral-300'
 
   return (
     <div ref={setNodeRef} style={style} className="border border-neutral-200 bg-white p-4">
@@ -50,24 +54,45 @@ function SortableItem({ item, onRemove, onFieldChange }: {
               <button onClick={() => onRemove(item.id)} className="text-neutral-300 hover:text-red-500"><X size={14} /></button>
             </div>
           </div>
-          <div className="flex gap-3 mb-3">
+
+          {/* Visibility toggles */}
+          <div className="flex gap-3 mb-4">
             {(['show_sizing', 'show_instagram', 'show_portfolio'] as const).map(field => (
               <label key={field} className="flex items-center gap-1 cursor-pointer">
-                <input type="checkbox" checked={item[field] as boolean} onChange={e => onFieldChange(item.id, field, e.target.checked)}
-                  className="w-3 h-3" />
-                <span className="text-[10px] tracking-wider uppercase text-neutral-500">
-                  {field.replace('show_', '')}
-                </span>
+                <input type="checkbox" checked={item[field] as boolean} onChange={e => onFieldChange(item.id, field, e.target.checked)} className="w-3 h-3" />
+                <span className="text-[10px] tracking-wider uppercase text-neutral-500">{field.replace('show_', '')}</span>
               </label>
             ))}
           </div>
-          <textarea
-            value={item.admin_notes || ''}
-            onChange={e => onFieldChange(item.id, 'admin_notes', e.target.value)}
-            placeholder="Admin notes..."
-            rows={2}
-            className="w-full border-b border-neutral-200 bg-transparent py-1 text-xs focus:outline-none focus:border-black resize-none placeholder:text-neutral-300"
-          />
+
+          {/* Client-visible notes */}
+          <div className="space-y-2 border-t border-neutral-100 pt-3">
+            <p className="text-[10px] tracking-widest uppercase text-neutral-400 mb-2">Client Notes (visible on slides)</p>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="text-[10px] tracking-wider uppercase text-neutral-400 block mb-0.5">Location</label>
+                <input value={item.location || ''} onChange={e => onFieldChange(item.id, 'location', e.target.value)}
+                  placeholder="e.g. Bangkok, NYC" className={inp} />
+              </div>
+              <div>
+                <label className="text-[10px] tracking-wider uppercase text-neutral-400 block mb-0.5">Rate</label>
+                <input value={item.rate || ''} onChange={e => onFieldChange(item.id, 'rate', e.target.value)}
+                  placeholder="e.g. $5,000/day" className={inp} />
+              </div>
+            </div>
+            <div>
+              <label className="text-[10px] tracking-wider uppercase text-neutral-400 block mb-0.5">Notes</label>
+              <textarea value={item.client_notes || ''} onChange={e => onFieldChange(item.id, 'client_notes', e.target.value)}
+                placeholder="Notes visible to client on slides..." rows={2} className={inp} />
+            </div>
+          </div>
+
+          {/* Private admin notes */}
+          <div className="mt-3 pt-3 border-t border-neutral-100">
+            <label className="text-[10px] tracking-wider uppercase text-neutral-400 block mb-0.5">Private Admin Notes (not shown to client)</label>
+            <textarea value={item.admin_notes || ''} onChange={e => onFieldChange(item.id, 'admin_notes', e.target.value)}
+              placeholder="Internal notes only..." rows={2} className={inp} />
+          </div>
         </div>
       </div>
     </div>

@@ -142,93 +142,109 @@ export function PresentationViewer({
       {/* Slides view */}
       {view === 'slides' && current && currentModel && (
         <div onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} className="fixed inset-0 bg-white z-40 flex flex-col overflow-hidden">
-          {/* Fixed top bar */}
-          <div className="flex items-center justify-between px-8 py-4 border-b border-neutral-100 flex-shrink-0">
+          {/* Top bar */}
+          <div className="flex items-center justify-between px-6 py-3 border-b border-neutral-100 flex-shrink-0">
             <img src="/logo.jpg" alt="" className="h-5 w-auto" />
             <p className="label">{slideIndex + 1} / {sorted.length}</p>
-            <button onClick={() => setView('grid')} className="text-xs tracking-widest uppercase hover:opacity-60 transition-opacity">
-              ✕ Exit Slides
-            </button>
+            <button onClick={() => setView('grid')} className="text-xs tracking-widest uppercase hover:opacity-60 transition-opacity">✕ Exit Slides</button>
           </div>
-          <div className="w-full flex flex-col flex-1 min-h-0 overflow-hidden px-8 py-4">
-            {/* Name */}
-            <h2 className="text-2xl md:text-3xl font-light tracking-widest uppercase mb-3">
-              {currentModel.first_name} {currentModel.last_name}
-            </h2>
 
-            {/* Info row flush left + shortlist inline */}
-            <div className="flex flex-wrap items-end gap-x-6 gap-y-2 text-sm mb-4">
-              {current.show_sizing && <>
-                {currentModel.height_ft && <div><span className="label block">Height</span>{currentModel.height_ft}&apos;{currentModel.height_in}&quot;</div>}
-                {currentModel.bust && <div><span className="label block">Bust</span>{currentModel.bust}</div>}
-                {currentModel.waist && <div><span className="label block">Waist</span>{currentModel.waist}</div>}
-                {currentModel.hips && <div><span className="label block">Hips</span>{currentModel.hips}</div>}
-                {currentModel.chest && <div><span className="label block">Chest</span>{currentModel.chest}</div>}
-                {currentModel.suit_size && <div><span className="label block">Suit</span>{currentModel.suit_size}</div>}
-                {currentModel.shoe_size && <div><span className="label block">Shoe</span>{currentModel.shoe_size}</div>}
-                {currentModel.dress_size && <div><span className="label block">Dress</span>{currentModel.dress_size}</div>}
-              </>}
-              {current.show_instagram && currentModel.instagram_handle && (
-                <div><span className="label block">Instagram</span>
-                  <a href={"https://instagram.com/" + currentModel.instagram_handle} target="_blank" rel="noopener noreferrer" className="hover:underline">@{currentModel.instagram_handle}</a>
-                </div>
-              )}
-              {current.show_portfolio && currentModel.portfolio_url && (
-                <div><span className="label block">Portfolio</span>
-                  <a href={currentModel.portfolio_url.startsWith("http") ? currentModel.portfolio_url : "https://" + currentModel.portfolio_url} target="_blank" rel="noopener noreferrer" className="hover:underline">↗</a>
-                </div>
-              )}
-              {currentModel.agency && <div><span className="label block">Agency</span>{currentModel.agency}</div>}
-              <div className="ml-auto">
+          {/* Main: left info panel + right photos */}
+          <div className="flex flex-1 min-h-0 overflow-hidden">
+
+            {/* LEFT: info + notes */}
+            <div className="flex flex-col justify-between w-64 xl:w-72 flex-shrink-0 border-r border-neutral-100 px-6 py-5 overflow-y-auto">
+              <div>
+                <h2 className="text-xl font-light tracking-widest uppercase mb-1">
+                  {currentModel.first_name}<br />{currentModel.last_name}
+                </h2>
+                {currentModel.agency && <p className="text-xs text-neutral-400 mb-4">{currentModel.agency}</p>}
+
+                {current.show_sizing && (
+                  <div className="space-y-2 mb-4">
+                    {currentModel.height_ft && <div><span className="label block">Height</span>{currentModel.height_ft}&apos;{currentModel.height_in}&quot;</div>}
+                    {currentModel.bust && <div><span className="label block">Bust</span>{currentModel.bust}</div>}
+                    {currentModel.waist && <div><span className="label block">Waist</span>{currentModel.waist}</div>}
+                    {currentModel.hips && <div><span className="label block">Hips</span>{currentModel.hips}</div>}
+                    {currentModel.chest && <div><span className="label block">Chest</span>{currentModel.chest}</div>}
+                    {currentModel.suit_size && <div><span className="label block">Suit</span>{currentModel.suit_size}</div>}
+                    {currentModel.shoe_size && <div><span className="label block">Shoe (US)</span>US {currentModel.shoe_size}</div>}
+                    {currentModel.dress_size && <div><span className="label block">Dress</span>{currentModel.dress_size}</div>}
+                  </div>
+                )}
+                {current.show_instagram && currentModel.instagram_handle && (
+                  <div className="mb-2">
+                    <span className="label block">Instagram</span>
+                    <a href={"https://instagram.com/" + currentModel.instagram_handle} target="_blank" rel="noopener noreferrer" className="text-sm hover:underline">@{currentModel.instagram_handle}</a>
+                  </div>
+                )}
+                {current.show_portfolio && currentModel.portfolio_url && (
+                  <div className="mb-2">
+                    <span className="label block">Portfolio</span>
+                    <a href={currentModel.portfolio_url.startsWith("http") ? currentModel.portfolio_url : "https://" + currentModel.portfolio_url} target="_blank" rel="noopener noreferrer" className="text-sm hover:underline">View ↗</a>
+                  </div>
+                )}
+
+                {/* Client notes (location, rate, notes) */}
+                {(current.location || current.rate || current.client_notes) && (
+                  <div className="mt-4 pt-4 border-t border-neutral-100 space-y-2">
+                    {current.location && <div><span className="label block">Location</span><p className="text-sm">{current.location}</p></div>}
+                    {current.rate && <div><span className="label block">Rate</span><p className="text-sm">{current.rate}</p></div>}
+                    {current.client_notes && <div><span className="label block">Notes</span><p className="text-sm text-neutral-600 leading-relaxed">{current.client_notes}</p></div>}
+                  </div>
+                )}
+              </div>
+
+              {/* Shortlist + nav at bottom */}
+              <div className="mt-4 pt-4 border-t border-neutral-100">
                 <SlideActions presentationId={presentationId} modelId={current.model_id} clientId={clientId}
                   initialShortlisted={!!shortlists[current.model_id]} initialNotes={shortlistMap[current.model_id]?.notes || ""}
                   onShortlistChange={(v) => handleShortlistChange(current.model_id, v)} compact={true} />
+                <div className="flex items-center justify-between mt-4">
+                  <button onClick={prev} disabled={slideIndex === 0}
+                    className="flex items-center gap-1 text-xs tracking-widest uppercase disabled:opacity-20 hover:opacity-60 transition-opacity">
+                    <ChevronLeft size={14} /> Prev
+                  </button>
+                  <button onClick={next} disabled={slideIndex === sorted.length - 1}
+                    className="flex items-center gap-1 text-xs tracking-widest uppercase disabled:opacity-20 hover:opacity-60 transition-opacity">
+                    Next <ChevronRight size={14} />
+                  </button>
+                </div>
               </div>
             </div>
 
-            {current.admin_notes && <p className="text-sm text-neutral-500 italic border-l-2 border-neutral-200 pl-3 mb-4">{current.admin_notes}</p>}
-
-            {/* Photos with nav flush at bottom */}
-            <div className="flex flex-col flex-1 min-h-0">
-              <div className="grid grid-cols-2 gap-3 flex-1 min-h-0">
-                {currentMedia.slice(0, 2).map((m: any) => (
-                  <div key={m.id} className="h-full overflow-hidden bg-neutral-100">
+            {/* RIGHT: 3:4 photos */}
+            <div className="flex-1 min-w-0 flex gap-3 p-4">
+              {currentMedia.length === 0 && (
+                <div className="flex-1 bg-neutral-100 flex items-center justify-center text-neutral-300 text-xs">No photos</div>
+              )}
+              {currentMedia.slice(0, 2).map((m: any) => (
+                <div key={m.id} className="flex-1 min-w-0 relative" style={{aspectRatio: '3/4', maxWidth: 'calc(50% - 6px)'}}>
+                  <div className="absolute inset-0">
                     {m.type === "video"
                       ? <video src={m.public_url} className="w-full h-full object-cover" controls />
-                      : <img src={m.public_url} alt="" className="w-full h-full object-cover" />}
+                      : <img src={m.public_url} alt="" className="w-full h-full object-cover object-top" />}
                   </div>
-                ))}
-                {currentMedia.length === 0 && (
-                  <div className="h-full bg-neutral-100 flex items-center justify-center text-neutral-300 text-xs col-span-2">No photos</div>
-                )}
-              </div>
-              <div className="flex items-center justify-between mt-3">
-                <button onClick={prev} disabled={slideIndex === 0}
-                  className="flex items-center gap-2 text-xs tracking-widest uppercase disabled:opacity-20 hover:opacity-60 transition-opacity">
-                  <ChevronLeft size={16} /> Prev
-                </button>
-                <div className="flex gap-1.5 overflow-x-auto max-w-xs">
-                  {sorted.map((pm, i) => {
-                    const thumb = (mediaByModel[pm.model_id] || []).find((m: any) => m.is_visible && m.type === "photo")
-                    const active = i === slideIndex
-                    return (
-                      <button key={pm.id} onClick={() => setSlideIndex(i)}
-                        className={["relative flex-shrink-0 w-9 h-9 overflow-hidden border-2 transition-colors", active ? "border-black" : "border-transparent opacity-40 hover:opacity-70"].join(" ")}>
-                        {thumb
-                          ? <img src={thumb.public_url} alt="" className="w-full h-full object-cover" />
-                          : <div className="w-full h-full bg-neutral-100 flex items-center justify-center text-[8px] text-neutral-400">{pm.models?.first_name?.[0]}</div>}
-                        {shortlists[pm.model_id] && <div className="absolute top-0 right-0 w-2 h-2 bg-black rounded-full" />}
-                      </button>
-                    )
-                  })}
                 </div>
-                <button onClick={next} disabled={slideIndex === sorted.length - 1}
-                  className="flex items-center gap-2 text-xs tracking-widest uppercase disabled:opacity-20 hover:opacity-60 transition-opacity">
-                  Next <ChevronRight size={16} />
-                </button>
-              </div>
+              ))}
             </div>
-            <p className="text-center text-[10px] text-neutral-300 tracking-widest uppercase mt-3 md:hidden">swipe to navigate</p>
+          </div>
+
+          {/* Thumbnail strip */}
+          <div className="flex items-center justify-center gap-1.5 py-2 border-t border-neutral-100 flex-shrink-0 overflow-x-auto px-4">
+            {sorted.map((pm, i) => {
+              const thumb = (mediaByModel[pm.model_id] || []).find((m: any) => m.is_visible && m.type === "photo")
+              const active = i === slideIndex
+              return (
+                <button key={pm.id} onClick={() => setSlideIndex(i)}
+                  className={["relative flex-shrink-0 w-9 h-9 overflow-hidden border-2 transition-colors", active ? "border-black" : "border-transparent opacity-40 hover:opacity-70"].join(" ")}>
+                  {thumb
+                    ? <img src={thumb.public_url} alt="" className="w-full h-full object-cover" />
+                    : <div className="w-full h-full bg-neutral-100 flex items-center justify-center text-[8px] text-neutral-400">{pm.models?.first_name?.[0]}</div>}
+                  {shortlists[pm.model_id] && <div className="absolute top-0 right-0 w-2 h-2 bg-black rounded-full" />}
+                </button>
+              )
+            })}
           </div>
         </div>
       )}

@@ -71,6 +71,12 @@ export default function PresentationBuilder({ params }: { params: { id: string }
         show_instagram: m.show_instagram,
         show_portfolio: m.show_portfolio,
         admin_notes: m.admin_notes,
+        location: m.location || null,
+        rate: m.rate || null,
+        client_notes: m.client_notes || null,
+        location: m.location || '',
+        rate: m.rate || '',
+        client_notes: m.client_notes || '',
         is_visible: m.is_visible,
       }).eq('id', m.id)
     }
