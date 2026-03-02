@@ -3,41 +3,93 @@ import { useCallback, useState } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { createClient } from '@/lib/supabase/client'
 import { Upload } from 'lucide-react'
+import { ImageCropper } from './ImageCropper'
 
 interface MediaUploaderProps {
   modelId: string
   onUploaded: () => void
 }
 
+interface PendingFile {
+  src: string
+  filename: string
+  originalFile: File
+}
+
 export function MediaUploader({ modelId, onUploaded }: MediaUploaderProps) {
   const supabase = createClient()
   const [uploading, setUploading] = useState(false)
   const [progress, setProgress] = useState<string>('')
+  const [cropQueue, setCropQueue] = useState<PendingFile[]>([])
+  const [pendingUploads, setPendingUploads] = useState<{ blob: Blob, filename: string }[]>([])
+
+  const uploadBlob = async (blob: Blob, filename: string, index: number, total: number) => {
+    setProgress(`Uploading ${index + 1} of ${total}...`)
+    const ext = filename.split('.').pop() || 'jpg'
+    const path = `${modelId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+    const type = blob.type.startsWith('video') ? 'video' : 'photo'
+    const { error } = await supabase.storage.from('model-media').upload(path, blob, { contentType: blob.type })
+    if (!error) {
+      const { data: { publicUrl } } = supabase.storage.from('model-media').getPublicUrl(path)
+      await supabase.from('model_media').insert({ model_id: modelId, storage_path: path, public_url: publicUrl, type })
+    }
+  }
 
   const onDrop = useCallback(async (files: File[]) => {
-    setUploading(true)
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i]
-      setProgress(`Uploading ${i + 1} of ${files.length}...`)
-      const ext = file.name.split('.').pop()
-      const path = `${modelId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
-      const type = file.type.startsWith('video') ? 'video' : 'photo'
+    const images = files.filter(f => f.type.startsWith('image/'))
+    const videos = files.filter(f => f.type.startsWith('video/'))
 
-      const { error } = await supabase.storage.from('model-media').upload(path, file)
-      if (!error) {
-        const { data: { publicUrl } } = supabase.storage.from('model-media').getPublicUrl(path)
-        await supabase.from('model_media').insert({
-          model_id: modelId,
-          storage_path: path,
-          public_url: publicUrl,
-          type,
-        })
+    // Upload videos directly (no crop)
+    if (videos.length > 0) {
+      setUploading(true)
+      for (let i = 0; i < videos.length; i++) {
+        await uploadBlob(videos[i], videos[i].name, i, videos.length)
       }
+      setUploading(false)
+      setProgress('')
+      if (images.length === 0) { onUploaded(); return }
     }
-    setUploading(false)
-    setProgress('')
-    onUploaded()
+
+    // Queue images for cropping
+    if (images.length > 0) {
+      const queue: PendingFile[] = images.map(f => ({
+        src: URL.createObjectURL(f),
+        filename: f.name,
+        originalFile: f,
+      }))
+      setCropQueue(queue)
+      setPendingUploads([])
+    }
   }, [modelId, supabase, onUploaded])
+
+  const handleCropDone = async (blob: Blob, filename: string) => {
+    const remaining = cropQueue.slice(1)
+    const newPending = [...pendingUploads, { blob, filename }]
+
+    if (remaining.length === 0) {
+      // All cropped — upload everything
+      setCropQueue([])
+      setPendingUploads([])
+      setUploading(true)
+      for (let i = 0; i < newPending.length; i++) {
+        await uploadBlob(newPending[i].blob, newPending[i].filename, i, newPending.length)
+      }
+      setUploading(false)
+      setProgress('')
+      onUploaded()
+    } else {
+      setPendingUploads(newPending)
+      setCropQueue(remaining)
+    }
+  }
+
+  const handleCropCancel = () => {
+    // Skip crop for current, use original
+    const current = cropQueue[0]
+    current.originalFile.arrayBuffer().then(buf => {
+      handleCropDone(new Blob([buf], { type: current.originalFile.type }), current.filename)
+    })
+  }
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -46,20 +98,30 @@ export function MediaUploader({ modelId, onUploaded }: MediaUploaderProps) {
   })
 
   return (
-    <div
-      {...getRootProps()}
-      className={`border-2 border-dashed p-8 text-center cursor-pointer transition-colors ${isDragActive ? 'border-black bg-neutral-50' : 'border-neutral-200 hover:border-neutral-400'}`}
-    >
-      <input {...getInputProps()} />
-      <Upload size={20} className="mx-auto mb-3 text-neutral-400" />
-      {uploading ? (
-        <p className="text-xs text-neutral-500">{progress}</p>
-      ) : (
-        <>
-          <p className="text-xs text-neutral-500">Drag photos & videos here, or click to browse</p>
-          <p className="text-xs text-neutral-300 mt-1">JPG, PNG, GIF, MP4, MOV</p>
-        </>
+    <>
+      {cropQueue.length > 0 && (
+        <ImageCropper
+          src={cropQueue[0].src}
+          filename={cropQueue[0].filename}
+          onDone={handleCropDone}
+          onCancel={handleCropCancel}
+        />
       )}
-    </div>
+      <div
+        {...getRootProps()}
+        className={`border-2 border-dashed p-8 text-center cursor-pointer transition-colors ${isDragActive ? 'border-black bg-neutral-50' : 'border-neutral-200 hover:border-neutral-400'}`}
+      >
+        <input {...getInputProps()} />
+        <Upload size={20} className="mx-auto mb-3 text-neutral-400" />
+        {uploading ? (
+          <p className="text-xs text-neutral-500">{progress}</p>
+        ) : (
+          <>
+            <p className="text-xs text-neutral-500">Drag photos & videos here, or click to browse</p>
+            <p className="text-xs text-neutral-300 mt-1">JPG, PNG, GIF, MP4, MOV</p>
+          </>
+        )}
+      </div>
+    </>
   )
 }

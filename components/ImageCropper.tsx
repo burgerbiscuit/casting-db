@@ -1,0 +1,122 @@
+'use client'
+import { useState, useRef, useCallback } from 'react'
+import ReactCrop, { type Crop, type PixelCrop, centerCrop, makeAspectCrop } from 'react-image-crop'
+import 'react-image-crop/dist/ReactCrop.css'
+
+interface Props {
+  src: string
+  filename: string
+  onDone: (blob: Blob, filename: string) => void
+  onCancel: () => void
+}
+
+function centerAspectCrop(w: number, h: number, aspect: number) {
+  return centerCrop(makeAspectCrop({ unit: '%', width: 90 }, aspect, w, h), w, h)
+}
+
+export function ImageCropper({ src, filename, onDone, onCancel }: Props) {
+  const imgRef = useRef<HTMLImageElement>(null)
+  const [crop, setCrop] = useState<Crop>()
+  const [completedCrop, setCompletedCrop] = useState<PixelCrop>()
+  const [aspect, setAspect] = useState<number | undefined>(3/4)
+  const [rotate, setRotate] = useState(0)
+  const [scale, setScale] = useState(1)
+
+  const onImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const { width, height } = e.currentTarget
+    setCrop(centerAspectCrop(width, height, aspect ?? 3/4))
+  }
+
+  const getCroppedBlob = useCallback(async () => {
+    if (!imgRef.current || !completedCrop) return
+    const image = imgRef.current
+    const canvas = document.createElement('canvas')
+    const scaleX = image.naturalWidth / image.width
+    const scaleY = image.naturalHeight / image.height
+    canvas.width = completedCrop.width * scaleX
+    canvas.height = completedCrop.height * scaleY
+    const ctx = canvas.getContext('2d')!
+    ctx.save()
+    ctx.translate(canvas.width / 2, canvas.height / 2)
+    ctx.rotate((rotate * Math.PI) / 180)
+    ctx.scale(scale, scale)
+    ctx.translate(-canvas.width / 2, -canvas.height / 2)
+    ctx.drawImage(
+      image,
+      completedCrop.x * scaleX, completedCrop.y * scaleY,
+      completedCrop.width * scaleX, completedCrop.height * scaleY,
+      0, 0, canvas.width, canvas.height
+    )
+    ctx.restore()
+    return new Promise<Blob>((resolve) => canvas.toBlob(b => resolve(b!), 'image/jpeg', 0.95))
+  }, [completedCrop, rotate, scale])
+
+  const handleDone = async () => {
+    const blob = await getCroppedBlob()
+    if (blob) onDone(blob, filename.replace(/\.[^.]+$/, '') + '_cropped.jpg')
+    else onDone(await fetch(src).then(r => r.blob()), filename)
+  }
+
+  const aspects = [
+    { label: '3:4 Portrait', value: 3/4 },
+    { label: '1:1 Square', value: 1 },
+    { label: '4:5', value: 4/5 },
+    { label: 'Free', value: undefined },
+  ]
+
+  return (
+    <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+      <div className="bg-white max-w-2xl w-full max-h-[90vh] flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-100">
+          <p className="text-xs tracking-widest uppercase">Edit Photo</p>
+          <button onClick={onCancel} className="text-xs tracking-widest uppercase text-neutral-400 hover:text-black">Cancel</button>
+        </div>
+
+        {/* Controls */}
+        <div className="flex flex-wrap gap-3 px-6 py-3 border-b border-neutral-100">
+          <div className="flex gap-2">
+            {aspects.map(a => (
+              <button key={a.label} onClick={() => {
+                setAspect(a.value)
+                if (imgRef.current && a.value) {
+                  const { width, height } = imgRef.current
+                  setCrop(centerAspectCrop(width, height, a.value))
+                }
+              }}
+                className={`text-xs tracking-widest uppercase px-3 py-1.5 border transition-colors ${aspect === a.value ? 'bg-black text-white border-black' : 'border-neutral-300 hover:border-black'}`}>
+                {a.label}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-3 ml-auto">
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-neutral-400 tracking-widest uppercase">Rotate</span>
+              <button onClick={() => setRotate(r => r - 90)} className="text-xs border border-neutral-300 px-2 py-1 hover:border-black">↺</button>
+              <button onClick={() => setRotate(r => r + 90)} className="text-xs border border-neutral-300 px-2 py-1 hover:border-black">↻</button>
+            </div>
+          </div>
+        </div>
+
+        {/* Crop area */}
+        <div className="flex-1 overflow-auto flex items-center justify-center p-4 bg-neutral-50 min-h-0">
+          <ReactCrop crop={crop} onChange={c => setCrop(c)} onComplete={c => setCompletedCrop(c)}
+            aspect={aspect} minWidth={50} minHeight={50}>
+            <img ref={imgRef} src={src} alt="Crop" onLoad={onImageLoad}
+              style={{ transform: `rotate(${rotate}deg) scale(${scale})`, maxHeight: '50vh', maxWidth: '100%' }} />
+          </ReactCrop>
+        </div>
+
+        {/* Footer */}
+        <div className="flex justify-end gap-3 px-6 py-4 border-t border-neutral-100">
+          <button onClick={onCancel} className="text-xs tracking-widest uppercase px-6 py-3 border border-neutral-300 hover:border-black">
+            Skip Crop
+          </button>
+          <button onClick={handleDone} className="text-xs tracking-widest uppercase px-6 py-3 bg-black text-white hover:bg-neutral-800">
+            Apply & Upload
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
