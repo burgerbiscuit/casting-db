@@ -1,7 +1,7 @@
 import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 
-const esc = (s: string) => (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')
+const esc = (s = '') => (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')
 
 export async function GET(
   request: NextRequest,
@@ -10,15 +10,12 @@ export async function GET(
   const { id } = params
 
   try {
-    // Auth check: user must be logged in (team member OR authenticated client)
     const authSupabase = await createClient()
     const { data: { user } } = await authSupabase.auth.getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    // Verify access: either team member or client with access to this presentation's project
     const { data: teamMember } = await authSupabase.from('team_members').select('id').eq('user_id', user.id).single()
     if (!teamMember) {
-      // Must be a client with access to this project
       const supabaseCheck = await createServiceClient()
       const { data: pres } = await supabaseCheck.from('presentations').select('project_id').eq('id', id).single()
       if (pres) {
@@ -48,11 +45,31 @@ export async function GET(
       return NextResponse.json({ error: 'Not found' }, { status: 404 })
     }
 
+    // Get shortlisted model IDs from client_shortlists
+    const { data: shortlists } = await supabase
+      .from('client_shortlists')
+      .select('model_id')
+      .eq('presentation_id', id)
+
+    const shortlistedIds = new Set((shortlists || []).map((s: any) => s.model_id))
+
+    // Get client notes
+    const { data: clientNoteRows } = await supabase
+      .from('client_shortlists')
+      .select('model_id, notes')
+      .eq('presentation_id', id)
+
+    const clientNotesMap = new Map<string, string>()
+    ;(clientNoteRows || []).forEach((r: any) => { if (r.notes) clientNotesMap.set(r.model_id, r.notes) })
+
     const modelIds = (presentationModels || []).map((pm: any) => pm.model_id)
     const { data: allMedia } = await supabase
       .from('model_media')
       .select('*')
       .in('model_id', modelIds)
+      .eq('is_visible', true)
+      .eq('type', 'photo')
+      .order('display_order')
 
     const mediaByModel = new Map<string, any[]>()
     ;(allMedia || []).forEach(m => {
@@ -60,7 +77,80 @@ export async function GET(
       mediaByModel.get(m.model_id)!.push(m)
     })
 
-    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${esc(presentation.name)}</title><style>* { margin: 0; padding: 0; box-sizing: border-box; } body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #111; } .cover { page-break-after: always; padding: 40px; min-height: 100vh; display: flex; flex-direction: column; justify-content: center; text-align: center; } .cover h1 { font-size: 32px; font-weight: 300; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 20px; } .model { page-break-inside: avoid; padding: 40px; } .model-name { font-size: 18px; font-weight: 600; text-transform: uppercase; margin-bottom: 20px; } .photos { display: flex; gap: 20px; margin-bottom: 20px; } .photo { width: 45%; aspect-ratio: 3/4; object-fit: cover; } .sizing { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; font-size: 12px; } .sizing-item { border: 1px solid #e5e5e5; padding: 10px; } .sizing-label { font-size: 10px; color: #888; font-weight: 600; text-transform: uppercase; margin-bottom: 5px; } .sizing-value { font-weight: 600; } .links { font-size: 12px; margin-bottom: 15px; } .links a { color: #0000FF; text-decoration: underline; display: block; }</style></head><body><div class="cover"><h1>${esc(presentation.name)}</h1><p>${esc((presentation.projects as any)?.name || '')}</p></div>${presentationModels.map((pm: any) => {const model = pm.models; const pdfPhotos = (mediaByModel.get(model.id) || []).filter(m => m.is_pdf_primary || m.is_pdf_secondary); return `<div class="model"><div class="model-name">${esc(model.first_name)} ${esc(model.last_name)}</div>${pdfPhotos.length > 0 ? `<div class="photos">${pdfPhotos.slice(0,2).map((p: any) => `<img src="${esc(p.public_url)}" class="photo">`).join('')}</div>` : ''}${pm.show_sizing ? `<div class="sizing">${model.height_ft ? `<div class="sizing-item"><div class="sizing-label">Height</div><div class="sizing-value">${esc(String(model.height_ft))}'${esc(String(model.height_in))}"</div></div>` : ''}${model.bust ? `<div class="sizing-item"><div class="sizing-label">Bust</div><div class="sizing-value">${esc(model.bust)}</div></div>` : ''}${model.waist ? `<div class="sizing-item"><div class="sizing-label">Waist</div><div class="sizing-value">${esc(model.waist)}</div></div>` : ''}${model.hips ? `<div class="sizing-item"><div class="sizing-label">Hips</div><div class="sizing-value">${esc(model.hips)}</div></div>` : ''}${model.shoe_size ? `<div class="sizing-item"><div class="sizing-label">Shoe</div><div class="sizing-value">${esc(model.shoe_size)}</div></div>` : ''}${model.dress_size ? `<div class="sizing-item"><div class="sizing-label">Dress</div><div class="sizing-value">${esc(model.dress_size)}</div></div>` : ''}</div>` : ''}<div class="links">${pm.show_instagram && model.instagram_handle ? `<a href="https://instagram.com/${esc(model.instagram_handle)}">@${esc(model.instagram_handle)}</a>` : ''}${pm.show_portfolio && model.portfolio_url ? `<a href="${esc(model.portfolio_url)}">${esc(model.portfolio_url)}</a>` : ''}</div></div>`}).join('')}</body></html>`
+    // Sort: shortlisted first
+    const shortlisted = (presentationModels || []).filter((pm: any) => shortlistedIds.has(pm.model_id))
+    const rest = (presentationModels || []).filter((pm: any) => !shortlistedIds.has(pm.model_id))
+
+    const renderModelPage = (pm: any) => {
+      const model = pm.models
+      const photos = mediaByModel.get(model.id) || []
+      const photo1 = photos[0]?.public_url || ''
+      const photo2 = photos[1]?.public_url || ''
+      const clientNotes = clientNotesMap.get(model.id) || ''
+
+      const sizingFields = [
+        model.height_ft ? `<div><div style="font-size:10px;color:#aaa;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:2px">Height</div><div>${esc(String(model.height_ft))}'${esc(String(model.height_in || 0))}"</div></div>` : '',
+        model.bust ? `<div><div style="font-size:10px;color:#aaa;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:2px">Bust</div><div>${esc(model.bust)}</div></div>` : '',
+        model.waist ? `<div><div style="font-size:10px;color:#aaa;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:2px">Waist</div><div>${esc(model.waist)}</div></div>` : '',
+        model.hips ? `<div><div style="font-size:10px;color:#aaa;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:2px">Hips</div><div>${esc(model.hips)}</div></div>` : '',
+        model.chest ? `<div><div style="font-size:10px;color:#aaa;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:2px">Chest</div><div>${esc(model.chest)}</div></div>` : '',
+        model.shoe_size ? `<div><div style="font-size:10px;color:#aaa;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:2px">Shoe</div><div>US ${esc(model.shoe_size)}</div></div>` : '',
+        model.dress_size ? `<div><div style="font-size:10px;color:#aaa;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:2px">Dress</div><div>${esc(model.dress_size)}</div></div>` : '',
+        pm.show_instagram && model.instagram_handle ? `<div><div style="font-size:10px;color:#aaa;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:2px">Instagram</div><div><a href="https://instagram.com/${esc(model.instagram_handle)}" style="color:#111;text-decoration:underline">@${esc(model.instagram_handle)}</a></div></div>` : '',
+        pm.show_portfolio && model.portfolio_url ? `<div><div style="font-size:10px;color:#aaa;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:2px">Portfolio</div><div><a href="${esc(model.portfolio_url.startsWith('http') ? model.portfolio_url : 'https://' + model.portfolio_url)}" style="color:#111;text-decoration:underline">View ↗</a></div></div>` : '',
+      ].filter(Boolean).join('')
+
+      return `<div style="page-break-after: always; padding: 40px; font-family: 'Inter', sans-serif;">
+  <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 20px;">
+    <div>
+      <h2 style="font-size:18px; font-weight:300; letter-spacing:0.1em; text-transform:uppercase; margin:0">${esc(model.first_name)} ${esc(model.last_name)}</h2>
+      ${model.agency ? `<p style="font-size:11px; color:#999; margin:4px 0 0">${esc(model.agency)}</p>` : ''}
+    </div>
+    <div style="display:flex; gap:20px; font-size:11px; color:#666; text-align:right">
+      ${sizingFields}
+    </div>
+  </div>
+  <div style="display:flex; gap:12px; margin-bottom:20px;">
+    ${photo1 ? `<img src="${esc(photo1)}" style="width:calc(50% - 6px); aspect-ratio:3/4; object-fit:cover; object-position:top;" />` : `<div style="width:calc(50% - 6px); aspect-ratio:3/4; background:#f5f5f5;"></div>`}
+    ${photo2 ? `<img src="${esc(photo2)}" style="width:calc(50% - 6px); aspect-ratio:3/4; object-fit:cover; object-position:top;" />` : `<div style="width:calc(50% - 6px); aspect-ratio:3/4; background:#f5f5f5;"></div>`}
+  </div>
+  ${clientNotes ? `<div style="font-size:12px; color:#555; border-top:1px solid #eee; padding-top:12px; line-height:1.6">${esc(clientNotes)}</div>` : ''}
+</div>`
+    }
+
+    const shortlistedSection = shortlisted.length > 0 ? `
+<div style="page-break-after: always; padding: 40px; font-family: 'Inter', sans-serif; display:flex; align-items:center; justify-content:center; min-height:100vh;">
+  <div style="text-align:center">
+    <p style="font-size:10px; letter-spacing:0.2em; text-transform:uppercase; color:#999; margin-bottom:12px">Selected</p>
+    <h2 style="font-size:28px; font-weight:300; letter-spacing:0.08em; text-transform:uppercase;">${shortlisted.length} Model${shortlisted.length !== 1 ? 's' : ''}</h2>
+  </div>
+</div>
+${shortlisted.map(renderModelPage).join('')}` : ''
+
+    const allTalentSection = rest.length > 0 ? `
+<div style="page-break-after: always; padding: 40px; font-family: 'Inter', sans-serif; display:flex; align-items:center; justify-content:center; min-height:100vh;">
+  <div style="text-align:center">
+    <p style="font-size:10px; letter-spacing:0.2em; text-transform:uppercase; color:#999; margin-bottom:12px">All Talent</p>
+    <h2 style="font-size:28px; font-weight:300; letter-spacing:0.08em; text-transform:uppercase;">${rest.length} Model${rest.length !== 1 ? 's' : ''}</h2>
+  </div>
+</div>
+${rest.map(renderModelPage).join('')}` : (!shortlisted.length ? (presentationModels || []).map(renderModelPage).join('') : '')
+
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${esc(presentation.name)}</title><style>
+@page { margin: 0; }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif; color: #111; }
+</style></head><body>
+<div style="page-break-after: always; padding: 80px 40px; font-family: 'Inter', sans-serif; display:flex; align-items:center; justify-content:center; min-height:100vh;">
+  <div style="text-align:center">
+    <img src="/logo.jpg" style="height:32px; width:auto; margin-bottom:32px; display:block; margin-left:auto; margin-right:auto;" />
+    <h1 style="font-size:24px; font-weight:300; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:8px">${esc(presentation.name)}</h1>
+    <p style="font-size:12px; color:#999; letter-spacing:0.05em">${esc((presentation.projects as any)?.name || '')}</p>
+  </div>
+</div>
+${shortlisted.length > 0 ? shortlistedSection : ''}
+${rest.length > 0 || shortlisted.length === 0 ? allTalentSection : ''}
+</body></html>`
 
     return new NextResponse(html, {
       headers: {
