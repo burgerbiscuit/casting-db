@@ -24,7 +24,7 @@ export default function AdminLogin() {
   return (
     <main className="min-h-screen flex items-center justify-center bg-white">
       <div className="w-full max-w-sm px-6">
-        <p className="text-lg tracking-widest uppercase text-center mb-4">Tasha Tongpreecha Casting</p>
+        <img src="/logo.jpg" alt="Tasha Tongpreecha Casting" className="h-6 w-auto" />
         <h1 className="text-sm tracking-widest uppercase text-center text-neutral-400 mb-10">Admin</h1>
         <form onSubmit={login} className="space-y-6">
           <Input label="Email" type="email" value={email} onChange={e => setEmail(e.target.value)} required autoFocus />

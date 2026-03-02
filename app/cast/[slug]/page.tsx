@@ -195,7 +195,7 @@ export default function CastPage({ params }: { params: { slug: string } }) {
     <main className="min-h-screen bg-white">
       <div className="max-w-lg mx-auto px-6 py-16">
         <div className="text-center mb-12">
-          <p className="text-sm font-medium tracking-widest uppercase">Tasha Tongpreecha Casting</p>
+          <img src="/logo.jpg" alt="Tasha Tongpreecha Casting" className="h-6 w-auto" />
           {project && step !== 'landing' && (
             <p className="text-xs text-neutral-400 tracking-widest uppercase mt-2">{project.name}</p>
           )}

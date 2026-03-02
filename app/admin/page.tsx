@@ -21,7 +21,7 @@ export default async function AdminDashboard() {
     <div>
       <div className="flex items-center justify-between mb-10">
         <div>
-          <p className="label mb-1">Tasha Tongpreecha Casting</p>
+          <img src="/logo.jpg" alt="Tasha Tongpreecha Casting" className="h-6 w-auto" />
           <h1 className="text-2xl font-light tracking-widest uppercase">Dashboard</h1>
         </div>
         <Link href="/admin/projects/new"><Button>New Project</Button></Link>
