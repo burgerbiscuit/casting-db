@@ -19,6 +19,21 @@ export function PresentationViewer({
   const [view, setView] = useState<'grid' | 'slides'>('grid')
   const [slideIndex, setSlideIndex] = useState(0)
   const [followerCounts, setFollowerCounts] = useState<Record<string, string>>({})
+
+  // Lock body scroll when in slides mode
+  useEffect(() => {
+    if (view === 'slides') {
+      document.body.style.overflow = 'hidden'
+      document.documentElement.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+      document.documentElement.style.overflow = ''
+    }
+    return () => {
+      document.body.style.overflow = ''
+      document.documentElement.style.overflow = ''
+    }
+  }, [view])
   const [shortlists, setShortlists] = useState<Record<string, boolean>>(() => {
     const m: Record<string, boolean> = {}
     Object.keys(shortlistMap).forEach(k => { m[k] = true })
@@ -126,9 +141,16 @@ export function PresentationViewer({
 
       {/* Slides view */}
       {view === 'slides' && current && currentModel && (
-        <div onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} className="flex flex-col" style={{height: "calc(100vh - 180px)"}}>
-          <p className="label mb-4">{slideIndex + 1} / {sorted.length}</p>
-          <div className="w-full flex flex-col flex-1 min-h-0">
+        <div onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} className="fixed inset-0 bg-white z-40 flex flex-col overflow-hidden">
+          {/* Fixed top bar */}
+          <div className="flex items-center justify-between px-8 py-4 border-b border-neutral-100 flex-shrink-0">
+            <img src="/logo.jpg" alt="" className="h-5 w-auto" />
+            <p className="label">{slideIndex + 1} / {sorted.length}</p>
+            <button onClick={() => setView('grid')} className="text-xs tracking-widest uppercase hover:opacity-60 transition-opacity">
+              ✕ Exit Slides
+            </button>
+          </div>
+          <div className="w-full flex flex-col flex-1 min-h-0 overflow-hidden px-8 py-4">
             {/* Name */}
             <h2 className="text-2xl md:text-3xl font-light tracking-widest uppercase mb-3">
               {currentModel.first_name} {currentModel.last_name}
