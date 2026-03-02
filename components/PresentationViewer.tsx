@@ -149,58 +149,55 @@ export function PresentationViewer({
             <button onClick={() => setView('grid')} className="text-xs tracking-widest uppercase hover:opacity-60 transition-opacity">✕ Exit Slides</button>
           </div>
 
-          {/* Main: left info panel + right photos */}
-          <div className="flex flex-1 min-h-0 overflow-hidden">
-
-            {/* LEFT: info + notes */}
-            <div className="flex flex-col justify-between w-64 xl:w-72 flex-shrink-0 border-r border-neutral-100 px-6 py-5 overflow-y-auto">
+          {/* Name + info row across the top */}
+          <div className="flex-shrink-0 px-8 pt-5 pb-3 border-b border-neutral-100">
+            <div className="flex items-end justify-between">
               <div>
-                <h2 className="text-xl font-light tracking-widest uppercase mb-1">
-                  {currentModel.first_name}<br />{currentModel.last_name}
+                <h2 className="text-2xl font-light tracking-widest uppercase">
+                  {currentModel.first_name} {currentModel.last_name}
                 </h2>
-                {currentModel.agency && <p className="text-xs text-neutral-400 mb-4">{currentModel.agency}</p>}
-
-                {current.show_sizing && (
-                  <div className="space-y-2 mb-4">
-                    {currentModel.height_ft && <div><span className="label block">Height</span>{currentModel.height_ft}&apos;{currentModel.height_in}&quot;</div>}
-                    {currentModel.bust && <div><span className="label block">Bust</span>{currentModel.bust}</div>}
-                    {currentModel.waist && <div><span className="label block">Waist</span>{currentModel.waist}</div>}
-                    {currentModel.hips && <div><span className="label block">Hips</span>{currentModel.hips}</div>}
-                    {currentModel.chest && <div><span className="label block">Chest</span>{currentModel.chest}</div>}
-                    {currentModel.suit_size && <div><span className="label block">Suit</span>{currentModel.suit_size}</div>}
-                    {currentModel.shoe_size && <div><span className="label block">Shoe (US)</span>US {currentModel.shoe_size}</div>}
-                    {currentModel.dress_size && <div><span className="label block">Dress</span>{currentModel.dress_size}</div>}
-                  </div>
-                )}
+                {currentModel.agency && <p className="text-xs text-neutral-400 mt-0.5">{currentModel.agency}</p>}
+              </div>
+              <div className="flex items-end gap-6 text-sm">
+                {current.show_sizing && <>
+                  {currentModel.height_ft && <div><span className="label block">Height</span>{currentModel.height_ft}&apos;{currentModel.height_in}&quot;</div>}
+                  {currentModel.bust && <div><span className="label block">Bust</span>{currentModel.bust}</div>}
+                  {currentModel.waist && <div><span className="label block">Waist</span>{currentModel.waist}</div>}
+                  {currentModel.hips && <div><span className="label block">Hips</span>{currentModel.hips}</div>}
+                  {currentModel.chest && <div><span className="label block">Chest</span>{currentModel.chest}</div>}
+                  {currentModel.suit_size && <div><span className="label block">Suit</span>{currentModel.suit_size}</div>}
+                  {currentModel.shoe_size && <div><span className="label block">Shoe (US)</span>US {currentModel.shoe_size}</div>}
+                  {currentModel.dress_size && <div><span className="label block">Dress</span>{currentModel.dress_size}</div>}
+                </>}
                 {current.show_instagram && currentModel.instagram_handle && (
-                  <div className="mb-2">
-                    <span className="label block">Instagram</span>
-                    <a href={"https://instagram.com/" + currentModel.instagram_handle} target="_blank" rel="noopener noreferrer" className="text-sm hover:underline">@{currentModel.instagram_handle}</a>
+                  <div><span className="label block">Instagram</span>
+                    <a href={"https://instagram.com/" + currentModel.instagram_handle} target="_blank" rel="noopener noreferrer" className="hover:underline">@{currentModel.instagram_handle}</a>
                   </div>
                 )}
                 {current.show_portfolio && currentModel.portfolio_url && (
-                  <div className="mb-2">
-                    <span className="label block">Portfolio</span>
-                    <a href={currentModel.portfolio_url.startsWith("http") ? currentModel.portfolio_url : "https://" + currentModel.portfolio_url} target="_blank" rel="noopener noreferrer" className="text-sm hover:underline">View ↗</a>
+                  <div><span className="label block">Portfolio</span>
+                    <a href={currentModel.portfolio_url.startsWith("http") ? currentModel.portfolio_url : "https://" + currentModel.portfolio_url} target="_blank" rel="noopener noreferrer" className="hover:underline">View ↗</a>
                   </div>
                 )}
-
-                {/* Client notes (location, rate, notes) */}
-                {(current.location || current.rate || current.client_notes) && (
-                  <div className="mt-4 pt-4 border-t border-neutral-100 space-y-2">
-                    {current.location && <div><span className="label block">Location</span><p className="text-sm">{current.location}</p></div>}
-                    {current.rate && <div><span className="label block">Rate</span><p className="text-sm">{current.rate}</p></div>}
-                    {current.client_notes && <div><span className="label block">Notes</span><p className="text-sm text-neutral-600 leading-relaxed">{current.client_notes}</p></div>}
-                  </div>
-                )}
-              </div>
-
-              {/* Shortlist + nav at bottom */}
-              <div className="mt-4 pt-4 border-t border-neutral-100">
                 <SlideActions presentationId={presentationId} modelId={current.model_id} clientId={clientId}
                   initialShortlisted={!!shortlists[current.model_id]} initialNotes={shortlistMap[current.model_id]?.notes || ""}
                   onShortlistChange={(v) => handleShortlistChange(current.model_id, v)} compact={true} />
-                <div className="flex items-center justify-between mt-4">
+              </div>
+            </div>
+          </div>
+
+          {/* Main: left notes panel + right 3:4 photos */}
+          <div className="flex flex-1 min-h-0 overflow-hidden">
+
+            {/* LEFT: client notes + nav */}
+            {(current.location || current.rate || current.client_notes) ? (
+              <div className="flex flex-col justify-between w-52 xl:w-60 flex-shrink-0 border-r border-neutral-100 px-5 py-5">
+                <div className="space-y-3">
+                  {current.location && <div><span className="label block">Location</span><p className="text-sm">{current.location}</p></div>}
+                  {current.rate && <div><span className="label block">Rate</span><p className="text-sm">{current.rate}</p></div>}
+                  {current.client_notes && <div><span className="label block">Notes</span><p className="text-sm text-neutral-600 leading-relaxed">{current.client_notes}</p></div>}
+                </div>
+                <div className="flex items-center justify-between pt-4 border-t border-neutral-100 mt-4">
                   <button onClick={prev} disabled={slideIndex === 0}
                     className="flex items-center gap-1 text-xs tracking-widest uppercase disabled:opacity-20 hover:opacity-60 transition-opacity">
                     <ChevronLeft size={14} /> Prev
@@ -211,23 +208,35 @@ export function PresentationViewer({
                   </button>
                 </div>
               </div>
-            </div>
+            ) : null}
 
             {/* RIGHT: 3:4 photos */}
-            <div className="flex-1 min-w-0 flex gap-3 p-4">
+            <div className="flex-1 min-w-0 flex gap-3 p-4 items-start justify-center">
               {currentMedia.length === 0 && (
-                <div className="flex-1 bg-neutral-100 flex items-center justify-center text-neutral-300 text-xs">No photos</div>
+                <div className="flex-1 bg-neutral-100 flex items-center justify-center text-neutral-300 text-xs" style={{aspectRatio:'3/4'}}>No photos</div>
               )}
               {currentMedia.slice(0, 2).map((m: any) => (
-                <div key={m.id} className="flex-1 min-w-0 relative" style={{aspectRatio: '3/4', maxWidth: 'calc(50% - 6px)'}}>
-                  <div className="absolute inset-0">
-                    {m.type === "video"
-                      ? <video src={m.public_url} className="w-full h-full object-cover" controls />
-                      : <img src={m.public_url} alt="" className="w-full h-full object-cover object-top" />}
-                  </div>
+                <div key={m.id} className="min-w-0 bg-neutral-100 overflow-hidden" style={{aspectRatio:'3/4', height:'100%', maxHeight:'100%', flex:'1 1 0'}}>
+                  {m.type === "video"
+                    ? <video src={m.public_url} className="w-full h-full object-cover" controls />
+                    : <img src={m.public_url} alt="" className="w-full h-full object-cover object-top" />}
                 </div>
               ))}
             </div>
+
+            {/* Prev/Next when no notes panel */}
+            {!(current.location || current.rate || current.client_notes) && (
+              <div className="absolute bottom-14 left-8 right-8 flex items-center justify-between pointer-events-none">
+                <button onClick={prev} disabled={slideIndex === 0} style={{pointerEvents:'all'}}
+                  className="flex items-center gap-1 text-xs tracking-widest uppercase disabled:opacity-20 hover:opacity-60 transition-opacity bg-white/80 px-3 py-2">
+                  <ChevronLeft size={14} /> Prev
+                </button>
+                <button onClick={next} disabled={slideIndex === sorted.length - 1} style={{pointerEvents:'all'}}
+                  className="flex items-center gap-1 text-xs tracking-widest uppercase disabled:opacity-20 hover:opacity-60 transition-opacity bg-white/80 px-3 py-2">
+                  Next <ChevronRight size={14} />
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Thumbnail strip */}
