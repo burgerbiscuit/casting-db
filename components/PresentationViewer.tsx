@@ -158,7 +158,8 @@ export function PresentationViewer({
                     media={mediaByModel[pm.model_id] || []} presentationId={presentationId}
                     clientId={clientId} initialShortlisted={true}
                     initialNotes={shortlistMap[pm.model_id]?.notes || ''}
-                    onShortlistChange={(v) => handleShortlistChange(pm.model_id, v)} />
+                    onShortlistChange={(v) => handleShortlistChange(pm.model_id, v)}
+                    onCardClick={() => { setSlideIndex(sorted.findIndex(s => s.model_id === pm.model_id)); setView('slides') }} />
                 ))}
               </div>
               <div className="border-t border-neutral-100 mt-8 mb-6" />
@@ -170,7 +171,8 @@ export function PresentationViewer({
                 media={mediaByModel[pm.model_id] || []} presentationId={presentationId}
                 clientId={clientId} initialShortlisted={false}
                 initialNotes={shortlistMap[pm.model_id]?.notes || ''}
-                onShortlistChange={(v) => handleShortlistChange(pm.model_id, v)} />
+                onShortlistChange={(v) => handleShortlistChange(pm.model_id, v)}
+                onCardClick={() => { setSlideIndex(sorted.findIndex(s => s.model_id === pm.model_id)); setView('slides') }} />
             ))}
           </div>
         </div>
