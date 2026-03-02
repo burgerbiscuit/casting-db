@@ -33,13 +33,16 @@ export default function ScoutPage() {
 
   const [form, setForm] = useState({
     first_name: '', last_name: '', email: '', phone: '',
-    gender: '', date_of_birth: '',
+    gender: '',
+  gender_other: '', date_of_birth: '',
     instagram_handle: '', portfolio_url: '',
     agency: '', based_in: '',
     height_ft: 5, height_in: 7,
     bust: '', waist: '', hips: '', chest: '', dress_size: '', shoe_size: '', suit_size: '', inseam: '',
     ethnicity_broad: [] as string[], ethnicity_specific: [] as string[],
-    languages: [] as string[],
+    ethnicity_other: '',
+  ethnicity_other: '',
+  languages: [] as string[],
     skills: [] as string[], hobbies: [] as string[],
     notes: '',
   })

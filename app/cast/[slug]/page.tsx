@@ -38,6 +38,7 @@ const SKILL_SUGGESTIONS = [
 
 const defaultForm = {
   gender: '' as Gender,
+  gender_other: '',
   height_ft: 5, height_in: 7,
   // Female sizing
   bust: '', waist: '', hips: '', dress_size: '',
@@ -48,6 +49,8 @@ const defaultForm = {
   agency: '',
   ethnicity_broad: [] as string[],
   ethnicity_specific: [] as string[],
+  ethnicity_other: '',
+  ethnicity_other: '',
   languages: [] as string[],
   instagram_handle: '',
   portfolio_url: '',
@@ -171,7 +174,7 @@ export default function CastPage({ params }: { params: { slug: string } }) {
     setSaving(true)
     const modelData = {
       first_name: firstName, last_name: lastName,
-      gender: form.gender,
+      gender: form.gender === 'other' && form.gender_other ? form.gender_other : form.gender,
       height_ft: form.height_ft, height_in: form.height_in,
       bust: form.bust, waist: form.waist, hips: form.hips, dress_size: form.dress_size,
       chest: form.chest, suit_size: form.suit_size, inseam: form.inseam,
@@ -300,6 +303,9 @@ export default function CastPage({ params }: { params: { slug: string } }) {
                     </button>
                   ))}
                 </div>
+                {form.gender === 'other' && (
+                  <Input label="Please specify" value={form.gender_other} onChange={e => setForm(f => ({ ...f, gender_other: e.target.value }))} placeholder="e.g. Gender fluid" className="mt-3" />
+                )}
               </div>
 
               {/* Height */}
