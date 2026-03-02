@@ -197,16 +197,7 @@ export function PresentationViewer({
                   {current.rate && <div><span className="label block">Rate</span><p className="text-sm">{current.rate}</p></div>}
                   {current.client_notes && <div><span className="label block">Notes</span><p className="text-sm text-neutral-600 leading-relaxed">{current.client_notes}</p></div>}
                 </div>
-                <div className="flex items-center justify-between pt-4 border-t border-neutral-100 mt-4">
-                  <button onClick={prev} disabled={slideIndex === 0}
-                    className="flex items-center gap-1 text-xs tracking-widest uppercase disabled:opacity-20 hover:opacity-60 transition-opacity">
-                    <ChevronLeft size={14} /> Prev
-                  </button>
-                  <button onClick={next} disabled={slideIndex === sorted.length - 1}
-                    className="flex items-center gap-1 text-xs tracking-widest uppercase disabled:opacity-20 hover:opacity-60 transition-opacity">
-                    Next <ChevronRight size={14} />
-                  </button>
-                </div>
+
               </div>
             ) : null}
 
@@ -224,36 +215,20 @@ export function PresentationViewer({
               ))}
             </div>
 
-            {/* Prev/Next when no notes panel */}
-            {!(current.location || current.rate || current.client_notes) && (
-              <div className="absolute bottom-14 left-8 right-8 flex items-center justify-between pointer-events-none">
-                <button onClick={prev} disabled={slideIndex === 0} style={{pointerEvents:'all'}}
-                  className="flex items-center gap-1 text-xs tracking-widest uppercase disabled:opacity-20 hover:opacity-60 transition-opacity bg-white/80 px-3 py-2">
-                  <ChevronLeft size={14} /> Prev
-                </button>
-                <button onClick={next} disabled={slideIndex === sorted.length - 1} style={{pointerEvents:'all'}}
-                  className="flex items-center gap-1 text-xs tracking-widest uppercase disabled:opacity-20 hover:opacity-60 transition-opacity bg-white/80 px-3 py-2">
-                  Next <ChevronRight size={14} />
-                </button>
-              </div>
-            )}
+
           </div>
 
-          {/* Thumbnail strip */}
-          <div className="flex items-center justify-center gap-1.5 py-2 border-t border-neutral-100 flex-shrink-0 overflow-x-auto px-4">
-            {sorted.map((pm, i) => {
-              const thumb = (mediaByModel[pm.model_id] || []).find((m: any) => m.is_visible && m.type === "photo")
-              const active = i === slideIndex
-              return (
-                <button key={pm.id} onClick={() => setSlideIndex(i)}
-                  className={["relative flex-shrink-0 w-9 h-9 overflow-hidden border-2 transition-colors", active ? "border-black" : "border-transparent opacity-40 hover:opacity-70"].join(" ")}>
-                  {thumb
-                    ? <img src={thumb.public_url} alt="" className="w-full h-full object-cover" />
-                    : <div className="w-full h-full bg-neutral-100 flex items-center justify-center text-[8px] text-neutral-400">{pm.models?.first_name?.[0]}</div>}
-                  {shortlists[pm.model_id] && <div className="absolute top-0 right-0 w-2 h-2 bg-black rounded-full" />}
-                </button>
-              )
-            })}
+          {/* Prev / Next bottom bar */}
+          <div className="flex items-center justify-between px-8 py-3 border-t border-neutral-100 flex-shrink-0">
+            <button onClick={prev} disabled={slideIndex === 0}
+              className="flex items-center gap-2 text-xs tracking-widest uppercase disabled:opacity-20 hover:opacity-60 transition-opacity">
+              <ChevronLeft size={14} /> Prev
+            </button>
+            <span className="text-xs text-neutral-400">{slideIndex + 1} / {sorted.length}</span>
+            <button onClick={next} disabled={slideIndex === sorted.length - 1}
+              className="flex items-center gap-2 text-xs tracking-widest uppercase disabled:opacity-20 hover:opacity-60 transition-opacity">
+              Next <ChevronRight size={14} />
+            </button>
           </div>
         </div>
       )}
