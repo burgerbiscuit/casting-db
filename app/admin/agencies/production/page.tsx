@@ -159,8 +159,8 @@ export default function ProductionContactsPage() {
 
       {/* Contacts table */}
       {loading ? <p className="text-xs text-neutral-400">Loading...</p> : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+        <div className="overflow-x-auto -mx-4 md:mx-0">
+          <table className="w-full text-sm min-w-[700px]">
             <thead>
               <tr className="border-b border-neutral-200">
                 <th className="text-left w-6 py-2"><input type="checkbox" 

@@ -330,7 +330,7 @@ export default function CastPage({ params }: { params: { slug: string } }) {
 
   return (
     <main className="min-h-screen bg-white">
-      <div className="max-w-lg mx-auto px-6 py-16">
+      <div className="max-w-lg mx-auto px-4 md:px-6 py-8 md:py-16">
         <div className="text-center mb-12">
           <img src="/logo.jpg" alt="Tasha Tongpreecha Casting" className="h-6 w-auto mx-auto" />
           {project && step !== 'landing' && (

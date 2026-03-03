@@ -273,8 +273,8 @@ export function PresentationViewer({
           )}
           <div className={isMobile ? 'flex-1 overflow-y-auto overscroll-none' : ''}>
           {/* Search & filter bar */}
-          <div className="flex gap-3 mb-6 flex-wrap items-end">
-            <div className="relative flex-1 min-w-[180px]">
+          <div className="flex flex-col sm:flex-row gap-3 mb-6 flex-wrap items-end">
+            <div className="relative w-full sm:flex-1 sm:min-w-[180px]">
               <input
                 value={search}
                 onChange={e => setSearch(e.target.value)}
@@ -288,12 +288,12 @@ export function PresentationViewer({
               )}
             </div>
             <select value={filterHeight || ""} onChange={e => setFilterHeight(e.target.value)}
-              className="text-xs border-b border-neutral-300 py-2 focus:outline-none focus:border-black bg-transparent pr-4">
+              className="text-xs border-b border-neutral-300 py-2 focus:outline-none focus:border-black bg-transparent pr-4 hidden sm:block">
               <option value="">All Heights</option>
               {allHeights.map(h => <option key={h} value={h}>{h}</option>)}
             </select>
             <select value={filterGender || ""} onChange={e => setFilterGender(e.target.value)}
-              className="text-xs border-b border-neutral-300 py-2 focus:outline-none focus:border-black bg-transparent pr-4">
+              className="text-xs border-b border-neutral-300 py-2 focus:outline-none focus:border-black bg-transparent pr-4 hidden sm:block">
               <option value="">All Genders</option>
               {allGenders.map(g => <option key={g} value={g}>{g}</option>)}
             </select>
@@ -395,18 +395,21 @@ export function PresentationViewer({
         const isConfirmed = confirms[pm?.model_id]
         const sizing = getSizingParts(pm, model)
         return (
-          <div className="fixed inset-0 bg-white z-30 flex flex-col overflow-hidden"
-            onTouchStart={e => { swipeTouchStart.current = e.touches[0].clientX }}
-            onTouchEnd={e => {
-              const dx = e.changedTouches[0].clientX - swipeTouchStart.current
-              if (dx < -50 && swipeIndex < sorted.length - 1) setSwipeIndex(i => i + 1)
-              if (dx > 50 && swipeIndex > 0) setSwipeIndex(i => i - 1)
-            }}>
+          <div className="fixed inset-0 bg-white z-30 flex flex-col overflow-hidden">
             {/* Header */}
             <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b border-neutral-100">
-              <img src="/logo.jpg" alt="" className="h-4 w-auto" />
-              <span className="text-[10px] tracking-widest uppercase text-neutral-400">{swipeIndex + 1} / {sorted.length}</span>
-              <button onClick={() => setView('grid')} className="text-[10px] tracking-widest uppercase text-neutral-400 border border-neutral-200 px-3 py-1.5">Grid</button>
+              <button onClick={() => setSwipeIndex(i => Math.max(0, i - 1))} disabled={swipeIndex === 0}
+                className="p-2 disabled:opacity-20">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 18l-6-6 6-6"/></svg>
+              </button>
+              <div className="flex flex-col items-center">
+                <img src="/logo.jpg" alt="" className="h-4 w-auto mb-0.5" />
+                <span className="text-[9px] tracking-widest uppercase text-neutral-400">{swipeIndex + 1} / {sorted.length}</span>
+              </div>
+              <button onClick={() => setSwipeIndex(i => Math.min(sorted.length - 1, i + 1))} disabled={swipeIndex === sorted.length - 1}
+                className="p-2 disabled:opacity-20">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 18l6-6-6-6"/></svg>
+              </button>
             </div>
 
             {/* Photo — fills remaining space */}
@@ -446,7 +449,7 @@ export function PresentationViewer({
                 {isConfirmed ? '✓ Confirmed' : 'Confirm Talent'}
               </button>
               {/* Swipe hint */}
-              <p className="text-center text-[9px] text-neutral-300 tracking-widest mt-3">← swipe to browse →</p>
+
             </div>
           </div>
         )

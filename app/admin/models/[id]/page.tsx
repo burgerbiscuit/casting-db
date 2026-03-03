@@ -172,7 +172,7 @@ export default function ModelProfile({ params }: { params: { id: string } }) {
 
       {activeTab === 'profile' && (
         <div className="max-w-2xl space-y-8">
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
             <Input label="First Name" value={model.first_name || ''} onChange={e => setModel({ ...model, first_name: e.target.value })} />
             <Input label="Last Name" value={model.last_name || ''} onChange={e => setModel({ ...model, last_name: e.target.value })} />
           </div>
@@ -213,7 +213,7 @@ export default function ModelProfile({ params }: { params: { id: string } }) {
 
           {/* Female sizing */}
           {model.gender !== 'male' && (
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Input label="Bust" value={model.bust || ''} onChange={e => setModel({ ...model, bust: e.target.value })} />
               <Input label="Waist" value={model.waist || ''} onChange={e => setModel({ ...model, waist: e.target.value })} />
               <Input label="Hips" value={model.hips || ''} onChange={e => setModel({ ...model, hips: e.target.value })} />
@@ -223,7 +223,7 @@ export default function ModelProfile({ params }: { params: { id: string } }) {
 
           {/* Male sizing */}
           {model.gender === 'male' && (
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Input label="Chest" value={model.chest || ''} onChange={e => setModel({ ...model, chest: e.target.value })} />
               <Input label="Waist" value={model.waist || ''} onChange={e => setModel({ ...model, waist: e.target.value })} />
               <Input label="Inseam" value={model.inseam || ''} onChange={e => setModel({ ...model, inseam: e.target.value })} />
@@ -346,7 +346,7 @@ export default function ModelProfile({ params }: { params: { id: string } }) {
       {activeTab === 'media' && (
         <div>
           {/* Sectioned uploads */}
-          <div className="grid grid-cols-3 gap-6 mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6 mb-8">
             <div>
               <p className="label mb-3">Photos</p>
               <MediaUploader modelId={id} onUploaded={loadMedia} mediaType="photo" />

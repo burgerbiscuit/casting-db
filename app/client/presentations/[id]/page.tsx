@@ -78,14 +78,14 @@ export default async function PresentationView({ params }: { params: { id: strin
 
   return (
     <div className="max-w-7xl mx-auto">
-      <div className="flex items-center justify-between mb-10">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 md:mb-10 gap-4">
         <div>
           <Link href="/client" className="label hover:text-black">← Projects</Link>
           <h1 className="text-2xl font-light tracking-widest uppercase mt-2">{presentation.name}</h1>
           <p className="text-sm text-neutral-400">{(presentation.projects as any)?.name}</p>
         </div>
         <a href={`/api/pdf/${id}`} target="_blank"
-          className="flex items-center gap-2 text-xs tracking-widest uppercase border border-black px-4 py-3 hover:bg-black hover:text-white transition-colors">
+          className="flex items-center gap-2 text-xs tracking-widest uppercase border border-black px-4 py-2.5 hover:bg-black hover:text-white transition-colors self-start">
           <Download size={12} /> Download PDF
         </a>
       </div>
