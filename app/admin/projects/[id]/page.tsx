@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/Button'
 import { revalidatePath } from 'next/cache'
 import { CopyButton } from '@/components/CopyButton'
 import { ProjectModelsSection } from '@/components/ProjectModelsSection'
+import { ProjectPresentationTab } from '@/components/ProjectPresentationTab'
 
 async function archiveProject(id: string, status: string) {
   'use server'
@@ -12,8 +13,9 @@ async function archiveProject(id: string, status: string) {
   revalidatePath(`/admin/projects/${id}`)
 }
 
-export default async function ProjectDetail({ params }: { params: { id: string } }) {
+export default async function ProjectDetail({ params, searchParams }: { params: { id: string }, searchParams: { tab?: string } }) {
   const { id } = params
+  const tab = searchParams?.tab || 'models'
   const supabase = await createClient()
 
   const { data: project } = await supabase.from('projects').select('*').eq('id', id).single()
@@ -29,7 +31,6 @@ export default async function ProjectDetail({ params }: { params: { id: string }
     .from('presentation_models').select('model_id').eq('presentation_id', mainPres.id) : { data: [] }
   const presModelIds = new Set((presModels || []).map((pm: any) => pm.model_id))
 
-  // Get first photo for each model
   const modelIds = (projectModels || []).map((pm: any) => pm.models?.id).filter(Boolean)
   const { data: photos } = modelIds.length > 0 ? await supabase
     .from('model_media').select('model_id, public_url')
@@ -67,7 +68,6 @@ export default async function ProjectDetail({ params }: { params: { id: string }
         </form>
       </div>
 
-      {/* Project details */}
       {(project.shoot_date || project.client_name || project.location || project.specs || (project.presentation_rounds?.length > 0)) && (
         <div className="border border-neutral-100 p-6 mb-8 grid grid-cols-2 md:grid-cols-4 gap-6">
           {project.client_name && <div><p className="label mb-1">Client</p><p className="text-sm">{project.client_name}</p></div>}
@@ -84,8 +84,7 @@ export default async function ProjectDetail({ params }: { params: { id: string }
         </div>
       )}
 
-      {/* Two key links */}
-      <div className="grid grid-cols-2 gap-4 mb-12">
+      <div className="grid grid-cols-2 gap-4 mb-10">
         <div className="border border-neutral-200 p-6">
           <p className="label mb-1">Model Sign-In Link</p>
           <p className="text-xs text-neutral-400 mb-4">Share with models so they can check in.</p>
@@ -95,7 +94,6 @@ export default async function ProjectDetail({ params }: { params: { id: string }
             <CopyButton text={modelLink} />
           </div>
         </div>
-
         <div className="border border-neutral-200 p-6">
           <p className="label mb-1">Client Presentation Link</p>
           <p className="text-xs text-neutral-400 mb-4">Share with clients to view the presentation.</p>
@@ -111,47 +109,39 @@ export default async function ProjectDetail({ params }: { params: { id: string }
               </div>
             </>
           ) : (
-            <div>
-              <p className="text-xs text-neutral-400 italic mb-3">No presentation yet.</p>
-              <Link href={`/admin/presentations/new?project=${id}`}>
-                <Button size="sm">Create Presentation</Button>
-              </Link>
-            </div>
+            <p className="text-xs text-neutral-400 italic">No presentation yet. Add models then go to the Presentation tab.</p>
           )}
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-10">
-        {/* Models section with list/grid toggle */}
-        <section>
-          <ProjectModelsSection
-            projectId={id}
-            modelsWithPhotos={modelsWithPhotos}
-            mainPres={mainPres || null}
-            presModelIds={presModelIds}
-          />
-        </section>
-
-        {/* Presentations */}
-        <section>
-          <div className="flex items-center justify-between mb-4">
-            <p className="label">Presentations</p>
-            <Link href={`/admin/presentations/new?project=${id}`}><Button size="sm">New</Button></Link>
-          </div>
-          <div className="divide-y divide-neutral-100">
-            {presentations?.map(pres => (
-              <div key={pres.id} className="flex items-center justify-between py-3">
-                <div>
-                  <p className="text-sm">{pres.name}</p>
-                  <p className="text-xs text-neutral-400">{pres.is_published ? '● Published' : '○ Draft'}</p>
-                </div>
-                <Link href={`/admin/presentations/${pres.id}`} className="text-xs text-neutral-400 underline">Edit</Link>
-              </div>
-            ))}
-            {!presentations?.length && <p className="text-sm text-neutral-400 py-4">No presentations yet.</p>}
-          </div>
-        </section>
+      {/* Tabs */}
+      <div className="flex border-b border-neutral-200 mb-8">
+        <Link href={`/admin/projects/${id}?tab=models`}
+          className={`px-6 py-3 text-xs tracking-widest uppercase transition-colors border-b-2 -mb-[1px] ${tab !== 'presentation' ? 'border-black text-black' : 'border-transparent text-neutral-400 hover:text-black'}`}>
+          Models ({projectModels?.length || 0})
+        </Link>
+        <Link href={`/admin/projects/${id}?tab=presentation`}
+          className={`px-6 py-3 text-xs tracking-widest uppercase transition-colors border-b-2 -mb-[1px] ${tab === 'presentation' ? 'border-black text-black' : 'border-transparent text-neutral-400 hover:text-black'}`}>
+          Presentation {publishedPres ? '● ' : ''}
+        </Link>
       </div>
+
+      {tab !== 'presentation' && (
+        <ProjectModelsSection
+          projectId={id}
+          modelsWithPhotos={modelsWithPhotos}
+          mainPres={mainPres || null}
+          presModelIds={presModelIds}
+        />
+      )}
+
+      {tab === 'presentation' && (
+        <ProjectPresentationTab
+          projectId={id}
+          presentationId={mainPres?.id || null}
+          isPublished={mainPres?.is_published || false}
+        />
+      )}
     </div>
   )
 }
