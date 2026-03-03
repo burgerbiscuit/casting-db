@@ -116,7 +116,7 @@ export default async function ProjectDetail({ params, searchParams }: { params: 
         </Link>
         <Link href={`/admin/projects/${id}?tab=presentation`}
           className={`px-6 py-3 text-xs tracking-widest uppercase transition-colors border-b-2 -mb-[1px] ${tab === 'presentation' ? 'border-black text-black' : 'border-transparent text-neutral-400 hover:text-black'}`}>
-          Presentation {publishedPres ? '● ' : ''}
+          Presentation
         </Link>
       </div>
 

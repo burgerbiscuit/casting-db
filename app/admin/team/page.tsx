@@ -86,7 +86,7 @@ export default function TeamPage() {
         <DeleteConfirmModal
           title={`Remove ${deleteTarget.name} from the team?`}
           description="They will lose access to the admin panel immediately."
-          onConfirm={() => { removeMember(deleteTarget.id); setDeleteTarget(null) }}
+          onConfirm={() => { remove(deleteTarget.id); setDeleteTarget(null) }}
           onCancel={() => setDeleteTarget(null)}
         />
       )}

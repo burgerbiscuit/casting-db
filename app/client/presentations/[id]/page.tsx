@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { PresentationViewer } from '@/components/PresentationViewer'
 import Link from 'next/link'
 import { Download } from 'lucide-react'

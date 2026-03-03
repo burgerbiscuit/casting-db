@@ -85,13 +85,13 @@ export function PresentationViewer({
   const [confirmModal, setConfirmModal] = useState<{ modelId: string; modelName: string } | null>(null)
 
   const [search, setSearch] = useState('')
-  const [filterHeight, setFilterHeight] = useState('')
-  const [filterGender, setFilterGender] = useState('')
+  const [filterHeight, setFilterHeight] = useState<string>('')
+  const [filterGender, setFilterGender] = useState<string>('')
 
   // All unique heights and genders for filter dropdowns
   const allHeights = [...new Set(presentationModels.map(pm => {
     const m = pm.models
-    return m?.height_ft ? `${m.height_ft}'${m.height_in || 0}"` : null
+    return m?.height_ft ? `${m.height_ft}'${m.height_in || 0}"` : ''
   }).filter(Boolean))].sort()
 
   const allGenders = [...new Set(presentationModels.map(pm => pm.models?.gender).filter(Boolean))].sort()
@@ -265,12 +265,12 @@ export function PresentationViewer({
                 </button>
               )}
             </div>
-            <select value={filterHeight} onChange={e => setFilterHeight(e.target.value)}
+            <select value={filterHeight || ""} onChange={e => setFilterHeight(e.target.value)}
               className="text-xs border-b border-neutral-300 py-2 focus:outline-none focus:border-black bg-transparent pr-4">
               <option value="">All Heights</option>
               {allHeights.map(h => <option key={h} value={h}>{h}</option>)}
             </select>
-            <select value={filterGender} onChange={e => setFilterGender(e.target.value)}
+            <select value={filterGender || ""} onChange={e => setFilterGender(e.target.value)}
               className="text-xs border-b border-neutral-300 py-2 focus:outline-none focus:border-black bg-transparent pr-4">
               <option value="">All Genders</option>
               {allGenders.map(g => <option key={g} value={g}>{g}</option>)}
