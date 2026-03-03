@@ -3,6 +3,8 @@ import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
+
+  // User auth client (anon key)
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -20,12 +22,24 @@ export async function middleware(request: NextRequest) {
     }
   )
 
+  // Service role client for team_member / client_profile checks (bypasses RLS)
+  const supabaseSvc = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    {
+      cookies: {
+        getAll() { return request.cookies.getAll() },
+        setAll() {},
+      },
+    }
+  )
+
   const { data: { user } } = await supabase.auth.getUser()
   const path = request.nextUrl.pathname
 
   if (path.startsWith('/admin') && path !== '/admin/login') {
     if (!user) return NextResponse.redirect(new URL('/admin/login', request.url))
-    const { data: member } = await supabase
+    const { data: member } = await supabaseSvc
       .from('team_members')
       .select('id')
       .eq('user_id', user.id)
@@ -35,15 +49,13 @@ export async function middleware(request: NextRequest) {
 
   if (path.startsWith('/client') && path !== '/client/login') {
     if (!user) return NextResponse.redirect(new URL('/client/login', request.url))
-    // Allow team members access to /client routes as well
-    const { data: isMember } = await supabase
+    const { data: isMember } = await supabaseSvc
       .from('team_members')
       .select('id')
       .eq('user_id', user.id)
       .single()
     if (!isMember) {
-      // Check if they have a client profile
-      const { data: clientProfile } = await supabase
+      const { data: clientProfile } = await supabaseSvc
         .from('client_profiles')
         .select('id')
         .eq('user_id', user.id)
