@@ -96,7 +96,39 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
   }
 
   const [models, setModels] = useState(modelsWithPhotos)
+  const [addSearch, setAddSearch] = useState('')
+  const [addResults, setAddResults] = useState<any[]>([])
+  const [addLoading, setAddLoading] = useState(false)
   useEffect(() => setModels(modelsWithPhotos), [modelsWithPhotos])
+
+  const searchToAdd = async (q: string) => {
+    setAddSearch(q)
+    if (q.length < 2) { setAddResults([]); return }
+    setAddLoading(true)
+    const res = await fetch('/api/model-search?q=' + encodeURIComponent(q))
+    const data = await res.json()
+    // Filter out models already in project
+    const existing = new Set(models.map((m: any) => m.models?.id))
+    setAddResults((data || []).filter((m: any) => !existing.has(m.id)))
+    setAddLoading(false)
+  }
+
+  const addModelToProject = async (model: any) => {
+    // Add to project_models
+    await supabase.from('project_models').upsert({ project_id: projectId, model_id: model.id }, { onConflict: 'project_id,model_id' })
+    // Add to presentation if exists
+    if (mainPres?.id) {
+      const { data: existing } = await supabase.from('presentation_models').select('id').eq('presentation_id', mainPres.id).eq('model_id', model.id).single()
+      if (!existing) {
+        const { data: last } = await supabase.from('presentation_models').select('display_order').eq('presentation_id', mainPres.id).order('display_order', { ascending: false }).limit(1).single()
+        await supabase.from('presentation_models').insert({ presentation_id: mainPres.id, model_id: model.id, display_order: (last?.display_order ?? -1) + 1, show_sizing: true, show_instagram: true, show_portfolio: true, is_visible: true })
+      }
+    }
+    // Add to local state
+    setModels(prev => [...prev, { id: model.id, models: model, photo: null }])
+    setAddSearch('')
+    setAddResults([])
+  }
 
   const removeFromProject = async (modelId: string, modelName: string) => {
     if (!confirm(`Remove ${modelName} from this project? They will still be in the models database.`)) return
@@ -110,6 +142,7 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
   }
 
   // Sort: confirmed → shortlisted → other
+  // ------ UI ------
   const sorted = [...models].sort((a, b) => {
     const as = STATUS_ORDER[shortlistStatus[a.models?.id] || 'none']
     const bs = STATUS_ORDER[shortlistStatus[b.models?.id] || 'none']
@@ -263,6 +296,30 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
 
   return (
     <div>
+      {/* Add model search */}
+      <div className="relative mb-4">
+        <input
+          value={addSearch}
+          onChange={e => searchToAdd(e.target.value)}
+          placeholder="Search database to add a model..."
+          className="w-full border border-neutral-200 px-3 py-2 text-xs focus:outline-none focus:border-black placeholder:text-neutral-400"
+        />
+        {addLoading && <span className="absolute right-3 top-2 text-neutral-300 text-xs">searching...</span>}
+        {addResults.length > 0 && (
+          <div className="absolute top-full left-0 right-0 z-20 bg-white border border-neutral-200 border-t-0 shadow-lg max-h-48 overflow-y-auto">
+            {addResults.map(m => (
+              <button key={m.id} onClick={() => addModelToProject(m)}
+                className="w-full flex items-center justify-between px-3 py-2 hover:bg-neutral-50 text-left border-b border-neutral-100 last:border-0">
+                <div>
+                  <p className="text-xs font-medium">{m.first_name} {m.last_name}</p>
+                  {m.agency && <p className="text-[10px] text-neutral-400">{m.agency}</p>}
+                </div>
+                <span className="text-[10px] tracking-widest uppercase text-neutral-400">+ Add</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
       <div className="flex items-center justify-between mb-4">
         <p className="label">Models Signed In ({modelsWithPhotos.length})</p>
         <div className="flex items-center gap-2">
