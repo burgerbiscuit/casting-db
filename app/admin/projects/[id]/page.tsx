@@ -40,7 +40,7 @@ export default async function ProjectDetail({ params, searchParams }: { params: 
 
   if (!project) return <div>Project not found</div>
 
-  const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://cast.tashatongpreecha.com').trim()
+  const appUrl = 'https://cast.tashatongpreecha.com'
   const modelLink = `${appUrl}/cast/${project.slug}`
   const clientLink = presentations?.[0] ? `${appUrl}/client/presentations/${presentations[0].id}` : null
   const contactSheetUrl = `/api/contact-sheet/${id}`
