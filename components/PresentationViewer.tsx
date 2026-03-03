@@ -241,12 +241,25 @@ export function PresentationViewer({
               <p className="label mb-4 flex items-center gap-2"><Heart size={10} className="fill-black text-black" /> Shortlisted</p>
               <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
                 {sorted.filter(pm => shortlists[pm.model_id]).map(pm => (
-                  <ModelCard key={pm.id} presentationModel={pm} model={pm.models}
-                    media={mediaByModel[pm.model_id] || []} presentationId={presentationId}
-                    clientId={clientId} initialShortlisted={true}
-                    initialNotes={shortlistMap[pm.model_id]?.notes || ''}
-                    onShortlistChange={(v) => handleShortlistChange(pm.model_id, v)}
-                    onCardClick={() => { setSlideIndex(sorted.findIndex(s => s.model_id === pm.model_id)); setView('slides') }} />
+                  <div key={pm.id} className="relative">
+                    {confirms[pm.model_id] && (
+                      <div className="absolute top-2 left-2 z-10 bg-black text-white text-[9px] tracking-widest uppercase px-2 py-1">Confirmed</div>
+                    )}
+                    <ModelCard presentationModel={pm} model={pm.models}
+                      media={mediaByModel[pm.model_id] || []} presentationId={presentationId}
+                      clientId={clientId} initialShortlisted={true}
+                      initialNotes={shortlistMap[pm.model_id]?.notes || ''}
+                      onShortlistChange={(v) => handleShortlistChange(pm.model_id, v)}
+                      onCardClick={() => { setSlideIndex(sorted.findIndex(s => s.model_id === pm.model_id)); setView('slides') }} />
+                    <button
+                      onClick={() => {
+                        if (confirms[pm.model_id]) { handleConfirm(pm.model_id) }
+                        else setConfirmModal({ modelId: pm.model_id, modelName: `${pm.models?.first_name} ${pm.models?.last_name}` })
+                      }}
+                      className={`w-full mt-1 py-1.5 text-[9px] tracking-widest uppercase transition-colors border ${confirms[pm.model_id] ? 'bg-black text-white border-black hover:opacity-70' : 'border-neutral-200 hover:border-black text-neutral-400 hover:text-black'}`}>
+                      {confirms[pm.model_id] ? '✓ Confirmed' : 'Confirm Talent'}
+                    </button>
+                  </div>
                 ))}
               </div>
               <div className="border-t border-neutral-100 mt-8 mb-6" />
