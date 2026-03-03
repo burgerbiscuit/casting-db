@@ -94,12 +94,12 @@ export function ModelCard({ presentationModel, model, media, presentationId, cli
 
       {/* Info */}
       <div className="p-3 flex flex-col" style={{height: "160px", overflow: "hidden"}}>
-        <h3 className="text-xs font-medium tracking-widest uppercase mb-1 truncate">
+        <h3 className="text-sm font-medium tracking-widest uppercase mb-1 truncate">
           {model.first_name} {model.last_name}
         </h3>
 
         {presentationModel.show_sizing && (
-          <div className="flex flex-wrap gap-x-3 gap-y-0.5 mb-2 text-[10px] text-neutral-500">
+          <div className="flex flex-wrap gap-x-3 gap-y-0.5 mb-2 text-xs text-neutral-600">
             {model.height_ft && <span>{model.height_ft}'{model.height_in}"</span>}
             {model.bust && <span>B {model.bust}</span>}
             {model.waist && <span>W {model.waist}</span>}
@@ -110,7 +110,7 @@ export function ModelCard({ presentationModel, model, media, presentationId, cli
         )}
 
         {presentationModel.show_instagram && model.instagram_handle && (
-          <div className="text-xs text-neutral-500 mb-2">
+          <div className="text-xs text-neutral-700 mb-2">
             <a href={`https://instagram.com/${model.instagram_handle}`} target="_blank" rel="noopener noreferrer"
               className="hover:text-black underline">@{model.instagram_handle}</a>
             {igData?.follower_count && <span className="ml-1 text-neutral-400">· {formatFollowers(igData.follower_count)} followers</span>}
@@ -119,13 +119,13 @@ export function ModelCard({ presentationModel, model, media, presentationId, cli
 
         {presentationModel.show_portfolio && model.portfolio_url && (
           <a href={model.portfolio_url.startsWith('http') ? model.portfolio_url : `https://${model.portfolio_url}`} target="_blank" rel="noopener noreferrer"
-            className="text-xs text-neutral-400 hover:text-black underline block mb-3 truncate">
+            className="text-xs text-neutral-600 hover:text-black underline block mb-3 truncate">
             Portfolio ↗
           </a>
         )}
 
         {presentationModel.admin_notes && (
-          <p className="text-[10px] text-neutral-500 italic mb-1 line-clamp-1">{presentationModel.admin_notes}</p>
+          <p className="text-xs text-neutral-600 italic mb-1 line-clamp-1">{presentationModel.admin_notes}</p>
         )}
 
 

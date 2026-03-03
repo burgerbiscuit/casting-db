@@ -432,10 +432,10 @@ export function PresentationViewer({
             {/* Bottom info panel */}
             <div className="flex-shrink-0 px-5 pt-4 pb-5 border-t border-neutral-100 bg-white">
               {/* Name row — full width, no overlap */}
-              <h2 className="text-base font-light tracking-widest uppercase leading-tight mb-0.5">{model?.first_name} {model?.last_name}</h2>
-              {model?.agency && <p className="text-[11px] text-neutral-400 mb-1">{model.agency}</p>}
-              {sizing.length > 0 && <p className="text-[10px] text-neutral-400 mb-1">{sizing.join(' · ')}</p>}
-              {pm?.admin_notes && <p className="text-[10px] text-neutral-500 mb-2 italic">{pm.admin_notes}</p>}
+              <h2 className="text-lg font-light tracking-widest uppercase leading-tight mb-1">{model?.first_name} {model?.last_name}</h2>
+              {model?.agency && <p className="text-xs text-neutral-600 mb-1">{model.agency}</p>}
+              {sizing.length > 0 && <p className="text-xs text-neutral-600 mb-1">{sizing.join(' · ')}</p>}
+              {pm?.admin_notes && <p className="text-xs text-neutral-600 mb-2 italic">{pm.admin_notes}</p>}
               {/* Action buttons row */}
               <div className="flex gap-2 mt-2">
                 <button
@@ -515,13 +515,13 @@ export function PresentationViewer({
             <div className={`flex-shrink-0 flex flex-col justify-between ${isMobile ? 'w-36 px-3 py-3' : 'w-48 xl:w-56 px-5 py-5'}`}>
               <div className="space-y-4 text-center">
                 {current.admin_notes && (
-                  <p className="text-xs text-neutral-600 italic leading-relaxed">{current.admin_notes}</p>
+                  <p className="text-sm text-neutral-700 italic leading-relaxed">{current.admin_notes}</p>
                 )}
                 {current.rate && (
                   <p className="text-base font-medium tracking-wider">{current.rate}</p>
                 )}
                 {current.location && (
-                  <p className="text-sm text-neutral-500 tracking-wider">{current.location}</p>
+                  <p className="text-sm text-neutral-700 tracking-wider">{current.location}</p>
                 )}
               </div>
 
