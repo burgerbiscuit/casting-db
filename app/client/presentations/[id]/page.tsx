@@ -84,7 +84,7 @@ export default async function PresentationView({ params }: { params: { id: strin
           <h1 className="text-2xl font-light tracking-widest uppercase mt-2">{presentation.name}</h1>
           <p className="text-sm text-neutral-400">{(presentation.projects as any)?.name}</p>
         </div>
-        <a href={`/api/pdf/${id}`} download
+        <a href={`/api/pdf/${id}`} target="_blank"
           className="flex items-center gap-2 text-xs tracking-widest uppercase border border-black px-4 py-3 hover:bg-black hover:text-white transition-colors">
           <Download size={12} /> Download PDF
         </a>
