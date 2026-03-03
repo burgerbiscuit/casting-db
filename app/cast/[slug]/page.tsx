@@ -280,15 +280,17 @@ export default function CastPage({ params }: { params: { slug: string } }) {
       updated_at: new Date().toISOString(),
     }
 
-    const res = await fetch('/api/cast-signin', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ modelData, projectId: project.id, modelId: selectedModel?.id, isReturning }),
-    })
-    const result = await res.json()
-    const modelId = result.modelId
+    try {
+      const res = await fetch('/api/cast-signin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ modelData, projectId: project.id, modelId: selectedModel?.id, isReturning }),
+      })
+      if (!res.ok) throw new Error('Server error ' + res.status)
+      const result = await res.json()
+      const modelId = result.modelId
+      if (!modelId) throw new Error('No model ID returned')
 
-    if (modelId) {
       for (const file of selfieFiles) {
         const ext = file.name.split('.').pop() || 'jpg'
         const storagePath = modelId + '/' + Date.now() + '-' + Math.random().toString(36).slice(2) + '.' + ext
@@ -302,16 +304,17 @@ export default function CastPage({ params }: { params: { slug: string } }) {
           })
         }
       }
-      // Save friends & family relationships
       for (const relId of relatedModels) {
         await supabase.from('model_relationships').insert({
-          model_id: modelId,
-          related_model_id: relId,
-          relationship_type: 'friend_family',
+          model_id: modelId, related_model_id: relId, relationship_type: 'friend_family',
         })
       }
+      setSaving(false); setStep('done')
+    } catch (err) {
+      console.error('Sign-in error:', err)
+      alert('Something went wrong saving your info. Please check your connection and try again.')
+      setSaving(false)
     }
-    setSaving(false); setStep('done')
   }
 
   // Helper: does any selected ethnicity-specific value need a text input?
