@@ -134,13 +134,16 @@ export function PresentationViewer({
     const bC = !!confirms[b.model_id]
     const aS = !!shortlists[a.model_id]
     const bS = !!shortlists[b.model_id]
-    if (aR && !bR) return 1   // released sink to bottom
+    if (aR && !bR) return 1
     if (!aR && bR) return -1
     if (aC && !bC) return -1
     if (!aC && bC) return 1
     if (aS && !bS) return -1
     if (!aS && bS) return 1
-    return 0
+    // Alphabetical within same group
+    const aName = ((a.models?.last_name || '') + (a.models?.first_name || '')).toLowerCase()
+    const bName = ((b.models?.last_name || '') + (b.models?.first_name || '')).toLowerCase()
+    return aName.localeCompare(bName)
   })
 
   useEffect(() => {
@@ -333,7 +336,7 @@ export function PresentationViewer({
                         else setConfirmModal({ modelId: pm.model_id, modelName: `${pm.models?.first_name} ${pm.models?.last_name}` })
                       }}
                       className={`w-full mt-1 py-1.5 text-[9px] tracking-widest uppercase transition-colors border ${confirms[pm.model_id] ? 'bg-green-600 text-white border-green-600' : pendings[pm.model_id] ? 'bg-amber-400 text-white border-amber-400 cursor-default' : 'border-neutral-200 hover:border-black text-neutral-400 hover:text-black'}`}>
-                      {confirms[pm.model_id] ? '✓ Confirmed' : pendings[pm.model_id] ? '⏳ Pending Confirmation' : 'Confirm Talent'}
+                      {confirms[pm.model_id] ? '✓ Confirmed' : pendings[pm.model_id] ? 'Confirmation Pending' : 'Request Confirmation'}
                     </button>
                   </div>
                 ))}
@@ -360,7 +363,7 @@ export function PresentationViewer({
                     else setConfirmModal({ modelId: pm.model_id, modelName: `${pm.models?.first_name} ${pm.models?.last_name}` })
                   }}
                   className={`w-full mt-1 py-1.5 text-[9px] tracking-widest uppercase transition-colors border ${confirms[pm.model_id] ? 'bg-green-600 text-white border-green-600' : pendings[pm.model_id] ? 'bg-amber-400 text-white border-amber-400 cursor-default' : 'border-neutral-200 hover:border-black text-neutral-400 hover:text-black'}`}>
-                  {confirms[pm.model_id] ? '✓ Confirmed' : pendings[pm.model_id] ? '⏳ Pending Confirmation' : 'Confirm Talent'}
+                  {confirms[pm.model_id] ? '✓ Confirmed' : pendings[pm.model_id] ? 'Confirmation Pending' : 'Request Confirmation'}
                 </button>
               </div>
             )
@@ -431,21 +434,40 @@ export function PresentationViewer({
 
             {/* Bottom info panel */}
             <div className="flex-shrink-0 px-5 pt-4 pb-5 border-t border-neutral-100 bg-white">
-              {/* Name row — full width, no overlap */}
-              <h2 className="text-lg font-light tracking-widest uppercase leading-tight mb-1">{model?.first_name} {model?.last_name}</h2>
-              {model?.agency && <p className="text-xs text-neutral-600 mb-1">{model.agency}</p>}
-              {sizing.length > 0 && <p className="text-xs text-neutral-600 mb-1">{sizing.join(' · ')}</p>}
-              {pm?.admin_notes && <p className="text-xs text-neutral-600 mb-2 italic">{pm.admin_notes}</p>}
-              {/* Action buttons row */}
-              <div className="flex gap-2 mt-2">
+              <h2 className="text-lg font-light tracking-widest uppercase leading-tight mb-0.5">{model?.first_name} {model?.last_name}</h2>
+              {model?.agency && <p className="text-xs text-neutral-600 mb-0.5">{model.agency}</p>}
+              {sizing.length > 0 && <p className="text-xs text-neutral-600 mb-0.5">{sizing.join(' · ')}</p>}
+              {/* Rate + location from project_models via presentation_models */}
+              {(pm?.rate || pm?.location) && (
+                <p className="text-xs text-neutral-600 mb-0.5">
+                  {[pm?.rate, pm?.location].filter(Boolean).join(' · ')}
+                </p>
+              )}
+              {pm?.admin_notes && <p className="text-xs text-neutral-600 mb-1 italic">{pm.admin_notes}</p>}
+              {/* Social / portfolio links */}
+              <div className="flex gap-3 mb-2 flex-wrap">
+                {model?.instagram_handle && (
+                  <a href={"https://instagram.com/" + model.instagram_handle} target="_blank" rel="noopener noreferrer"
+                    className="text-[10px] tracking-widest uppercase underline underline-offset-2 text-neutral-500 hover:text-black">Instagram ↗</a>
+                )}
+                {model?.tiktok_handle && (
+                  <a href={"https://tiktok.com/@" + model.tiktok_handle.replace('@','')} target="_blank" rel="noopener noreferrer"
+                    className="text-[10px] tracking-widest uppercase underline underline-offset-2 text-neutral-500 hover:text-black">TikTok ↗</a>
+                )}
+                {model?.portfolio_url && (
+                  <a href={model.portfolio_url.startsWith('http') ? model.portfolio_url : 'https://' + model.portfolio_url} target="_blank" rel="noopener noreferrer"
+                    className="text-[10px] tracking-widest uppercase underline underline-offset-2 text-neutral-500 hover:text-black">Portfolio ↗</a>
+                )}
+              </div>
+              {/* Action buttons */}
+              <div className="flex gap-2">
                 <button
                   onClick={() => {
-                    const isPending = pendings[pm.model_id]
-                    if (confirms[pm.model_id] || isPending) return
+                    if (confirms[pm.model_id] || pendings[pm.model_id]) return
                     setConfirmModal({ modelId: pm.model_id, modelName: `${model?.first_name} ${model?.last_name}` })
                   }}
-                  className={`flex-1 py-2.5 text-[10px] tracking-widest uppercase transition-colors border ${confirms[pm.model_id] ? 'bg-green-600 text-white border-green-600' : pendings[pm.model_id] ? 'bg-amber-400 text-white border-amber-400' : 'border-neutral-300 text-neutral-500 hover:border-black hover:text-black'}`}>
-                  {confirms[pm.model_id] ? '✓ Confirmed' : pendings[pm.model_id] ? '⏳ Pending' : 'Confirm Talent'}
+                  className={`flex-1 py-2.5 text-[10px] tracking-widest uppercase transition-colors border ${confirms[pm.model_id] ? 'bg-green-600 text-white border-green-600' : pendings[pm.model_id] ? 'bg-amber-400 text-white border-amber-400 cursor-default' : 'border-neutral-300 text-neutral-500 hover:border-black hover:text-black'}`}>
+                  {confirms[pm.model_id] ? '✓ Confirmed' : pendings[pm.model_id] ? 'Confirmation Pending' : 'Request Confirmation'}
                 </button>
                 <button
                   onClick={() => isShortlisted
@@ -456,6 +478,14 @@ export function PresentationViewer({
                   {isShortlisted ? 'Shortlisted' : 'Shortlist'}
                 </button>
               </div>
+              {/* OK to Release */}
+              {isShortlisted && (
+                <button
+                  onClick={() => handleRelease(pm.model_id)}
+                  className={`w-full mt-2 py-2 text-[10px] tracking-widest uppercase border transition-colors ${releases[pm.model_id] ? 'bg-black text-white border-black' : 'border-neutral-200 text-neutral-400 hover:border-black hover:text-black'}`}>
+                  {releases[pm.model_id] ? '✓ OK to Release' : 'OK to Release'}
+                </button>
+              )}
             </div>
           </div>
         )
