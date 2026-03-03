@@ -66,7 +66,7 @@ export default async function ProjectDetail({ params, searchParams }: { params: 
       </div>
 
       {(project.shoot_date || project.client_name || project.location || project.specs || (project.presentation_rounds?.length > 0)) && (
-        <div className="border border-neutral-100 p-6 mb-8 grid grid-cols-2 md:grid-cols-4 gap-6">
+        <div className="border border-neutral-100 p-6 mb-4 grid grid-cols-2 md:grid-cols-4 gap-3">
           {project.client_name && <div><p className="label mb-1">Client</p><p className="text-sm">{project.client_name}</p></div>}
           {project.location && <div><p className="label mb-1">Location</p><p className="text-sm">{project.location}</p></div>}
           {project.shoot_date && <div><p className="label mb-1">Shoot Date</p><p className="text-sm">{new Date(project.shoot_date).toLocaleDateString('en-US', {month:'long',day:'numeric',year:'numeric'})}</p></div>}
@@ -110,7 +110,7 @@ export default async function ProjectDetail({ params, searchParams }: { params: 
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-neutral-200 mb-8">
+      <div className="flex border-b border-neutral-200 mb-4">
         <Link href={`/admin/projects/${id}?tab=models`}
           className={`px-6 py-3 text-xs tracking-widest uppercase transition-colors border-b-2 -mb-[1px] ${tab !== 'presentation' ? 'border-black text-black' : 'border-transparent text-neutral-400 hover:text-black'}`}>
           Models ({projectModels?.length || 0})

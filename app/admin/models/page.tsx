@@ -112,7 +112,7 @@ export default function ModelsPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-light tracking-widest uppercase">Models</h1>
         <span className="text-xs text-neutral-400">{total} shown</span>
       </div>
@@ -137,7 +137,7 @@ export default function ModelsPage() {
 
       {/* Filter panel */}
       {showFilters && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 p-5 bg-neutral-50 border border-neutral-100">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4 p-5 bg-neutral-50 border border-neutral-100">
           <div>
             <label className="label text-[10px] block mb-1">AGENCY</label>
             <input value={agency} onChange={e => setAgency(e.target.value)} placeholder="Any agency"

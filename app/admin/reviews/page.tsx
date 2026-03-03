@@ -39,9 +39,9 @@ export default function ReviewsPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-light tracking-widest uppercase mb-8">Pending Reviews</h1>
+      <h1 className="text-2xl font-light tracking-widest uppercase mb-4">Pending Reviews</h1>
 
-      <div className="flex border-b border-neutral-200 mb-8">
+      <div className="flex border-b border-neutral-200 mb-4">
         <TabBtn id="models" label="Models" count={models.length} />
         <TabBtn id="agents" label="Agents" count={agents.length} />
         <TabBtn id="other" label="Other" count={others.length} />

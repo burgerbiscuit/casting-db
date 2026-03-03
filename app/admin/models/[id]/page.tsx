@@ -161,7 +161,7 @@ export default function ModelProfile({ params }: { params: { id: string } }) {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-8 border-b border-neutral-200 mb-8">
+      <div className="flex gap-4 border-b border-neutral-200 mb-4">
         {(['profile', 'media'] as const).map(tab => (
           <button key={tab} onClick={() => setActiveTab(tab)}
             className={`pb-3 text-xs tracking-widest uppercase transition-colors ${activeTab === tab ? 'border-b-2 border-black text-black' : 'text-neutral-400 hover:text-black'}`}>
@@ -172,7 +172,7 @@ export default function ModelProfile({ params }: { params: { id: string } }) {
 
       {activeTab === 'profile' && (
         <div className="max-w-2xl space-y-8">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-3">
             <Input label="First Name" value={model.first_name || ''} onChange={e => setModel({ ...model, first_name: e.target.value })} />
             <Input label="Last Name" value={model.last_name || ''} onChange={e => setModel({ ...model, last_name: e.target.value })} />
           </div>
@@ -346,7 +346,7 @@ export default function ModelProfile({ params }: { params: { id: string } }) {
       {activeTab === 'media' && (
         <div>
           {/* Sectioned uploads */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6 mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-3 mb-4">
             <div>
               <p className="label mb-3">Photos</p>
               <MediaUploader modelId={id} onUploaded={loadMedia} mediaType="photo" />
@@ -362,7 +362,7 @@ export default function ModelProfile({ params }: { params: { id: string } }) {
           </div>
 
           {media.length > 0 && (
-            <div className="mt-4 mb-2 flex gap-6 text-[10px] text-neutral-400 tracking-wider uppercase">
+            <div className="mt-4 mb-2 flex gap-3 text-[10px] text-neutral-400 tracking-wider uppercase">
               <span className="flex items-center gap-1"><Eye size={10} /> Show in presentations</span>
               <span className="flex items-center gap-1"><EyeOff size={10} /> Hide from presentations</span>
               <span className="flex items-center gap-1"><Star size={10} fill="currentColor" /> PDF photo 1 or 2</span>
@@ -426,7 +426,7 @@ export default function ModelProfile({ params }: { params: { id: string } }) {
               </div>
             ))}
             {!media.length && (
-              <p className="col-span-4 text-sm text-neutral-400 py-8 text-center">No media yet. Upload above.</p>
+              <p className="col-span-4 text-sm text-neutral-400 py-4 text-center">No media yet. Upload above.</p>
             )}
           </div>
         </div>

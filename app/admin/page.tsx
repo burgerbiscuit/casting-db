@@ -54,7 +54,7 @@ export default function AdminDashboard() {
       </div>
 
       {(pendingCount > 0 || pendingAgents > 0 || pendingOther > 0) && (
-        <Link href="/admin/reviews" className="block mb-8 border border-amber-200 bg-amber-50 px-6 py-4 flex items-center justify-between hover:border-amber-400 transition-colors">
+        <Link href="/admin/reviews" className="block mb-4 border border-amber-200 bg-amber-50 px-6 py-4 flex items-center justify-between hover:border-amber-400 transition-colors">
           <div className="flex items-center gap-3">
             <span className="text-amber-500">⚠️</span>
             <span className="text-sm text-amber-800 tracking-wide">
