@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Search, Mail, X } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
+import { ContactEditModal } from '@/components/ContactEditModal'
 
 export default function ProductionContactsPage() {
   const supabase = createClient()
@@ -17,6 +18,7 @@ export default function ProductionContactsPage() {
   const [boards, setBoards] = useState<string[]>([])
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
+  const [editTarget, setEditTarget] = useState<any>(null)
   const [showComposer, setShowComposer] = useState(false)
   const [emailDraft, setEmailDraft] = useState({ subject: '', message: '' })
 
@@ -189,11 +191,23 @@ export default function ProductionContactsPage() {
                     {c.email ? <a href={`mailto:${c.email}`} className="underline underline-offset-2 hover:opacity-60 text-xs">{c.email}</a> : '—'}
                   </td>
                   <td className="py-2.5 text-neutral-500 text-xs">{c.cell_phone || '—'}</td>
+                  <td className="py-2.5 text-right">
+                    <button onClick={() => setEditTarget(c)} className="text-[10px] tracking-widest uppercase text-neutral-400 hover:text-black transition-colors">Edit</button>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+      )}
+
+      {editTarget && (
+        <ContactEditModal
+          contact={editTarget}
+          onClose={() => setEditTarget(null)}
+          onSaved={() => { setEditTarget(null); load() }}
+          onDeleted={() => { setEditTarget(null); load() }}
+        />
       )}
 
       {/* Email composer modal */}
