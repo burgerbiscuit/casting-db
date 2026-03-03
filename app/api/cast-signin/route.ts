@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (modelId) {
-      await supabase.from('project_models').upsert({ project_id: projectId, model_id: modelId })
+      await supabase.from('project_models').upsert({ project_id: projectId, model_id: modelId }, { onConflict: 'project_id,model_id' })
       // Auto-add to the project's presentation — create one if it doesn't exist yet
       let { data: pres } = await supabase.from('presentations').select('id').eq('project_id', projectId).single()
       if (!pres) {
@@ -53,7 +53,8 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ ok: true, modelId })
-  } catch (e) {
-    return NextResponse.json({ error: 'Failed to save' }, { status: 500 })
+  } catch (e: any) {
+    console.error('[cast-signin] error:', e?.message, e)
+    return NextResponse.json({ error: 'Failed to save', detail: e?.message }, { status: 500 })
   }
 }
