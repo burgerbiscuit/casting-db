@@ -27,7 +27,7 @@ export default function ModelsPage() {
     setLoading(true)
     let query = supabase
       .from('models')
-      .select('id, first_name, last_name, agency, height_ft, height_in, based_in, gender, date_of_birth, skills, hobbies, reviewed, created_at')
+      .select('id, first_name, last_name, agency, height_ft, height_in, based_in, gender, date_of_birth, skills, hobbies, reviewed, notes, created_at')
       .order('created_at', { ascending: false })
       .limit(300)
 
