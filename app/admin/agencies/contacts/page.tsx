@@ -14,6 +14,7 @@ export default function AgencyContactsPage() {
   const [board, setBoard] = useState('ALL')
   const [section, setSection] = useState('ALL')
   const [gender, setGender] = useState('ALL')
+  const [starOnly, setStarOnly] = useState(false)
   const [cities, setCities] = useState<string[]>([])
   const [boards, setBoards] = useState<string[]>([])
   const [selected, setSelected] = useState<Set<string>>(new Set())
@@ -29,7 +30,7 @@ export default function AgencyContactsPage() {
 
   useEffect(() => {
     filterContacts()
-  }, [search, city, board, section, gender, allContacts])
+  }, [search, city, board, section, gender, starOnly, allContacts])
 
   const load = async () => {
     setLoading(true)
@@ -61,10 +62,10 @@ export default function AgencyContactsPage() {
     if (board !== 'ALL') filtered = filtered.filter(c => c.board === board)
     if (section !== 'ALL') filtered = filtered.filter(c => c.section === section)
     if (gender !== 'ALL') filtered = filtered.filter(c => c.gender === gender)
+    if (starOnly) filtered = filtered.filter((c: any) => c.is_main_contact)
     
     filtered.sort((a: any, b: any) => {
-      if (a.is_main_contact && !b.is_main_contact) return -1
-      if (!a.is_main_contact && b.is_main_contact) return 1
+      // No auto-sort by star — alphabetical only
       if (a.email_invalid && !b.email_invalid) return 1
       if (!a.email_invalid && b.email_invalid) return -1
       return 0
@@ -212,7 +213,7 @@ export default function AgencyContactsPage() {
             </thead>
             <tbody>
               {contacts.map(c => (
-                <tr key={c.id} className={`border-b border-neutral-100 hover:bg-neutral-50 ${selected.has(c.id) ? 'bg-blue-50' : c.is_main_contact ? 'bg-green-50' : c.email_invalid ? 'bg-red-50' : ''}`}>
+                <tr key={c.id} className={`border-b border-neutral-100 hover:bg-neutral-50 ${selected.has(c.id) ? 'bg-blue-50' : c.email_invalid ? 'bg-red-50' : ''}`}>
                   <td className="py-2.5 px-2"><input type="checkbox" 
                     checked={selected.has(c.id)}
                     onChange={() => toggleSelect(c.id)}
