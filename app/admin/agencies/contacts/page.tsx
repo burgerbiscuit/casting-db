@@ -26,20 +26,16 @@ export default function AgencyContactsPage() {
 
   useEffect(() => {
     filterContacts()
-  }, [search, city, board, section, allContacts])
+  }, [search, city, board, section, gender, allContacts])
 
   const load = async () => {
     setLoading(true)
-    const { data } = await supabase
-      .from('agency_contacts')
-      .select('*')
-      .order('agency_name')
-      .limit(3000)
-    
-    if (data) {
+    const res = await fetch('/api/agency-contacts')
+    const data = await res.json()
+    if (Array.isArray(data)) {
       setAllContacts(data)
-      const uniqueCities = [...new Set((data || []).map(c => c.city).filter(Boolean))].sort()
-      const uniqueBoards = [...new Set((data || []).map(c => c.board).filter(Boolean))].sort()
+      const uniqueCities = [...new Set(data.map((c: any) => c.city).filter(Boolean))].sort()
+      const uniqueBoards = [...new Set(data.map((c: any) => c.board).filter(Boolean))].sort()
       setCities(uniqueCities as string[])
       setBoards(uniqueBoards as string[])
     }
