@@ -1,140 +1,208 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import { Plus, Pencil, Trash2, Check, X } from 'lucide-react'
 
-const TEMPLATES = [
-  { id: 'editorial', label: 'Editorial Confirmation', body: `Hi,
-
-We are ready to confirm the below for this project.
-
-[MODEL NAME]
-
-[INCLUDE SPECS]
-Photographer: 
-Stylist: 
-Date: 
-Location: 
-
-Please confirm receipt of this email. Thank you!` },
-  { id: 'beauty', label: 'Beauty Campaign Confirmation', body: `Hi [AGENT NAME],
-
-Happy to confirm you for the [PROJECT NAME] shoot!
-
-[MODEL NAME]
-
-[PROJECT NAME]
-Date: [DATE]
-Rate: $[RATE] + 20% agency fee
-Usage: Full buyout, in perpetuity (non-negotiable).
-
-WHERE:
-[LOCATION]
-
-NOTES:
-No color contacts
-Hair should be worn as it was at casting day
-Please have models come with an absolutely clean/no makeup face
-
-Please provide model's legal name for the releases.
-Please let us know once this has been received. Thank you!` },
-  { id: 'backup', label: 'Backup / Hold Email', body: `Hi,
-
-Hope you are well!
-
-As a contingency for the [PROJECT NAME], we would like to see if it would be possible for the below to hold [DATES]?
-
-[MODEL NAME]
-
-We will know by the morning of the shoot date if we can confirm or release.
-
-Thank you! x` },
-  { id: 'release-all', label: 'Release All Options', body: `Hi,
-
-We can release all options holding for [PROJECT NAME].
-
-Thank you!` },
-  { id: 'release-specific', label: 'Release Specific Model', body: `Hi,
-
-We can release [MODEL NAME] for [PROJECT / DAY].
-
-Thank you!` },
-  { id: 'invoicing', label: 'Invoicing Instructions', body: `Please see invoicing details below.
-
-Please include the following in your invoice:
-- Dates worked
-- Day rate for each day
-- W9
-
-Save as a PDF and label as:
-FIRST NAME LAST NAME JOB TITLE INVOICE [DATE e.g. 4.12.25]
-
-Please send Venmo request to @tashatongpreecha
-
-Thank you` },
-]
-
-const LINGO = [
-  { term: 'Specs', def: 'Project details: ethnicities, ages, usage, etc.' },
-  { term: 'Usage', def: 'Where images will live. E.g. "Full buyout, unlimited usage, all media, in perpetuity."' },
-  { term: 'In Perpetuity', def: 'No time limit — brand can use images forever.' },
-  { term: 'Rate', def: 'Payment / Compensation.' },
-  { term: 'Option', def: "Holding a model's time so they don't get booked elsewhere." },
-  { term: '1st Option', def: 'Model is holding for us — we can book right away. Book or release promptly.' },
-  { term: '2nd Option', def: 'Another hold exists. If that falls through, they may be available for ours.' },
-  { term: 'NA', def: 'Not Available.' },
-  { term: 'Release', def: 'Let optioned models know they are free — their time is no longer needed.' },
-  { term: 'Chase / Push', def: 'Following up about availability or a package.' },
-  { term: 'Package Link', def: 'What agents send to present their models.' },
-  { term: 'Street Scouting', def: 'Finding non-repped talent on social media or IRL.' },
-]
+type Item = { id: string; type: 'template' | 'lingo'; label: string; body: string; display_order: number }
 
 export default function ResourcesPage() {
-  const [active, setActive] = useState('editorial')
+  const supabase = createClient()
+  const [templates, setTemplates] = useState<Item[]>([])
+  const [lingo, setLingo] = useState<Item[]>([])
+  const [activeId, setActiveId] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
-  const template = TEMPLATES.find(t => t.id === active)!
+  const [editing, setEditing] = useState<Item | null>(null)
+  const [adding, setAdding] = useState<'template' | 'lingo' | null>(null)
+  const [newLabel, setNewLabel] = useState('')
+  const [newBody, setNewBody] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  const load = async () => {
+    const { data } = await supabase.from('resource_items').select('*').order('display_order')
+    setTemplates((data || []).filter(d => d.type === 'template'))
+    setLingo((data || []).filter(d => d.type === 'lingo'))
+  }
+
+  useEffect(() => { load() }, [])
+  useEffect(() => { if (templates.length && !activeId) setActiveId(templates[0]?.id) }, [templates])
+
+  const activeTemplate = templates.find(t => t.id === activeId)
 
   const copy = () => {
-    navigator.clipboard.writeText(template.body)
+    if (!activeTemplate) return
+    navigator.clipboard.writeText(activeTemplate.body)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
+  }
+
+  const startEdit = (item: Item) => {
+    setEditing({ ...item })
+    setAdding(null)
+  }
+
+  const saveEdit = async () => {
+    if (!editing) return
+    setSaving(true)
+    await supabase.from('resource_items').update({ label: editing.label, body: editing.body }).eq('id', editing.id)
+    setEditing(null)
+    setSaving(false)
+    load()
+  }
+
+  const deleteItem = async (item: Item) => {
+    await supabase.from('resource_items').delete().eq('id', item.id)
+    if (activeId === item.id) setActiveId(null)
+    load()
+  }
+
+  const saveNew = async () => {
+    if (!adding || !newLabel) return
+    setSaving(true)
+    const order = (adding === 'template' ? templates : lingo).length
+    await supabase.from('resource_items').insert({ type: adding, label: newLabel, body: newBody, display_order: order })
+    setAdding(null); setNewLabel(''); setNewBody('')
+    setSaving(false)
+    load()
   }
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
       <h1 className="text-xs tracking-widest uppercase font-medium mb-8">Resources</h1>
 
+      {/* Email Templates */}
       <section className="mb-12">
-        <h2 className="text-xs tracking-widest uppercase text-neutral-400 mb-4">Email Templates</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xs tracking-widest uppercase text-neutral-400">Email Templates</h2>
+          <button onClick={() => { setAdding('template'); setEditing(null); setNewLabel(''); setNewBody('') }}
+            className="flex items-center gap-1 text-[10px] tracking-widest uppercase border border-neutral-200 px-3 py-1 hover:border-black transition-colors">
+            <Plus size={10} /> Add Template
+          </button>
+        </div>
+
+        {adding === 'template' && (
+          <div className="border border-black p-4 mb-4">
+            <input value={newLabel} onChange={e => setNewLabel(e.target.value)} placeholder="Template name"
+              className="w-full border-b border-neutral-300 py-1.5 text-xs mb-3 focus:outline-none focus:border-black bg-transparent" autoFocus />
+            <textarea value={newBody} onChange={e => setNewBody(e.target.value)} rows={6} placeholder="Email body..."
+              className="w-full border border-neutral-200 p-3 text-xs font-mono resize-none focus:outline-none focus:border-black mb-3" />
+            <div className="flex gap-2">
+              <button onClick={saveNew} disabled={saving || !newLabel}
+                className="px-4 py-2 text-[10px] tracking-widest uppercase bg-black text-white disabled:opacity-40">
+                {saving ? 'Saving...' : 'Save'}
+              </button>
+              <button onClick={() => setAdding(null)} className="px-4 py-2 text-[10px] tracking-widest uppercase border border-neutral-300 hover:border-black">
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="space-y-1">
-            {TEMPLATES.map(t => (
-              <button key={t.id} onClick={() => { setActive(t.id); setCopied(false) }}
-                className={"w-full text-left px-3 py-2 text-xs tracking-wide transition-colors " + (active === t.id ? 'bg-black text-white' : 'hover:bg-neutral-100')}>
-                {t.label}
-              </button>
+            {templates.map(t => (
+              <div key={t.id} className="group flex items-center gap-1">
+                <button onClick={() => { setActiveId(t.id); setEditing(null); setCopied(false) }}
+                  className={"flex-1 text-left px-3 py-2 text-xs tracking-wide transition-colors " + (activeId === t.id ? 'bg-black text-white' : 'hover:bg-neutral-100')}>
+                  {t.label}
+                </button>
+                <button onClick={() => startEdit(t)} className="opacity-0 group-hover:opacity-100 p-1 text-neutral-400 hover:text-black transition-opacity">
+                  <Pencil size={11} />
+                </button>
+                <button onClick={() => deleteItem(t)} className="opacity-0 group-hover:opacity-100 p-1 text-neutral-400 hover:text-red-500 transition-opacity">
+                  <Trash2 size={11} />
+                </button>
+              </div>
             ))}
           </div>
-          <div className="md:col-span-3 relative">
-            <pre className="bg-neutral-50 border border-neutral-200 p-4 text-xs leading-relaxed whitespace-pre-wrap font-sans text-neutral-700 min-h-48">
-              {template.body}
-            </pre>
-            <button onClick={copy}
-              className={"absolute top-3 right-3 text-[10px] tracking-widest uppercase px-3 py-1 border transition-colors " + (copied ? 'bg-black text-white border-black' : 'bg-white border-neutral-300 hover:border-black')}>
-              {copied ? 'Copied' : 'Copy'}
-            </button>
+
+          <div className="md:col-span-3">
+            {editing && editing.type === 'template' ? (
+              <div className="border border-black p-4">
+                <input value={editing.label} onChange={e => setEditing(p => p ? {...p, label: e.target.value} : null)}
+                  className="w-full border-b border-neutral-300 py-1 text-xs font-medium mb-3 focus:outline-none focus:border-black bg-transparent" />
+                <textarea value={editing.body} onChange={e => setEditing(p => p ? {...p, body: e.target.value} : null)}
+                  rows={12} className="w-full border border-neutral-200 p-3 text-xs font-mono resize-none focus:outline-none focus:border-black mb-3" />
+                <div className="flex gap-2">
+                  <button onClick={saveEdit} disabled={saving} className="px-4 py-2 text-[10px] tracking-widest uppercase bg-black text-white disabled:opacity-40">
+                    {saving ? 'Saving...' : 'Save'}
+                  </button>
+                  <button onClick={() => setEditing(null)} className="px-4 py-2 text-[10px] tracking-widest uppercase border border-neutral-300 hover:border-black">Cancel</button>
+                </div>
+              </div>
+            ) : activeTemplate ? (
+              <div className="relative">
+                <pre className="bg-neutral-50 border border-neutral-200 p-4 text-xs leading-relaxed whitespace-pre-wrap font-sans text-neutral-700 min-h-48">
+                  {activeTemplate.body}
+                </pre>
+                <div className="absolute top-3 right-3 flex gap-2">
+                  <button onClick={() => startEdit(activeTemplate)}
+                    className="text-[10px] tracking-widest uppercase px-3 py-1 border bg-white border-neutral-300 hover:border-black transition-colors">
+                    Edit
+                  </button>
+                  <button onClick={copy}
+                    className={"text-[10px] tracking-widest uppercase px-3 py-1 border transition-colors " + (copied ? 'bg-black text-white border-black' : 'bg-white border-neutral-300 hover:border-black')}>
+                    {copied ? 'Copied' : 'Copy'}
+                  </button>
+                </div>
+              </div>
+            ) : null}
           </div>
         </div>
       </section>
 
+      {/* Casting Lingo */}
       <section>
-        <h2 className="text-xs tracking-widest uppercase text-neutral-400 mb-4">Casting Lingo</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xs tracking-widest uppercase text-neutral-400">Casting Lingo</h2>
+          <button onClick={() => { setAdding('lingo'); setEditing(null); setNewLabel(''); setNewBody('') }}
+            className="flex items-center gap-1 text-[10px] tracking-widest uppercase border border-neutral-200 px-3 py-1 hover:border-black transition-colors">
+            <Plus size={10} /> Add Term
+          </button>
+        </div>
+
+        {adding === 'lingo' && (
+          <div className="border border-black p-4 mb-4 grid grid-cols-3 gap-4">
+            <input value={newLabel} onChange={e => setNewLabel(e.target.value)} placeholder="Term"
+              className="border-b border-neutral-300 py-1.5 text-xs focus:outline-none focus:border-black bg-transparent" autoFocus />
+            <div className="col-span-2 flex gap-2 items-start">
+              <input value={newBody} onChange={e => setNewBody(e.target.value)} placeholder="Definition"
+                className="flex-1 border-b border-neutral-300 py-1.5 text-xs focus:outline-none focus:border-black bg-transparent" />
+              <button onClick={saveNew} disabled={saving || !newLabel} className="p-1.5 bg-black text-white disabled:opacity-40"><Check size={12} /></button>
+              <button onClick={() => setAdding(null)} className="p-1.5 border border-neutral-300 hover:border-black"><X size={12} /></button>
+            </div>
+          </div>
+        )}
+
         <div className="divide-y divide-neutral-100 border border-neutral-100">
-          {LINGO.map(l => (
-            <div key={l.term} className="grid grid-cols-3 px-4 py-3 gap-4">
-              <p className="text-xs font-medium tracking-wide">{l.term}</p>
-              <p className="col-span-2 text-xs text-neutral-600 leading-relaxed">{l.def}</p>
+          {lingo.map(l => (
+            <div key={l.id} className="group grid grid-cols-3 px-4 py-3 gap-4 items-center hover:bg-neutral-50">
+              {editing?.id === l.id ? (
+                <>
+                  <input value={editing.label} onChange={e => setEditing(p => p ? {...p, label: e.target.value} : null)}
+                    className="border-b border-neutral-400 py-0.5 text-xs font-medium focus:outline-none bg-transparent" autoFocus />
+                  <div className="col-span-2 flex gap-2 items-center">
+                    <input value={editing.body || ''} onChange={e => setEditing(p => p ? {...p, body: e.target.value} : null)}
+                      className="flex-1 border-b border-neutral-400 py-0.5 text-xs focus:outline-none bg-transparent" />
+                    <button onClick={saveEdit} disabled={saving} className="p-1.5 bg-black text-white disabled:opacity-40"><Check size={12} /></button>
+                    <button onClick={() => setEditing(null)} className="p-1.5 border border-neutral-300"><X size={12} /></button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p className="text-xs font-medium tracking-wide">{l.label}</p>
+                  <p className="col-span-2 text-xs text-neutral-600 leading-relaxed">{l.body}</p>
+                  <div className="hidden group-hover:flex absolute right-4 gap-1">
+                    <button onClick={() => startEdit(l)} className="p-1 text-neutral-400 hover:text-black"><Pencil size={11} /></button>
+                    <button onClick={() => deleteItem(l)} className="p-1 text-neutral-400 hover:text-red-500"><Trash2 size={11} /></button>
+                  </div>
+                </>
+              )}
             </div>
           ))}
         </div>
+
+        {/* Lingo edit buttons on hover — positioned version */}
+        <style>{'.group:hover .lingo-actions { display: flex; }'}</style>
       </section>
     </div>
   )
