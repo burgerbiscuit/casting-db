@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { Button } from '@/components/ui/Button'
 import { ExternalLink, Users, Archive } from 'lucide-react'
+import { TasksPanel } from '@/components/TasksPanel'
 
 export default function AdminDashboard() {
   const supabase = createClient()
@@ -112,6 +113,10 @@ export default function AdminDashboard() {
           </div>
         </section>
       )}
+      {/* Tasks */}
+      <div className="mt-12 border-t border-neutral-100 pt-10">
+        <TasksPanel />
+      </div>
     </div>
   )
 }

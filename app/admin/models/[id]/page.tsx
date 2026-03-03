@@ -385,6 +385,13 @@ export default function ModelProfile({ params }: { params: { id: string } }) {
                 </div>
 
                 <div className="p-3 space-y-2 bg-white">
+                  {/* Upload timestamp */}
+                  {m.uploaded_at && (
+                    <p className="text-[9px] text-neutral-400 tracking-wider text-center">
+                      {new Date(m.uploaded_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      {' '}{new Date(m.uploaded_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                    </p>
+                  )}
                   {/* Show / Hide toggle */}
                   <button onClick={() => toggleFlag(m.id, 'is_visible', !m.is_visible)}
                     className={`w-full flex items-center justify-center gap-2 py-1.5 text-[10px] tracking-widest uppercase border transition-colors ${m.is_visible ? 'border-black bg-black text-white' : 'border-neutral-300 text-neutral-500 hover:border-black'}`}>

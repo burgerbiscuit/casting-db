@@ -32,7 +32,7 @@ export function MediaUploader({ modelId, onUploaded, mediaType }: MediaUploaderP
     const { error } = await supabase.storage.from('model-media').upload(path, blob, { contentType: blob.type })
     if (!error) {
       const { data: { publicUrl } } = supabase.storage.from('model-media').getPublicUrl(path)
-      await supabase.from('model_media').insert({ model_id: modelId, storage_path: path, public_url: publicUrl, type })
+      await supabase.from('model_media').insert({ model_id: modelId, storage_path: path, public_url: publicUrl, type, uploaded_at: new Date().toISOString() })
     }
   }
 
