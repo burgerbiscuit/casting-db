@@ -60,6 +60,7 @@ const defaultForm = {
   ethnicity_other: '',
   languages: [] as string[],
   instagram_handle: '',
+  tiktok_handle: '',
   portfolio_url: '',
   website_url: '',
   skills: [] as string[],
