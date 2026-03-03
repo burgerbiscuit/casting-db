@@ -138,6 +138,25 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
     }
   }
 
+
+  const addAllToPresentation = async () => {
+    if (!mainPres?.id) return
+    const missing = models.filter(pm => !presModelIds.has(pm.models?.id))
+    for (let i = 0; i < missing.length; i++) {
+      const pm = missing[i]
+      const modelId = pm.models?.id
+      if (!modelId) continue
+      const { data } = await supabase.from('presentation_models').upsert({
+        presentation_id: mainPres.id, model_id: modelId,
+        display_order: presModelIds.size + i, show_sizing: true, show_instagram: true, is_visible: true
+      }, { onConflict: 'presentation_id,model_id' }).select().single()
+      if (data) {
+        setPresModelIds(prev => new Set([...prev, modelId]))
+        setPresModels(prev => ({ ...prev, [modelId]: data }))
+      }
+    }
+  }
+
   const officialConfirm = async (modelId: string) => {
     const next = !adminConfirmed[modelId]
     setAdminConfirmed(r => ({ ...r, [modelId]: next }))
@@ -470,7 +489,12 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
       <div className="flex items-center justify-between mb-4">
         <p className="label">Models Signed In ({modelsWithPhotos.length})</p>
         <div className="flex items-center gap-2">
-          {mainPres && <p className="text-[10px] text-neutral-400 tracking-wider uppercase mr-2">✓ = on presentation</p>}
+          {mainPres && (
+            <button onClick={addAllToPresentation}
+              className="text-[10px] tracking-widest uppercase border border-neutral-300 px-2 py-1 hover:border-black transition-colors">
+              Add All to Presentation
+            </button>
+          )}
           {modelsWithPhotos.length > 0 && (
             <div className="flex border border-neutral-200 overflow-hidden">
               <button onClick={() => setView('list')}
