@@ -14,14 +14,18 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true)
 
   const load = async () => {
-    const [{ data: active }, { data: arch }, { count }] = await Promise.all([
+    const [{ data: active }, { data: arch }, { count }, { count: agentCount }, { count: otherCount }] = await Promise.all([
       supabase.from('projects').select('*, project_models(count)').eq('status', 'active').order('created_at', { ascending: false }),
       supabase.from('projects').select('id, name, created_at').eq('status', 'archived').order('created_at', { ascending: false }),
       supabase.from('models').select('*', { count: 'exact', head: true }).eq('reviewed', false),
+      supabase.from('agent_submissions').select('*', { count: 'exact', head: true }).eq('reviewed', false),
+      supabase.from('other_submissions').select('*', { count: 'exact', head: true }).eq('reviewed', false),
     ])
     setProjects(active || [])
     setArchived(arch || [])
     setPendingCount(count || 0)
+    setPendingAgents(agentCount || 0)
+    setPendingOther(otherCount || 0)
     setLoading(false)
   }
 
@@ -47,16 +51,21 @@ export default function AdminDashboard() {
         <Link href="/admin/projects/new"><Button>New Project</Button></Link>
       </div>
 
-      {pendingCount > 0 && (
-        <div className="mb-8 border border-amber-200 bg-amber-50 px-6 py-4 flex items-center justify-between">
+      {(pendingCount > 0 || pendingAgents > 0 || pendingOther > 0) && (
+        <Link href="/admin/reviews" className="block mb-8 border border-amber-200 bg-amber-50 px-6 py-4 flex items-center justify-between hover:border-amber-400 transition-colors">
           <div className="flex items-center gap-3">
             <span className="text-amber-500">⚠️</span>
             <span className="text-sm text-amber-800 tracking-wide">
-              <span className="font-medium">{pendingCount} model{pendingCount > 1 ? 's' : ''}</span> pending review
+              {pendingCount > 0 && <span><span className="font-medium">{pendingCount} model{pendingCount !== 1 ? 's' : ''}</span></span>}
+              {pendingCount > 0 && (pendingAgents > 0 || pendingOther > 0) && <span className="mx-1">·</span>}
+              {pendingAgents > 0 && <span><span className="font-medium">{pendingAgents} agent{pendingAgents !== 1 ? 's' : ''}</span></span>}
+              {pendingAgents > 0 && pendingOther > 0 && <span className="mx-1">·</span>}
+              {pendingOther > 0 && <span><span className="font-medium">{pendingOther} other</span></span>}
+              {' '}pending review
             </span>
           </div>
-          <Link href="/admin/models" className="text-xs tracking-widest uppercase underline text-amber-700 hover:text-amber-900">Review Now →</Link>
-        </div>
+          <span className="text-xs tracking-widest uppercase underline text-amber-700">Review Now →</span>
+        </Link>
       )}
 
       <section>
