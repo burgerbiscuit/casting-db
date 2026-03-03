@@ -8,7 +8,7 @@ interface Props {
   projectId: string
   modelsWithPhotos: any[]
   mainPres: any | null
-  presModelIds: Set<string>
+  presModelIds: string[]
 }
 
 function getInitials(model: any) {
@@ -24,7 +24,7 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
   const [view, setView] = useState<'list' | 'grid'>('list')
   const [presModels, setPresModels] = useState<Record<string, any>>({}) // keyed by model_id
   const [shortlistStatus, setShortlistStatus] = useState<Record<string, string>>({}) // model_id → 'confirmed'|'shortlisted'
-  const [presModelIds, setPresModelIds] = useState<Set<string>>(initialPresModelIds)
+  const [presModelIds, setPresModelIds] = useState<Set<string>>(new Set(initialPresModelIds))
 
   const load = useCallback(async () => {
     if (!mainPres?.id) return

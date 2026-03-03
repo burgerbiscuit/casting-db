@@ -29,7 +29,7 @@ export default async function ProjectDetail({ params, searchParams }: { params: 
   const mainPres = presentations?.[0]
   const { data: presModels } = mainPres ? await supabase
     .from('presentation_models').select('model_id').eq('presentation_id', mainPres.id) : { data: [] }
-  const presModelIds = new Set((presModels || []).map((pm: any) => pm.model_id))
+  const presModelIdsList = (presModels || []).map((pm: any) => pm.model_id)
 
   const modelIds = (projectModels || []).map((pm: any) => pm.models?.id).filter(Boolean)
   const { data: photos } = modelIds.length > 0 ? await supabase
@@ -125,7 +125,7 @@ export default async function ProjectDetail({ params, searchParams }: { params: 
           projectId={id}
           modelsWithPhotos={modelsWithPhotos}
           mainPres={mainPres || null}
-          presModelIds={presModelIds}
+          presModelIds={presModelIdsList}
         />
       )}
 
