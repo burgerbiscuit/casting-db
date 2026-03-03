@@ -1,4 +1,5 @@
 'use client'
+import { useState } from 'react'
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core'
 import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
@@ -26,14 +27,66 @@ interface Props {
   onFieldChange: (id: string, field: keyof PresentationModel, value: any) => void
   categories?: { id: string; name: string }[]
   onCategoryChange?: (pmId: string, categoryId: string | null) => void
+  onCreateCategory?: (name: string) => Promise<void>
 }
 
-function SortableItem({ item, onRemove, onFieldChange, categories, onCategoryChange }: {
+
+function SectionPicker({ categoryId, categories, onCategoryChange, onCreateCategory }: {
+  categoryId: string | null
+  categories: { id: string; name: string }[]
+  onCategoryChange: (catId: string | null) => void
+  onCreateCategory?: (name: string) => Promise<void>
+}) {
+  const [creating, setCreating] = useState(false)
+  const [newName, setNewName] = useState('')
+
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newName.trim() || !onCreateCategory) return
+    await onCreateCategory(newName.trim())
+    setNewName('')
+    setCreating(false)
+  }
+
+  return (
+    <div className="mt-2 mb-1">
+      <label className="text-[10px] tracking-wider uppercase text-neutral-400 block mb-0.5">Section</label>
+      {creating ? (
+        <form onSubmit={handleCreate} className="flex gap-2 items-center">
+          <input autoFocus value={newName} onChange={e => setNewName(e.target.value)}
+            placeholder="Section name..." 
+            className="flex-1 border-b border-neutral-300 bg-transparent py-1 text-xs focus:outline-none focus:border-black placeholder:text-neutral-300" />
+          <button type="submit" className="text-[10px] tracking-widest uppercase text-black hover:opacity-60">Add</button>
+          <button type="button" onClick={() => setCreating(false)} className="text-[10px] tracking-widest uppercase text-neutral-400 hover:text-black">Cancel</button>
+        </form>
+      ) : (
+        <div className="flex gap-2 items-center">
+          <select
+            value={categoryId || ''}
+            onChange={e => onCategoryChange(e.target.value || null)}
+            className="flex-1 border-b border-neutral-200 bg-transparent py-1 text-xs focus:outline-none focus:border-black text-neutral-700">
+            <option value="">— No section —</option>
+            {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+          {onCreateCategory && (
+            <button type="button" onClick={() => setCreating(true)}
+              className="text-[10px] tracking-widest uppercase text-neutral-400 hover:text-black whitespace-nowrap">
+              + Create
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function SortableItem({ item, onRemove, onFieldChange, categories, onCategoryChange, onCreateCategory }: {
   item: PresentationModel
   onRemove: (id: string) => void
   onFieldChange: (id: string, field: keyof PresentationModel, value: any) => void
   categories?: { id: string; name: string }[]
   onCategoryChange?: (pmId: string, categoryId: string | null) => void
+  onCreateCategory?: (name: string) => Promise<void>
 }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: item.id })
   const style = { transform: CSS.Transform.toString(transform), transition }
@@ -70,17 +123,13 @@ function SortableItem({ item, onRemove, onFieldChange, categories, onCategoryCha
           </div>
 
           {/* Section assignment */}
-          {categories && categories.length > 0 && onCategoryChange && (
-            <div className="mt-2 mb-1">
-              <label className="text-[10px] tracking-wider uppercase text-neutral-400 block mb-0.5">Section</label>
-              <select
-                value={(item as any).category_id || ''}
-                onChange={e => onCategoryChange(item.id, e.target.value || null)}
-                className="w-full border-b border-neutral-200 bg-transparent py-1 text-xs focus:outline-none focus:border-black text-neutral-700">
-                <option value="">— No section —</option>
-                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
-            </div>
+          {onCategoryChange && (
+            <SectionPicker
+              categoryId={(item as any).category_id || null}
+              categories={categories || []}
+              onCategoryChange={(catId) => onCategoryChange(item.id, catId)}
+              onCreateCategory={onCreateCategory}
+            />
           )}
 
           {/* Client-visible notes */}
@@ -117,7 +166,7 @@ function SortableItem({ item, onRemove, onFieldChange, categories, onCategoryCha
   )
 }
 
-export function SortableModelList({ items, onChange, onRemove, onFieldChange, categories, onCategoryChange }: Props) {
+export function SortableModelList({ items, onChange, onRemove, onFieldChange, categories, onCategoryChange, onCreateCategory }: Props) {
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
@@ -137,7 +186,7 @@ export function SortableModelList({ items, onChange, onRemove, onFieldChange, ca
       <SortableContext items={items.map(i => i.id)} strategy={verticalListSortingStrategy}>
         <div className="space-y-2">
           {items.map(item => (
-            <SortableItem key={item.id} item={item} onRemove={onRemove} onFieldChange={onFieldChange} categories={categories} onCategoryChange={onCategoryChange} />
+            <SortableItem key={item.id} item={item} onRemove={onRemove} onFieldChange={onFieldChange} categories={categories} onCategoryChange={onCategoryChange} onCreateCategory={onCreateCategory} />
           ))}
         </div>
       </SortableContext>

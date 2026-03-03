@@ -96,6 +96,13 @@ export function ProjectPresentationTab({ projectId, presentationId: initialPresI
     load()
   }
 
+  const addCategoryByName = async (name: string) => {
+    if (!presId || !name.trim()) return
+    const maxOrder = Math.max(-1, ...categories.map(c => c.display_order))
+    await supabase.from('presentation_categories').insert({ presentation_id: presId, name: name.trim(), display_order: maxOrder + 1 })
+    await load()
+  }
+
   const deleteCategory = async (catId: string) => {
     await supabase.from('presentation_models').update({ category_id: null }).eq('category_id', catId)
     await supabase.from('presentation_categories').delete().eq('id', catId)
@@ -240,6 +247,7 @@ export function ProjectPresentationTab({ projectId, presentationId: initialPresI
                 onFieldChange={onFieldChange}
                 categories={categories}
                 onCategoryChange={assignCategory}
+                onCreateCategory={async (name) => { await addCategoryByName(name) }}
               />
             </div>
           )}
@@ -255,6 +263,7 @@ export function ProjectPresentationTab({ projectId, presentationId: initialPresI
                 onFieldChange={onFieldChange}
                 categories={categories}
                 onCategoryChange={assignCategory}
+                onCreateCategory={async (name) => { await addCategoryByName(name) }}
               />
             </div>
           ))}
