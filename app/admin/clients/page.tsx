@@ -15,6 +15,9 @@ export default function ClientsPage() {
   const [inviteName, setInviteName] = useState('')
   const [inviting, setInviting] = useState(false)
   const [message, setMessage] = useState('')
+  const [inviteProjectIds, setInviteProjectIds] = useState<string[]>([])
+  const [inviteNote, setInviteNote] = useState('')
+  const [resending, setResending] = useState<string | null>(null)
   const [editingClient, setEditingClient] = useState<any>(null)
 
   const load = useCallback(async () => {
@@ -33,10 +36,10 @@ export default function ClientsPage() {
   const invite = async (e: React.FormEvent) => {
     e.preventDefault()
     setInviting(true)
-    const res = await fetch('/api/invite-client', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: inviteEmail, name: inviteName }) })
+    const res = await fetch('/api/invite-client', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: inviteEmail, name: inviteName, projectIds: inviteProjectIds, note: inviteNote }) })
     const data = await res.json()
     if (data.error) setMessage(`Error: ${data.error}`)
-    else { setMessage('Invite sent!'); setInviteEmail(''); setInviteName(''); load() }
+    else { setMessage('Invite sent! They will receive an email with a sign-in link.'); setInviteEmail(''); setInviteName(''); setInviteProjectIds([]); setInviteNote(''); load() }
     setInviting(false)
     setTimeout(() => setMessage(''), 3000)
   }
@@ -51,6 +54,15 @@ export default function ClientsPage() {
   const rejectRequest = async (req: any) => {
     await supabase.from('client_requests').update({ status: 'rejected' }).eq('id', req.id)
     load()
+  }
+
+  const resendInvite = async (client: any) => {
+    setResending(client.id)
+    const res = await fetch('/api/invite-client', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: client.email, name: client.name }) })
+    const data = await res.json()
+    setResending(null)
+    if (data.error) alert('Error: ' + data.error)
+    else alert('Invite resent to ' + client.email)
   }
 
   const toggleProjectAccess = async (clientUserId: string, projectId: string, hasAccess: boolean) => {
@@ -114,7 +126,31 @@ export default function ClientsPage() {
           <form onSubmit={invite} className="space-y-4">
             <Input label="Name" value={inviteName} onChange={e => setInviteName(e.target.value)} required />
             <Input label="Email" type="email" value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} required />
-            {message && <p className="text-xs text-neutral-500">{message}</p>}
+            {/* Project access */}
+            {activeProjects.length > 0 && (
+              <div>
+                <p className="text-[10px] tracking-widest uppercase text-neutral-400 mb-2">Grant Access To</p>
+                <div className="space-y-1.5 max-h-32 overflow-y-auto">
+                  {activeProjects.map(p => (
+                    <label key={p.id} className="flex items-center gap-2 cursor-pointer">
+                      <input type="checkbox"
+                        checked={inviteProjectIds.includes(p.id)}
+                        onChange={e => setInviteProjectIds(prev => e.target.checked ? [...prev, p.id] : prev.filter(id => id !== p.id))}
+                        className="w-3 h-3" />
+                      <span className="text-xs">{p.name}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+            {/* Personal note */}
+            <div>
+              <p className="text-[10px] tracking-widest uppercase text-neutral-400 mb-1">Personal Note <span className="normal-case text-neutral-300">(optional — included in invite email)</span></p>
+              <textarea value={inviteNote} onChange={e => setInviteNote(e.target.value)} rows={2}
+                placeholder="e.g. Hi Sarah, here's the Walking on Water casting for your review."
+                className="w-full border-b border-neutral-300 py-1.5 text-xs focus:outline-none focus:border-black bg-transparent resize-none placeholder:text-neutral-300" />
+            </div>
+            {message && <p className="text-xs text-green-600">{message}</p>}
             <Button type="submit" disabled={inviting}>{inviting ? 'Sending...' : 'Send Invite'}</Button>
           </form>
         </section>
@@ -145,6 +181,13 @@ export default function ClientsPage() {
 
                 {isExpanded && (
                   <div className="border-t border-neutral-100 px-6 py-6">
+                    <div className="flex justify-end mb-4">
+                      <button onClick={() => resendInvite(c)}
+                        disabled={resending === c.id}
+                        className="text-[10px] tracking-widest uppercase border border-neutral-200 px-3 py-1.5 hover:border-black transition-colors disabled:opacity-40">
+                        {resending === c.id ? 'Sending...' : 'Resend Invite Email'}
+                      </button>
+                    </div>
                     <div className="grid grid-cols-2 gap-8">
                       {/* Projects */}
                       <div>
