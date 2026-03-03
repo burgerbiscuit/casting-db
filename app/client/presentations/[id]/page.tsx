@@ -27,7 +27,8 @@ export default async function PresentationView({ params }: { params: { id: strin
   const isTeamMember = !!access || false
   let isMember = false
   if (!access) {
-    const { data: member } = await supabase.from('team_members').select('id').eq('user_id', user.id).single()
+    const supabaseSvc = await createServiceClient()
+    const { data: member } = await supabaseSvc.from('team_members').select('id').eq('user_id', user.id).single()
     if (!member) redirect('/client')
     isMember = true
   }

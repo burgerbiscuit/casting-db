@@ -1,16 +1,18 @@
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createServiceClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 
 export default async function ClientDashboard() {
   const supabase = await createClient()
+  const serviceSupabase = await createServiceClient()
   const { data: { user } } = await supabase.auth.getUser()
-  const { data: isMember } = await supabase.from('team_members').select('id').eq('user_id', user?.id).single()
+  // Use service client to bypass RLS for team member check
+  const { data: isMember } = await serviceSupabase.from('team_members').select('id').eq('user_id', user?.id).single()
 
   let projectsWithPresentations: any[] = []
 
   if (isMember) {
     // Team members see all active projects with presentations
-    const { data: allProjects } = await supabase
+    const { data: allProjects } = await serviceSupabase
       .from('projects')
       .select('id, name, status, presentations(id, name)')
       .eq('status', 'active')
@@ -21,7 +23,7 @@ export default async function ClientDashboard() {
     })).filter(p => p.presentations.length > 0)
   } else {
     // Clients see only assigned ACTIVE projects
-    const { data: clientProjects } = await supabase
+    const { data: clientProjects } = await serviceSupabase
       .from('client_projects')
       .select('*, projects(id, name, status, presentations(id, name))')
       .eq('client_id', user?.id)
