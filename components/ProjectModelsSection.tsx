@@ -95,8 +95,22 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
       .eq('model_id', modelId)
   }
 
+  const [models, setModels] = useState(modelsWithPhotos)
+  useEffect(() => setModels(modelsWithPhotos), [modelsWithPhotos])
+
+  const removeFromProject = async (modelId: string, modelName: string) => {
+    if (!confirm(`Remove ${modelName} from this project? They will still be in the models database.`)) return
+    await supabase.from('presentation_models').delete()
+      .eq('model_id', modelId)
+      .in('presentation_id', mainPres?.id ? [mainPres.id] : [])
+    await supabase.from('project_models').delete()
+      .eq('project_id', projectId).eq('model_id', modelId)
+    setModels(prev => prev.filter(pm => pm.models?.id !== modelId))
+    setPresModelIds(prev => { const s = new Set(prev); s.delete(modelId); return s })
+  }
+
   // Sort: confirmed → shortlisted → other
-  const sorted = [...modelsWithPhotos].sort((a, b) => {
+  const sorted = [...models].sort((a, b) => {
     const as = STATUS_ORDER[shortlistStatus[a.models?.id] || 'none']
     const bs = STATUS_ORDER[shortlistStatus[b.models?.id] || 'none']
     return as - bs
@@ -152,6 +166,9 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
             {expanded ? '▲' : '▼'}
           </button>
           <Link href={`/admin/models/${mid}`} className="text-[10px] text-neutral-300 hover:text-black transition-colors">→</Link>
+          <button onClick={() => removeFromProject(mid, `${model?.first_name} ${model?.last_name}`)}
+            title="Remove from project"
+            className="text-[10px] text-neutral-200 hover:text-red-500 transition-colors flex-shrink-0">✕</button>
         </div>
 
         {expanded && (
@@ -207,7 +224,12 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
           )}
         </div>
         <div className="p-2 flex flex-col gap-1.5">
-          <p className="text-xs font-medium truncate">{model?.first_name} {model?.last_name}</p>
+          <div className="flex items-start justify-between gap-1">
+            <p className="text-xs font-medium truncate flex-1">{model?.first_name} {model?.last_name}</p>
+            <button onClick={() => removeFromProject(mid, `${model?.first_name} ${model?.last_name}`)}
+              title="Remove from project"
+              className="text-neutral-200 hover:text-red-500 transition-colors flex-shrink-0 text-sm leading-none mt-0.5">✕</button>
+          </div>
           {model?.agency && <p className="text-[10px] text-neutral-400 truncate">{model?.agency}</p>}
           <input className="w-full text-[10px] border-b border-neutral-200 bg-transparent py-0.5 focus:outline-none focus:border-black placeholder:text-neutral-300"
             placeholder="Option" value={option} onChange={e => setOption(e.target.value)} onBlur={e => savePmField(pm.id, 'pm_option', e.target.value)} />
