@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/Input'
 import { Badge } from '@/components/ui/Badge'
 import { Trash2, ShieldAlert } from 'lucide-react'
 
-const TASHA_USER_ID = 'f5fe2bb4-f429-4978-a052-6f00cc614ff8'
+const TASHA_USER_ID = '328944d5-bf72-424d-874b-8f21b363464a'
 
 export default function TeamPage() {
   const supabase = createClient()

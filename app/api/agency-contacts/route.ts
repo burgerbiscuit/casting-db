@@ -2,7 +2,7 @@ import { NextResponse, NextRequest } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { createServiceClient } from '@/lib/supabase/server'
 
-const TASHA_USER_ID = 'f5fe2bb4-f429-4978-a052-6f00cc614ff8'
+const TASHA_USER_ID = '328944d5-bf72-424d-874b-8f21b363464a'
 
 export async function GET(req: NextRequest) {
   const type = req.nextUrl.searchParams.get('type') || 'model'
