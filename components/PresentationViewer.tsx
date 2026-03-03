@@ -20,7 +20,9 @@ interface Props {
 export function PresentationViewer({
   presentationModels, mediaByModel, presentationId, clientId, shortlistMap, confirmMap: initialConfirmMap, clientFirstName, categories, presentationName, projectName, projectSpecs
 }: Props) {
-  const [view, setView] = useState<'grid' | 'slides'>('grid')
+  const supabase = (require('@/lib/supabase/client')).createClient()
+  const [view, setView] = useState<'grid' | 'slides' | 'swipe'>('grid')
+  const [swipeIndex, setSwipeIndex] = useState(0)
   const [slideIndex, setSlideIndex] = useState(0)
   const [followerCounts, setFollowerCounts] = useState<Record<string, string>>({})
   const [clientNotes, setClientNotes] = useState<Record<string, string>>(() => {
@@ -30,6 +32,7 @@ export function PresentationViewer({
   })
   const [mediaModal, setMediaModal] = useState<{ url: string; type: string } | null>(null)
   const clientNoteDebounce = useRef<any>(null)
+  const swipeTouchStart = useRef<number>(0)
 
   const [isMobile, setIsMobile] = useState(false)
   const [isLandscape, setIsLandscape] = useState(false)
@@ -40,7 +43,7 @@ export function PresentationViewer({
       const landscape = window.innerWidth > window.innerHeight
       setIsLandscape(landscape)
       if (window.innerWidth < 768) {
-        setView(landscape ? 'slides' : 'grid')
+        setView(landscape ? 'slides' : 'swipe')
       }
     }
     checkMobile()
@@ -362,6 +365,73 @@ export function PresentationViewer({
           </div>{/* end mobile scroll wrapper */}
         </div>
       )}
+
+
+      {view === 'swipe' && isMobile && !isLandscape && (() => {
+        const pm = sorted[swipeIndex]
+        const model = pm?.models
+        const photos = (mediaByModel[pm?.model_id] || []).filter((m: any) => m.type !== 'video')
+        const photo = photos[0]
+        const isShortlisted = shortlists[pm?.model_id]
+        const isConfirmed = confirms[pm?.model_id]
+        const sizing = getSizingParts(pm, model)
+        return (
+          <div className="fixed inset-0 bg-white z-30 flex flex-col overflow-hidden"
+            onTouchStart={e => { swipeTouchStart.current = e.touches[0].clientX }}
+            onTouchEnd={e => {
+              const dx = e.changedTouches[0].clientX - swipeTouchStart.current
+              if (dx < -50 && swipeIndex < sorted.length - 1) setSwipeIndex(i => i + 1)
+              if (dx > 50 && swipeIndex > 0) setSwipeIndex(i => i - 1)
+            }}>
+            {/* Header */}
+            <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b border-neutral-100">
+              <img src="/logo.jpg" alt="" className="h-4 w-auto" />
+              <span className="text-[10px] tracking-widest uppercase text-neutral-400">{swipeIndex + 1} / {sorted.length}</span>
+              <button onClick={() => setView('grid')} className="text-[10px] tracking-widest uppercase text-neutral-400 border border-neutral-200 px-3 py-1.5">Grid</button>
+            </div>
+
+            {/* Photo — fills remaining space */}
+            <div className="flex-1 relative overflow-hidden bg-neutral-50">
+              {photo
+                ? <img src={photo.public_url} alt={model?.first_name} onClick={() => { setSlideIndex(swipeIndex); setView('slides') }} className="absolute inset-0 w-full h-full object-cover object-top cursor-pointer" />
+                : <div className="absolute inset-0 flex items-center justify-center text-neutral-200 text-4xl font-light">?</div>
+              }
+              {isConfirmed && (
+                <div className="absolute top-3 left-3 bg-black text-white text-[9px] tracking-widest uppercase px-2 py-1">Confirmed</div>
+              )}
+            </div>
+
+            {/* Bottom info panel */}
+            <div className="flex-shrink-0 px-5 pt-4 pb-5 border-t border-neutral-100 bg-white">
+              <div className="flex items-start justify-between mb-2">
+                <div>
+                  <h2 className="text-lg font-light tracking-widest uppercase leading-tight">{model?.first_name} {model?.last_name}</h2>
+                  {model?.agency && <p className="text-xs text-neutral-400 mt-0.5">{model.agency}</p>}
+                  {sizing.length > 0 && <p className="text-[10px] text-neutral-400 mt-1">{sizing.join(' · ')}</p>}
+                  {pm?.admin_notes && <p className="text-xs text-neutral-500 mt-1 italic">{pm.admin_notes}</p>}
+                </div>
+                <button
+                  onClick={() => isShortlisted
+                    ? supabase.from('client_shortlists').delete().eq('presentation_id', presentationId).eq('model_id', pm.model_id).eq('client_id', clientId).then(() => setShortlists(s => ({ ...s, [pm.model_id]: false })))
+                    : supabase.from('client_shortlists').upsert({ presentation_id: presentationId, model_id: pm.model_id, client_id: clientId, status: 'shortlisted', author_name: clientFirstName }, { onConflict: 'presentation_id,model_id,client_id' }).then(() => setShortlists(s => ({ ...s, [pm.model_id]: true })))}
+                  className="ml-4 flex-shrink-0">
+                  <Heart size={22} className={isShortlisted ? 'fill-black text-black' : 'text-neutral-300'} />
+                </button>
+              </div>
+              <button
+                onClick={() => {
+                  if (isConfirmed) { handleConfirm(pm.model_id) }
+                  else setConfirmModal({ modelId: pm.model_id, modelName: `${model?.first_name} ${model?.last_name}` })
+                }}
+                className={`w-full py-2.5 text-[10px] tracking-widest uppercase transition-colors border ${isConfirmed ? 'bg-black text-white border-black' : 'border-neutral-300 text-neutral-500 hover:border-black hover:text-black'}`}>
+                {isConfirmed ? '✓ Confirmed' : 'Confirm Talent'}
+              </button>
+              {/* Swipe hint */}
+              <p className="text-center text-[9px] text-neutral-300 tracking-widest mt-3">← swipe to browse →</p>
+            </div>
+          </div>
+        )
+      })()}
 
       {view === 'slides' && current && currentModel && (
         <div onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} className="fixed inset-0 bg-white z-40 flex flex-col overflow-hidden">
