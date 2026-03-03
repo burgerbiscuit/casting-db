@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Search, Mail, X } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 
-export default function AgencyContactsPage() {
+export default function ProductionContactsPage() {
   const supabase = createClient()
   const [contacts, setContacts] = useState<any[]>([])
   const [allContacts, setAllContacts] = useState<any[]>([])
@@ -30,7 +30,8 @@ export default function AgencyContactsPage() {
 
   const load = async () => {
     setLoading(true)
-    const res = await fetch('/api/agency-contacts?type=model')
+    const res = await fetch('/api/agency-contacts?type=production')
+    if (res.status === 403) { window.location.href = '/admin'; return }
     const data = await res.json()
     if (Array.isArray(data)) {
       setAllContacts(data)

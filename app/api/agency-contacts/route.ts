@@ -1,12 +1,26 @@
-import { NextResponse } from 'next/server'
+import { NextResponse, NextRequest } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { createClient as createServerClient } from '@/lib/supabase/server'
 
-export async function GET() {
+const TASHA_USER_ID = 'f5fe2bb4-f429-4978-a052-6f00cc614ff8'
+
+export async function GET(req: NextRequest) {
+  const type = req.nextUrl.searchParams.get('type') || 'model'
+
+  // Production contacts: only Tasha can access
+  if (type === 'production') {
+    const serverSupabase = await createServerClient()
+    const { data: { user } } = await serverSupabase.auth.getUser()
+    if (!user || user.id !== TASHA_USER_ID) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+    }
+  }
+
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
-  // Fetch all contacts in batches to bypass PostgREST row limit
+
   let all: any[] = []
   let from = 0
   const batchSize = 1000
@@ -14,6 +28,7 @@ export async function GET() {
     const { data, error } = await supabase
       .from('agency_contacts')
       .select('*')
+      .eq('contact_type', type)
       .order('agency_name')
       .range(from, from + batchSize - 1)
     if (error || !data || data.length === 0) break
