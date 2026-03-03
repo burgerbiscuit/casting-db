@@ -1,6 +1,8 @@
 import { createServiceClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 
+// Scout submissions create a model in the general database only — NOT linked to any project.
+// Models must sign into a casting (/cast/[slug]) to be linked to a project.
 // In-memory rate limit: max 5 submissions per IP per hour
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
 
