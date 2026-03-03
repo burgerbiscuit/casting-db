@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
   try {
     // inviteUserByEmail sends a real invite email with a magic link
     const { data, error } = await serviceSupabase.auth.admin.inviteUserByEmail(email, {
-      redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || 'https://cast.tashatongpreecha.com'}/admin`,
+      redirectTo: `${(process.env.NEXT_PUBLIC_APP_URL || 'https://cast.tashatongpreecha.com').trim()}/admin`,
     })
 
     if (error) return NextResponse.json({ error: error.message }, { status: 400 })
