@@ -103,7 +103,7 @@ export default function CastPage({ params }: { params: { slug: string } }) {
   const friendDebounceRef = useRef<any>(null)
 
   useEffect(() => {
-    supabase.from('projects').select('*').eq('slug', slug).single().then(({ data }) => {
+    supabase.from('projects').select('id, name, slug, status, description').eq('slug', slug).single().then(({ data }) => {
       if (data) { setProject(data); setStep('landing') }
     })
   }, [slug])
