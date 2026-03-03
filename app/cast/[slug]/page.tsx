@@ -417,7 +417,7 @@ export default function CastPage({ params }: { params: { slug: string } }) {
                 } else if (stored === birthdayInput) {
                   confirmReturning()
                 } else {
-                  setBirthdayError('That doesn't match. Please try again or select "Not Me" to go back.')
+                  setBirthdayError("That doesn't match. Please try again or select Not Me to go back.")
                 }
               }}>Confirm</Button>
               <Button variant="ghost" onClick={() => {
