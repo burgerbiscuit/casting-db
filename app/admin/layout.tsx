@@ -2,7 +2,7 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { LayoutDashboard, FolderOpen, Users, UserCheck, Settings, LogOut, Building2, Clapperboard } from 'lucide-react'
+import { LayoutDashboard, FolderOpen, Users, UserCheck, Settings, LogOut, Building2, Clapperboard, CalendarDays } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 const TASHA_USER_ID = 'f5fe2bb4-f429-4978-a052-6f00cc614ff8'
