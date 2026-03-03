@@ -322,7 +322,7 @@ export function PresentationViewer({
                 {sorted.filter(pm => shortlists[pm.model_id]).map(pm => (
                   <div key={pm.id} className="relative">
                     {confirms[pm.model_id] && (
-                      <div className="absolute top-2 left-2 z-10 bg-black text-white text-[9px] tracking-widest uppercase px-2 py-1">Confirmed</div>
+                      <div className="absolute top-2 left-2 z-10 bg-black text-white text-[9px] tracking-widest uppercase px-2 py-1">Officially Confirmed</div>
                     )}
                     <ModelCard presentationModel={pm} model={pm.models}
                       media={mediaByModel[pm.model_id] || []} presentationId={presentationId}
@@ -336,7 +336,7 @@ export function PresentationViewer({
                         else setConfirmModal({ modelId: pm.model_id, modelName: `${pm.models?.first_name} ${pm.models?.last_name}` })
                       }}
                       className={`w-full mt-1 py-1.5 text-[9px] tracking-widest uppercase transition-colors border ${confirms[pm.model_id] ? 'bg-green-600 text-white border-green-600' : pendings[pm.model_id] ? 'bg-amber-400 text-white border-amber-400 cursor-default' : 'border-neutral-200 hover:border-black text-neutral-400 hover:text-black'}`}>
-                      {confirms[pm.model_id] ? '✓ Confirmed' : pendings[pm.model_id] ? 'Confirmation Pending' : 'Request Confirmation'}
+                      {confirms[pm.model_id] ? '✓ Officially Confirmed' : pendings[pm.model_id] ? 'Confirmation Pending' : 'Request Confirmation'}
                     </button>
                   </div>
                 ))}
@@ -349,7 +349,7 @@ export function PresentationViewer({
             const renderCard = (pm: any) => (
               <div key={pm.id} className="relative">
                 {confirms[pm.model_id] && (
-                  <div className="absolute top-2 left-2 z-10 bg-black text-white text-[9px] tracking-widest uppercase px-2 py-1">Confirmed</div>
+                  <div className="absolute top-2 left-2 z-10 bg-black text-white text-[9px] tracking-widest uppercase px-2 py-1">Officially Confirmed</div>
                 )}
                 <ModelCard presentationModel={pm} model={pm.models}
                   media={mediaByModel[pm.model_id] || []} presentationId={presentationId}
@@ -363,7 +363,7 @@ export function PresentationViewer({
                     else setConfirmModal({ modelId: pm.model_id, modelName: `${pm.models?.first_name} ${pm.models?.last_name}` })
                   }}
                   className={`w-full mt-1 py-1.5 text-[9px] tracking-widest uppercase transition-colors border ${confirms[pm.model_id] ? 'bg-green-600 text-white border-green-600' : pendings[pm.model_id] ? 'bg-amber-400 text-white border-amber-400 cursor-default' : 'border-neutral-200 hover:border-black text-neutral-400 hover:text-black'}`}>
-                  {confirms[pm.model_id] ? '✓ Confirmed' : pendings[pm.model_id] ? 'Confirmation Pending' : 'Request Confirmation'}
+                  {confirms[pm.model_id] ? '✓ Officially Confirmed' : pendings[pm.model_id] ? 'Confirmation Pending' : 'Request Confirmation'}
                 </button>
               </div>
             )
@@ -428,7 +428,7 @@ export function PresentationViewer({
                 : <div className="absolute inset-0 flex items-center justify-center text-neutral-200 text-4xl font-light">?</div>
               }
               {isConfirmed && (
-                <div className="absolute top-3 left-3 bg-black text-white text-[9px] tracking-widest uppercase px-2 py-1">Confirmed</div>
+                <div className="absolute top-3 left-3 bg-black text-white text-[9px] tracking-widest uppercase px-2 py-1">Officially Confirmed</div>
               )}
             </div>
 
@@ -467,7 +467,7 @@ export function PresentationViewer({
                     setConfirmModal({ modelId: pm.model_id, modelName: `${model?.first_name} ${model?.last_name}` })
                   }}
                   className={`flex-1 py-2.5 text-[10px] tracking-widest uppercase transition-colors border ${confirms[pm.model_id] ? 'bg-green-600 text-white border-green-600' : pendings[pm.model_id] ? 'bg-amber-400 text-white border-amber-400 cursor-default' : 'border-neutral-300 text-neutral-500 hover:border-black hover:text-black'}`}>
-                  {confirms[pm.model_id] ? '✓ Confirmed' : pendings[pm.model_id] ? 'Confirmation Pending' : 'Request Confirmation'}
+                  {confirms[pm.model_id] ? '✓ Officially Confirmed' : pendings[pm.model_id] ? 'Confirmation Pending' : 'Request Confirmation'}
                 </button>
                 <button
                   onClick={() => isShortlisted
@@ -515,7 +515,7 @@ export function PresentationViewer({
                   setConfirmModal({ modelId: current.model_id, modelName: `${currentModel?.first_name} ${currentModel?.last_name}` })
                 }}
                 className={`flex-shrink-0 text-[8px] tracking-widest uppercase border px-2.5 py-1.5 transition-colors whitespace-nowrap ${confirms[current.model_id] ? 'bg-green-600 text-white border-green-600' : pendings[current.model_id] ? 'bg-amber-400 text-white border-amber-400' : 'border-neutral-300 text-neutral-500'}`}>
-                {confirms[current.model_id] ? '✓ Confirmed' : pendings[current.model_id] ? '⏳ Pending' : 'Confirm'}
+                {confirms[current.model_id] ? '✓ Officially Confirmed' : pendings[current.model_id] ? '⏳ Pending' : 'Confirm'}
               </button>
               <SlideActions presentationId={presentationId} modelId={current.model_id} clientId={clientId}
                 initialShortlisted={!!shortlists[current.model_id]} initialNotes={shortlistMap[current.model_id]?.notes || ""} initialAuthor={shortlistMap[current.model_id]?.author_name || ''}

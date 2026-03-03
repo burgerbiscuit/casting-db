@@ -167,8 +167,8 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
   })
 
   // Group for list view
-  const pending = sorted.filter(pm => shortlistStatus[pm.models?.id] === 'pending_confirmation')
-  const confirmed = sorted.filter(pm => shortlistStatus[pm.models?.id] === 'confirmed' || adminConfirmed[pm.models?.id])
+  const confirmed = sorted.filter(pm => adminConfirmed[pm.models?.id])
+  const pending = sorted.filter(pm => !adminConfirmed[pm.models?.id] && shortlistStatus[pm.models?.id] === 'pending_confirmation')
   const shortlisted = sorted.filter(pm => shortlistStatus[pm.models?.id] === 'shortlisted')
   const others = sorted.filter(pm => !shortlistStatus[pm.models?.id])
 

@@ -64,8 +64,11 @@ export default async function PresentationView({ params }: { params: { id: strin
   const shortlistMap: Record<string, any> = {}
   ;(shortlists || []).forEach(s => { shortlistMap[s.model_id] = s })
 
+  // confirmMap: only true when admin has officially confirmed (admin_confirmed = true in project_models)
+  const { data: projectModelsData } = await supabase
+    .from('project_models').select('model_id, admin_confirmed').eq('project_id', presentation.project_id)
   const confirmMap: Record<string, boolean> = {}
-  ;(shortlists || []).filter(s => s.status === 'confirmed').forEach(s => { confirmMap[s.model_id] = true })
+  ;(projectModelsData || []).filter((pm: any) => pm.admin_confirmed).forEach((pm: any) => { confirmMap[pm.model_id] = true })
 
   const mediaByModel: Record<string, any[]> = {}
   ;(allMedia || []).forEach(m => {
