@@ -36,6 +36,7 @@ export default function ScoutPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [agencySuggestions, setAgencySuggestions] = useState<string[]>([])
+  const [agencyContacts, setAgencyContacts] = useState<any[]>([])
   const [showAgency, setShowAgency] = useState(false)
   const [boardSuggestions, setBoardSuggestions] = useState<string[]>([])
   const [showBoard, setShowBoard] = useState(false)
@@ -65,9 +66,16 @@ export default function ScoutPage() {
   const set = (k: string, v: any) => setForm(f => ({ ...f, [k]: v }))
 
   const searchAgencies = async (q: string) => {
-    if (!q) { setAgencySuggestions([]); return }
-    const { data } = await supabase.from('models').select('agency').ilike('agency', `%${q}%`).not('agency', 'is', null).limit(10)
-    setAgencySuggestions([...new Set((data || []).map((r: any) => r.agency).filter(Boolean))])
+    if (!q) { setAgencySuggestions([]); setAgencyContacts([]); return }
+    const { data } = await supabase.from('agency_contacts').select('agency_name').ilike('agency_name', `%${q}%`).limit(20)
+    const unique = [...new Set((data || []).map((r: any) => r.agency_name).filter(Boolean))]
+    setAgencySuggestions(unique)
+  }
+
+  const loadAgentContacts = async (agencyName: string) => {
+    if (!agencyName) { setAgencyContacts([]); return }
+    const { data } = await supabase.from('agency_contacts').select('agent_name, board, email').ilike('agency_name', agencyName).not('agent_name', 'is', null).order('board')
+    setAgencyContacts(data || [])
   }
 
   const searchBoards = async (q: string) => {
@@ -254,15 +262,42 @@ export default function ScoutPage() {
             <input value={form.agency} onChange={e => { set('agency', e.target.value); searchAgencies(e.target.value); setShowAgency(true) }}
               onFocus={() => { if (form.agency) { searchAgencies(form.agency); setShowAgency(true) } }}
               placeholder="Agency name or Freelance" className={inp} />
-            {showAgency && agencySuggestions.length > 0 && (
+            {showAgency && (agencySuggestions.length > 0 || form.agency.length > 1) && (
               <div className="absolute top-full left-0 right-0 bg-white border border-neutral-200 z-10 shadow-sm">
                 {agencySuggestions.map(a => (
-                  <button key={a} type="button" onClick={() => { set('agency', a); setShowAgency(false) }}
+                  <button key={a} type="button" onClick={() => { set('agency', a); set('agent_name', ''); set('board', ''); setShowAgency(false); loadAgentContacts(a) }}
                     className="w-full px-4 py-2 text-left text-sm hover:bg-neutral-50 border-b border-neutral-100 last:border-0">{a}</button>
                 ))}
+                {form.agency && !agencySuggestions.map((a:string) => a.toLowerCase()).includes(form.agency.toLowerCase()) && (
+                  <button type="button" onClick={() => { setShowAgency(false); setAgencyContacts([]) }}
+                    className="w-full px-4 py-2 text-left text-sm text-neutral-400 hover:bg-neutral-50 italic border-t border-neutral-100">
+                    + Use "{form.agency}" as new agency
+                  </button>
+                )}
               </div>
             )}
           </div>
+
+          {/* Agent picker */}
+          {agencyContacts.length > 0 && (
+            <div>
+              <label className={lbl}>Select Your Agent</label>
+              <div className="space-y-1 max-h-48 overflow-y-auto border border-neutral-200 mt-1">
+                {agencyContacts.map((ac: any, i: number) => (
+                  <button key={i} type="button"
+                    onClick={() => { set('agent_name', ac.agent_name || ''); set('board', ac.board || '') }}
+                    className={`w-full px-4 py-2.5 text-left text-sm border-b border-neutral-100 last:border-0 transition-colors ${form.agent_name === ac.agent_name ? 'bg-black text-white' : 'hover:bg-neutral-50'}`}>
+                    <span className="font-medium">{ac.agent_name}</span>
+                    {ac.board && <span className="ml-2 text-xs opacity-60">{ac.board}</span>}
+                  </button>
+                ))}
+                <button type="button" onClick={() => { set('agent_name', ''); set('board', '') }}
+                  className="w-full px-4 py-2.5 text-left text-sm text-neutral-400 hover:bg-neutral-50 italic">
+                  + My agent isn't listed — enter manually
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Board autocomplete */}
           <div className="relative">

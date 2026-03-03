@@ -65,6 +65,9 @@ export async function POST(req: NextRequest) {
     hobbies: Array.isArray(body.hobbies) ? body.hobbies : [],
     notes: body.notes || null,
     source: 'scouting',
+    reviewed: false,
+    board: body.board || null,
+    agent_name: body.agent_name || null,
   }).select('id').single()
 
   if (error) {

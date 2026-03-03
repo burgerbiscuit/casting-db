@@ -5,11 +5,10 @@ import { ExternalLink, Users } from 'lucide-react'
 
 export default async function AdminDashboard() {
   const supabase = await createClient()
-  const { data: projects } = await supabase
-    .from('projects')
-    .select('*, project_models(count)')
-    .eq('status', 'active')
-    .order('created_at', { ascending: false })
+  const [{ data: projects }, { count: pendingCount }] = await Promise.all([
+    supabase.from('projects').select('*, project_models(count)').eq('status', 'active').order('created_at', { ascending: false }),
+    supabase.from('models').select('*', { count: 'exact', head: true }).eq('reviewed', false),
+  ])
 
   const { data: archived } = await supabase
     .from('projects')
@@ -26,6 +25,18 @@ export default async function AdminDashboard() {
         </div>
         <Link href="/admin/projects/new"><Button>New Project</Button></Link>
       </div>
+
+      {pendingCount && pendingCount > 0 ? (
+        <div className="mb-8 border border-amber-200 bg-amber-50 px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className="text-amber-500 text-lg">⚠️</span>
+            <span className="text-sm text-amber-800 tracking-wide">
+              <span className="font-medium">{pendingCount} model{pendingCount > 1 ? 's' : ''}</span> pending review
+            </span>
+          </div>
+          <a href="/admin/models" className="text-xs tracking-widest uppercase underline text-amber-700 hover:text-amber-900">Review Now →</a>
+        </div>
+      ) : null}
 
       <section>
         <p className="label mb-6">Active Projects</p>
