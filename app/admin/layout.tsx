@@ -10,7 +10,7 @@ const TASHA_USER_ID = 'f5fe2bb4-f429-4978-a052-6f00cc614ff8'
 const baseNav = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/admin/projects', label: 'Projects', icon: FolderOpen },
-  { href: '/admin/calendar', label: 'Calendar', icon: Calendar },
+  { href: '/admin/calendar', label: 'Calendar', icon: CalendarDays },
   { href: '/admin/models', label: 'Models', icon: Users },
   { href: '/admin/agencies/contacts', label: 'Model Agencies', icon: Building2 },
   { href: '/admin/clients', label: 'Clients', icon: UserCheck },
