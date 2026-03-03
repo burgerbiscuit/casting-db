@@ -97,9 +97,26 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
 
   const [models, setModels] = useState(modelsWithPhotos)
   const [addSearch, setAddSearch] = useState('')
+  const [showNewModel, setShowNewModel] = useState(false)
+  const [newModelForm, setNewModelForm] = useState({ first_name: '', last_name: '', agency: '', email: '', phone: '', instagram_handle: '' })
+  const [creating, setCreating] = useState(false)
   const [addResults, setAddResults] = useState<any[]>([])
   const [addLoading, setAddLoading] = useState(false)
   useEffect(() => setModels(modelsWithPhotos), [modelsWithPhotos])
+
+  const createNewModel = async () => {
+    if (!newModelForm.first_name || !newModelForm.last_name) return
+    setCreating(true)
+    const { data: model, error } = await supabase.from('models').insert({
+      ...newModelForm, reviewed: false, source: 'admin'
+    }).select('id, first_name, last_name, agency').single()
+    if (model) {
+      await addModelToProject(model)
+      setNewModelForm({ first_name: '', last_name: '', agency: '', email: '', phone: '', instagram_handle: '' })
+      setShowNewModel(false)
+    }
+    setCreating(false)
+  }
 
   const searchToAdd = async (q: string) => {
     setAddSearch(q)
@@ -296,6 +313,61 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
 
   return (
     <div>
+      {/* New model modal */}
+      {showNewModel && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-md p-6">
+            <h3 className="text-sm tracking-widest uppercase font-medium mb-4">New Model</h3>
+            <div className="grid grid-cols-2 gap-3 mb-3">
+              <div>
+                <p className="text-[10px] tracking-widest uppercase text-neutral-400 mb-1">First Name *</p>
+                <input value={newModelForm.first_name} onChange={e => setNewModelForm(p => ({...p, first_name: e.target.value}))}
+                  className="w-full border-b border-neutral-300 py-1.5 text-sm focus:outline-none focus:border-black" autoFocus />
+              </div>
+              <div>
+                <p className="text-[10px] tracking-widest uppercase text-neutral-400 mb-1">Last Name *</p>
+                <input value={newModelForm.last_name} onChange={e => setNewModelForm(p => ({...p, last_name: e.target.value}))}
+                  className="w-full border-b border-neutral-300 py-1.5 text-sm focus:outline-none focus:border-black" />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3 mb-3">
+              <div>
+                <p className="text-[10px] tracking-widest uppercase text-neutral-400 mb-1">Agency</p>
+                <input value={newModelForm.agency} onChange={e => setNewModelForm(p => ({...p, agency: e.target.value}))}
+                  className="w-full border-b border-neutral-300 py-1.5 text-sm focus:outline-none focus:border-black" />
+              </div>
+              <div>
+                <p className="text-[10px] tracking-widest uppercase text-neutral-400 mb-1">Instagram</p>
+                <input value={newModelForm.instagram_handle} onChange={e => setNewModelForm(p => ({...p, instagram_handle: e.target.value}))}
+                  placeholder="@handle" className="w-full border-b border-neutral-300 py-1.5 text-sm focus:outline-none focus:border-black" />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3 mb-5">
+              <div>
+                <p className="text-[10px] tracking-widest uppercase text-neutral-400 mb-1">Email</p>
+                <input type="email" value={newModelForm.email} onChange={e => setNewModelForm(p => ({...p, email: e.target.value}))}
+                  className="w-full border-b border-neutral-300 py-1.5 text-sm focus:outline-none focus:border-black" />
+              </div>
+              <div>
+                <p className="text-[10px] tracking-widest uppercase text-neutral-400 mb-1">Phone</p>
+                <input value={newModelForm.phone} onChange={e => setNewModelForm(p => ({...p, phone: e.target.value}))}
+                  className="w-full border-b border-neutral-300 py-1.5 text-sm focus:outline-none focus:border-black" />
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button onClick={createNewModel} disabled={creating || !newModelForm.first_name || !newModelForm.last_name}
+                className="flex-1 py-2.5 text-xs tracking-widest uppercase bg-black text-white hover:bg-neutral-800 disabled:opacity-40 transition-colors">
+                {creating ? 'Creating...' : 'Create & Add to Project'}
+              </button>
+              <button onClick={() => setShowNewModel(false)}
+                className="px-4 py-2.5 text-xs tracking-widest uppercase border border-neutral-300 hover:border-black transition-colors">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Add model search */}
       <div className="relative mb-4">
         <input
@@ -304,7 +376,10 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
           placeholder="Search database to add a model..."
           className="w-full border border-neutral-200 px-3 py-2 text-xs focus:outline-none focus:border-black placeholder:text-neutral-400"
         />
-        {addLoading && <span className="absolute right-3 top-2 text-neutral-300 text-xs">searching...</span>}
+        <button onClick={() => setShowNewModel(true)}
+          className="absolute right-2 top-1 text-[10px] tracking-widest uppercase border border-neutral-300 px-2 py-1 hover:border-black transition-colors bg-white">
+          + New
+        </button>
         {addResults.length > 0 && (
           <div className="absolute top-full left-0 right-0 z-20 bg-white border border-neutral-200 border-t-0 shadow-lg max-h-48 overflow-y-auto">
             {addResults.map(m => (
