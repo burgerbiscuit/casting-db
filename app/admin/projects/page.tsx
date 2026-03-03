@@ -7,8 +7,10 @@ export default async function ProjectsPage() {
   const supabase = await createClient()
   const { data: projects } = await supabase
     .from('projects')
-    .select('*')
+    .select('*, presentations(id)')
     .order('created_at', { ascending: false })
+
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://cast.tashatongpreecha.com'
 
   return (
     <div>
@@ -18,13 +20,27 @@ export default async function ProjectsPage() {
       </div>
       <div className="divide-y divide-neutral-100">
         {projects?.map(p => (
-          <div key={p.id} className="flex items-center justify-between py-4">
+          <div key={p.id} className="flex items-center justify-between py-5">
             <div>
               <span className="text-sm font-medium">{p.name}</span>
               <span className="ml-3"><Badge>{p.status}</Badge></span>
-              <p className="text-xs text-neutral-400 mt-1">/cast/{p.slug}</p>
+              {p.shoot_date && <span className="ml-3 text-xs text-neutral-400">{new Date(p.shoot_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>}
             </div>
-            <Link href={`/admin/projects/${p.id}`} className="text-xs tracking-wider uppercase underline">Manage</Link>
+            <div className="flex items-center gap-4">
+              <a href={`${appUrl}/cast/${p.slug}`} target="_blank"
+                className="text-[10px] tracking-widest uppercase text-neutral-400 hover:text-black transition-colors border border-neutral-200 px-3 py-1.5 hover:border-black">
+                Model Sign-In ↗
+              </a>
+              {(p.presentations as any)?.[0]?.id && (
+                <a href={`${appUrl}/client/presentations/${(p.presentations as any)[0].id}`} target="_blank"
+                  className="text-[10px] tracking-widest uppercase text-neutral-400 hover:text-black transition-colors border border-neutral-200 px-3 py-1.5 hover:border-black">
+                  Client View ↗
+                </a>
+              )}
+              <Link href={`/admin/projects/${p.id}`} className="text-[10px] tracking-widest uppercase text-neutral-400 hover:text-black transition-colors border border-neutral-200 px-3 py-1.5 hover:border-black">
+                Manage
+              </Link>
+            </div>
           </div>
         ))}
       </div>
