@@ -85,10 +85,35 @@ export default function PresentationBuilder({ params }: { params: { id: string }
     setTimeout(() => setSaved(false), 2000)
   }
 
+  const [emailStatus, setEmailStatus] = useState<string>('')
+
   const togglePublish = async () => {
     const newVal = !presentation?.is_published
     await supabase.from('presentations').update({ is_published: newVal }).eq('id', id)
     setPresentation({ ...presentation, is_published: newVal })
+
+    // Auto-email clients when publishing (not when unpublishing)
+    if (newVal) {
+      setEmailStatus('Sending...')
+      try {
+        const res = await fetch('/api/send-presentation-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ presentationId: id })
+        })
+        const data = await res.json()
+        if (data.sent > 0) {
+          setEmailStatus(`✓ Email sent to ${data.sent} client${data.sent > 1 ? 's' : ''}`)
+        } else if (data.error) {
+          setEmailStatus(data.error === 'No clients assigned to this project' ? 'Published (no clients assigned yet)' : '⚠ Published but email failed')
+        } else {
+          setEmailStatus('Published')
+        }
+      } catch {
+        setEmailStatus('⚠ Published but email failed')
+      }
+      setTimeout(() => setEmailStatus(''), 5000)
+    }
   }
 
   const copyLink = () => {
@@ -111,6 +136,7 @@ export default function PresentationBuilder({ params }: { params: { id: string }
           <button onClick={togglePublish} className={`text-xs px-4 py-3 border tracking-widest uppercase transition-colors ${presentation.is_published ? 'bg-black text-white border-black' : 'border-neutral-300 hover:border-black'}`}>
             {presentation.is_published ? 'Published' : 'Publish'}
           </button>
+          {emailStatus && <span className="text-xs text-neutral-500 tracking-wider">{emailStatus}</span>}
           <Button variant="secondary" size="sm" onClick={copyLink}>
             {copied ? '✓ Copied' : <><Copy size={12} className="mr-1" />Copy Link</>}
           </Button>
