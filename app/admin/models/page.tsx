@@ -65,7 +65,10 @@ export default function ModelsPage() {
     ;(media || []).forEach((m: any) => { if (!photoMap.has(m.model_id)) photoMap.set(m.model_id, m.public_url) })
 
     const enriched = filtered.map(m => ({ ...m, photo: photoMap.get(m.id) || null }))
-    setPending(enriched.filter(m => !m.reviewed))
+    const pending = enriched.filter(m => !m.reviewed)
+    // Sort: models with MISSING PROJECT flag bubble to top
+    pending.sort((a, b) => (b.notes?.includes('MISSING PROJECT') ? 1 : 0) - (a.notes?.includes('MISSING PROJECT') ? 1 : 0))
+    setPending(pending)
     setReviewed(enriched.filter(m => m.reviewed))
     setLoading(false)
   }, [search, agency, heightFt, city, keyword, gender, ageMin, ageMax])

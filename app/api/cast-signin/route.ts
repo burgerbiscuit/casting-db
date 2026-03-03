@@ -7,6 +7,14 @@ export async function POST(req: NextRequest) {
 
   const supabase = await createServiceClient()
 
+  // Safety check — projectId must always be present
+  if (!projectId) {
+    console.error('[cast-signin] Missing projectId! modelData:', JSON.stringify(modelData).slice(0, 200))
+    // Still create the model so they're not lost, but flag it
+    const { data, error } = await supabase.from('models').insert({ ...modelData, notes: '[MISSING PROJECT - check cast sign-in]' }).select('id').single()
+    return NextResponse.json({ ok: true, modelId: data?.id, warning: 'project_missing' })
+  }
+
   let modelId = existingModelId
   try {
     if (isReturning && modelId) {
