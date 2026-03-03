@@ -202,19 +202,16 @@ export function PresentationViewer({
   }
 
   const handleConfirm = async (modelId: string) => {
+    // Client can only request confirmation — sets status to pending_confirmation
+    // Admin must officially confirm from the backend (sets admin_confirmed = true)
+    if (confirms[modelId] || pendings[modelId]) return // already confirmed or pending, no action
     const supabase = (await import('@/lib/supabase/client')).createClient()
-    const next = !confirms[modelId]
-    setConfirms(prev => ({ ...prev, [modelId]: next }))
-    if (next) {
-      setShortlists(prev => ({ ...prev, [modelId]: true }))
-      await supabase.from('client_shortlists').upsert(
-        { presentation_id: presentationId, model_id: modelId, client_id: clientId, status: 'confirmed' },
-        { onConflict: 'presentation_id,model_id,client_id' }
-      )
-    } else {
-      await supabase.from('client_shortlists').update({ status: 'shortlisted' })
-        .eq('presentation_id', presentationId).eq('model_id', modelId).eq('client_id', clientId)
-    }
+    setPendings(prev => ({ ...prev, [modelId]: true }))
+    setShortlists(prev => ({ ...prev, [modelId]: true }))
+    await supabase.from('client_shortlists').upsert(
+      { presentation_id: presentationId, model_id: modelId, client_id: clientId, status: 'pending_confirmation' },
+      { onConflict: 'presentation_id,model_id,client_id' }
+    )
   }
 
   const handleRelease = async (modelId: string) => {
