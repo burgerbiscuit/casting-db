@@ -12,7 +12,7 @@ export default async function PresentationView({ params }: { params: { id: strin
   if (!user) redirect('/client/login')
 
   const { data: presentation } = await supabase
-    .from('presentations').select('*, projects(name)').eq('id', id).single()
+    .from('presentations').select('*, projects(name, specs)').eq('id', id).single()
 
   if (!presentation) return <div>Presentation not found.</div>
 
@@ -47,6 +47,9 @@ export default async function PresentationView({ params }: { params: { id: strin
   const shortlistMap: Record<string, any> = {}
   ;(shortlists || []).forEach(s => { shortlistMap[s.model_id] = s })
 
+  const confirmMap: Record<string, boolean> = {}
+  ;(shortlists || []).filter(s => s.status === 'confirmed').forEach(s => { confirmMap[s.model_id] = true })
+
   const mediaByModel: Record<string, any[]> = {}
   ;(allMedia || []).forEach(m => {
     if (!mediaByModel[m.model_id]) mediaByModel[m.model_id] = []
@@ -79,8 +82,10 @@ export default async function PresentationView({ params }: { params: { id: strin
         presentationId={id}
         clientId={user?.id || ''}
         shortlistMap={shortlistMap}
+        confirmMap={confirmMap}
         presentationName={presentation.name}
         projectName={(presentation.projects as any)?.name || ''}
+        projectSpecs={(presentation.projects as any)?.specs || ''}
       />
     </div>
   )

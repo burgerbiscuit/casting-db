@@ -9,12 +9,14 @@ interface Props {
   presentationId: string
   clientId: string
   shortlistMap: Record<string, any>
+  confirmMap: Record<string, boolean>
   presentationName: string
   projectName: string
+  projectSpecs: string
 }
 
 export function PresentationViewer({
-  presentationModels, mediaByModel, presentationId, clientId, shortlistMap, presentationName, projectName
+  presentationModels, mediaByModel, presentationId, clientId, shortlistMap, confirmMap: initialConfirmMap, presentationName, projectName, projectSpecs
 }: Props) {
   const [view, setView] = useState<'grid' | 'slides'>('grid')
   const [slideIndex, setSlideIndex] = useState(0)
@@ -46,6 +48,8 @@ export function PresentationViewer({
     Object.keys(shortlistMap).forEach(k => { m[k] = true })
     return m
   })
+  const [confirms, setConfirms] = useState<Record<string, boolean>>(initialConfirmMap || {})
+  const [confirmModal, setConfirmModal] = useState<{ modelId: string; modelName: string } | null>(null)
 
   const [search, setSearch] = useState('')
   const [filterHeight, setFilterHeight] = useState('')
@@ -76,8 +80,12 @@ export function PresentationViewer({
   })
 
   const sorted = [...filtered].sort((a, b) => {
+    const aC = !!confirms[a.model_id]
+    const bC = !!confirms[b.model_id]
     const aS = !!shortlists[a.model_id]
     const bS = !!shortlists[b.model_id]
+    if (aC && !bC) return -1
+    if (!aC && bC) return 1
     if (aS && !bS) return -1
     if (!aS && bS) return 1
     return 0
@@ -138,6 +146,23 @@ export function PresentationViewer({
     clientNoteDebounce.current = setTimeout(() => saveClientNotes(modelId, val), 800)
   }
 
+  const handleConfirm = async (modelId: string) => {
+    const supabase = (await import('@/lib/supabase/client')).createClient()
+    const next = !confirms[modelId]
+    setConfirms(prev => ({ ...prev, [modelId]: next }))
+    if (next) {
+      setShortlists(prev => ({ ...prev, [modelId]: true }))
+      await supabase.from('client_shortlists').upsert(
+        { presentation_id: presentationId, model_id: modelId, client_id: clientId, status: 'confirmed' },
+        { onConflict: 'presentation_id,model_id,client_id' }
+      )
+    } else {
+      await supabase.from('client_shortlists').update({ status: 'shortlisted' })
+        .eq('presentation_id', presentationId).eq('model_id', modelId).eq('client_id', clientId)
+    }
+  }
+
+  const confirmedCount = Object.values(confirms).filter(Boolean).length
   const shortlistedCount = Object.values(shortlists).filter(Boolean).length
 
   const getSizingParts = (pm: any, model: any): string[] => {
