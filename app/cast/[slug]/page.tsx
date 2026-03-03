@@ -339,7 +339,11 @@ export default function CastPage({ params }: { params: { slug: string } }) {
         {step === 'landing' && (
           <div className="text-center">
             <h1 className="text-3xl font-light tracking-widest uppercase mb-4">{project?.name}</h1>
-            {project?.description && <p className="text-sm text-neutral-500 mb-12">{project.description}</p>}
+            {project?.shoot_date && (
+              <p className="text-sm text-neutral-400 mb-12 tracking-wider">
+                {new Date(project.shoot_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+              </p>
+            )}
             <Button onClick={() => setStep('name')} size="lg">Sign In</Button>
           </div>
         )}
