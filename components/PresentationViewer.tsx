@@ -79,9 +79,15 @@ export function PresentationViewer({
     }
   }, [view, isMobile])
 
+
   const [shortlists, setShortlists] = useState<Record<string, boolean>>(() => {
     const m: Record<string, boolean> = {}
     Object.keys(shortlistMap).forEach(k => { m[k] = true })
+    return m
+  })
+  const [releases, setReleases] = useState<Record<string, boolean>>(() => {
+    const m: Record<string, boolean> = {}
+    Object.entries(shortlistMap).forEach(([k, v]) => { if ((v as any)?.is_released) m[k] = true })
     return m
   })
   const [confirms, setConfirms] = useState<Record<string, boolean>>(initialConfirmMap || {})
@@ -116,10 +122,14 @@ export function PresentationViewer({
   })
 
   const sorted = [...filtered].sort((a, b) => {
+    const aR = !!releases[a.model_id]
+    const bR = !!releases[b.model_id]
     const aC = !!confirms[a.model_id]
     const bC = !!confirms[b.model_id]
     const aS = !!shortlists[a.model_id]
     const bS = !!shortlists[b.model_id]
+    if (aR && !bR) return 1   // released sink to bottom
+    if (!aR && bR) return -1
     if (aC && !bC) return -1
     if (!aC && bC) return 1
     if (aS && !bS) return -1
@@ -196,6 +206,15 @@ export function PresentationViewer({
       await supabase.from('client_shortlists').update({ status: 'shortlisted' })
         .eq('presentation_id', presentationId).eq('model_id', modelId).eq('client_id', clientId)
     }
+  }
+
+  const handleRelease = async (modelId: string) => {
+    const next = !releases[modelId]
+    setReleases(r => ({ ...r, [modelId]: next }))
+    await supabase.from('client_shortlists').upsert({
+      presentation_id: presentationId, model_id: modelId, client_id: clientId,
+      is_released: next, status: 'shortlisted'
+    }, { onConflict: 'presentation_id,model_id,client_id' })
   }
 
   const confirmedCount = Object.values(confirms).filter(Boolean).length
@@ -307,7 +326,7 @@ export function PresentationViewer({
                         if (confirms[pm.model_id]) { handleConfirm(pm.model_id) }
                         else setConfirmModal({ modelId: pm.model_id, modelName: `${pm.models?.first_name} ${pm.models?.last_name}` })
                       }}
-                      className={`w-full mt-1 py-1.5 text-[9px] tracking-widest uppercase transition-colors border ${confirms[pm.model_id] ? 'bg-black text-white border-black hover:opacity-70' : 'border-neutral-200 hover:border-black text-neutral-400 hover:text-black'}`}>
+                      className={`w-full mt-1 py-1.5 text-[9px] tracking-widest uppercase transition-colors border ${confirms[pm.model_id] ? 'bg-green-600 text-white border-green-600 hover:bg-green-700' : 'border-neutral-200 hover:border-black text-neutral-400 hover:text-black'}`}>
                       {confirms[pm.model_id] ? '✓ Confirmed' : 'Confirm Talent'}
                     </button>
                   </div>
@@ -334,7 +353,7 @@ export function PresentationViewer({
                     if (confirms[pm.model_id]) { handleConfirm(pm.model_id) }
                     else setConfirmModal({ modelId: pm.model_id, modelName: `${pm.models?.first_name} ${pm.models?.last_name}` })
                   }}
-                  className={`w-full mt-1 py-1.5 text-[9px] tracking-widest uppercase transition-colors border ${confirms[pm.model_id] ? 'bg-black text-white border-black hover:opacity-70' : 'border-neutral-200 hover:border-black text-neutral-400 hover:text-black'}`}>
+                  className={`w-full mt-1 py-1.5 text-[9px] tracking-widest uppercase transition-colors border ${confirms[pm.model_id] ? 'bg-green-600 text-white border-green-600 hover:bg-green-700' : 'border-neutral-200 hover:border-black text-neutral-400 hover:text-black'}`}>
                   {confirms[pm.model_id] ? '✓ Confirmed' : 'Confirm Talent'}
                 </button>
               </div>
@@ -423,7 +442,7 @@ export function PresentationViewer({
                   if (isConfirmed) { handleConfirm(pm.model_id) }
                   else setConfirmModal({ modelId: pm.model_id, modelName: `${model?.first_name} ${model?.last_name}` })
                 }}
-                className={`w-full py-2.5 text-[10px] tracking-widest uppercase transition-colors border ${isConfirmed ? 'bg-black text-white border-black' : 'border-neutral-300 text-neutral-500 hover:border-black hover:text-black'}`}>
+                className={`w-full py-2.5 text-[10px] tracking-widest uppercase transition-colors border ${isConfirmed ? 'bg-green-600 text-white border-green-600' : 'border-neutral-300 text-neutral-500 hover:border-black hover:text-black'}`}>
                 {isConfirmed ? '✓ Confirmed' : 'Confirm Talent'}
               </button>
               {/* Swipe hint */}
@@ -451,7 +470,7 @@ export function PresentationViewer({
                   if (confirms[current.model_id]) { handleConfirm(current.model_id) }
                   else setConfirmModal({ modelId: current.model_id, modelName: `${currentModel?.first_name} ${currentModel?.last_name}` })
                 }}
-                className={`text-[9px] tracking-widest uppercase border px-3 py-1.5 transition-colors ${confirms[current.model_id] ? 'bg-black text-white border-black hover:opacity-70' : 'border-neutral-300 hover:border-black text-neutral-500 hover:text-black'}`}>
+                className={`text-[9px] tracking-widest uppercase border px-3 py-1.5 transition-colors ${confirms[current.model_id] ? 'bg-green-600 text-white border-green-600 hover:bg-green-700' : 'border-neutral-300 hover:border-black text-neutral-500 hover:text-black'}`}>
                 {confirms[current.model_id] ? '✓ Confirmed' : 'Confirm Talent'}
               </button>
               <SlideActions presentationId={presentationId} modelId={current.model_id} clientId={clientId}

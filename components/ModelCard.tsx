@@ -71,7 +71,7 @@ export function ModelCard({ presentationModel, model, media, presentationId, cli
   }
 
   return (
-    <div className="border border-neutral-200">
+    <div className="border border-neutral-200 flex flex-col">
       {/* Photos — click to open slides */}
       <div className="relative aspect-[3/4] bg-neutral-100 overflow-hidden cursor-pointer" onClick={onCardClick}>
         {visibleMedia.length > 0 ? (
@@ -93,19 +93,19 @@ export function ModelCard({ presentationModel, model, media, presentationId, cli
       </div>
 
       {/* Info */}
-      <div className="p-4">
-        <h3 className="text-sm font-medium tracking-widest uppercase mb-2">
+      <div className="p-3 flex flex-col" style={{height: "160px", overflow: "hidden"}}>
+        <h3 className="text-xs font-medium tracking-widest uppercase mb-1 truncate">
           {model.first_name} {model.last_name}
         </h3>
 
         {presentationModel.show_sizing && (
-          <div className="grid grid-cols-3 gap-1 mb-3 text-[10px] text-neutral-500">
-            {model.height_ft && <div><span className="label block">Height</span>{model.height_ft}'{model.height_in}"</div>}
-            {model.bust && <div><span className="label block">Bust</span>{model.bust}</div>}
-            {model.waist && <div><span className="label block">Waist</span>{model.waist}</div>}
-            {model.hips && <div><span className="label block">Hips</span>{model.hips}</div>}
-            {model.shoe_size && <div><span className="label block">Shoe</span>{model.shoe_size}</div>}
-            {model.dress_size && <div><span className="label block">Dress</span>{model.dress_size}</div>}
+          <div className="flex flex-wrap gap-x-3 gap-y-0.5 mb-2 text-[10px] text-neutral-500">
+            {model.height_ft && <span>{model.height_ft}'{model.height_in}"</span>}
+            {model.bust && <span>B {model.bust}</span>}
+            {model.waist && <span>W {model.waist}</span>}
+            {model.hips && <span>H {model.hips}</span>}
+            {model.shoe_size && <span>Shoe {model.shoe_size}</span>}
+            {model.dress_size && <span>Dress {model.dress_size}</span>}
           </div>
         )}
 
@@ -125,16 +125,10 @@ export function ModelCard({ presentationModel, model, media, presentationId, cli
         )}
 
         {presentationModel.admin_notes && (
-          <p className="text-xs text-neutral-500 italic mb-3">{presentationModel.admin_notes}</p>
+          <p className="text-[10px] text-neutral-500 italic mb-1 line-clamp-1">{presentationModel.admin_notes}</p>
         )}
 
-        <textarea
-          value={notes}
-          onChange={e => saveNotes(e.target.value)}
-          placeholder="Your notes..."
-          rows={2}
-          className="w-full text-xs border-b border-neutral-200 bg-transparent py-1 focus:outline-none focus:border-black resize-none placeholder:text-neutral-300 mt-2"
-        />
+
       </div>
     </div>
   )
