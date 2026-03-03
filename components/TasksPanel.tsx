@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Plus, X, Check, Clock, ChevronDown, ChevronUp } from 'lucide-react'
+import { DeleteConfirmModal } from '@/components/DeleteConfirmModal'
 
 const PRIORITIES = ['low', 'normal', 'high', 'urgent']
 const PRIORITY_COLORS: Record<string, string> = {
@@ -18,6 +19,7 @@ export function TasksPanel() {
   const [currentUser, setCurrentUser] = useState<any>(null)
   const [showForm, setShowForm] = useState(false)
   const [showDone, setShowDone] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
   const [form, setForm] = useState({ title: '', description: '', assigned_to: '', deadline: '', priority: 'normal' })
 
   const load = useCallback(async () => {
@@ -154,7 +156,7 @@ export function TasksPanel() {
                 <span className="text-[9px] text-neutral-300">by {task.created_by_name}</span>
               </div>
             </div>
-            <button onClick={() => deleteTask(task.id)}
+            <button onClick={() => setDeleteTarget(task.id)}
               className="opacity-0 group-hover:opacity-100 text-neutral-300 hover:text-black transition-all flex-shrink-0">
               <X size={12} />
             </button>
@@ -178,7 +180,7 @@ export function TasksPanel() {
                     <Check size={10} className="text-white" />
                   </button>
                   <p className="text-xs line-through text-neutral-400 flex-1">{task.title}</p>
-                  <button onClick={() => deleteTask(task.id)}
+                  <button onClick={() => setDeleteTarget(task.id)}
                     className="opacity-0 group-hover:opacity-100 text-neutral-300 hover:text-black transition-all">
                     <X size={12} />
                   </button>
@@ -187,6 +189,13 @@ export function TasksPanel() {
             </div>
           )}
         </div>
+      )}
+      {deleteTarget && (
+        <DeleteConfirmModal
+          title="Delete this task?"
+          onConfirm={() => { deleteTask(deleteTarget); setDeleteTarget(null) }}
+          onCancel={() => setDeleteTarget(null)}
+        />
       )}
     </div>
   )

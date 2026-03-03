@@ -1,4 +1,5 @@
 'use client'
+import { DeleteConfirmModal } from '@/components/DeleteConfirmModal'
 import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/Button'
@@ -14,6 +15,7 @@ export default function TeamPage() {
   const [role, setRole] = useState('member')
   const [inviting, setInviting] = useState(false)
   const [message, setMessage] = useState('')
+  const [deleteTarget, setDeleteTarget] = useState<{id: string, name: string} | null>(null)
 
   const load = useCallback(async () => {
     const { data } = await supabase.from('team_members').select('*').order('created_at')
@@ -80,6 +82,14 @@ export default function TeamPage() {
           </div>
         </section>
       </div>
+      {deleteTarget && (
+        <DeleteConfirmModal
+          title={`Remove ${deleteTarget.name} from the team?`}
+          description="They will lose access to the admin panel immediately."
+          onConfirm={() => { removeMember(deleteTarget.id); setDeleteTarget(null) }}
+          onCancel={() => setDeleteTarget(null)}
+        />
+      )}
     </div>
   )
 }

@@ -8,6 +8,7 @@ import { ChipInput } from '@/components/ChipInput'
 import { MediaUploader } from '@/components/MediaUploader'
 import { Eye, EyeOff, Trash2, Star, Crop } from 'lucide-react'
 import { ImageCropper } from '@/components/ImageCropper'
+import { DeleteConfirmModal } from '@/components/DeleteConfirmModal'
 import Link from 'next/link'
 
 const ETHNICITY_MAP: Record<string, string[]> = {
@@ -32,6 +33,8 @@ export default function ModelProfile({ params }: { params: { id: string } }) {
   const [saved, setSaved] = useState(false)
   const [activeTab, setActiveTab] = useState<'profile' | 'media' | 'presenting'>('profile')
   const [cropTarget, setCropTarget] = useState<{url: string, storagePath: string, id: string} | null>(null)
+  const [showDeleteModel, setShowDeleteModel] = useState(false)
+  const [deleteMediaTarget, setDeleteMediaTarget] = useState<{id: string, storagePath: string} | null>(null)
   const [presentations, setPresentations] = useState<any[]>([])
 
   const loadModel = useCallback(async () => {
@@ -94,7 +97,6 @@ export default function ModelProfile({ params }: { params: { id: string } }) {
   }
 
   const deleteModel = async () => {
-    if (!confirm('Permanently delete this model and all their data? This cannot be undone.')) return
     await supabase.from('presentation_models').delete().eq('model_id', model.id)
     await supabase.from('project_models').delete().eq('model_id', model.id)
     await supabase.from('model_media').delete().eq('model_id', model.id)
@@ -108,7 +110,6 @@ export default function ModelProfile({ params }: { params: { id: string } }) {
   }
 
   const deleteMedia = async (mediaId: string, storagePath: string) => {
-    if (!confirm('Delete this file?')) return
     await supabase.storage.from('model-media').remove([storagePath])
     await supabase.from('model_media').delete().eq('id', mediaId)
     loadMedia()
@@ -151,7 +152,7 @@ export default function ModelProfile({ params }: { params: { id: string } }) {
               ✓ Reviewed
             </button>
           )}
-          <button onClick={deleteModel} className="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-600 transition-colors px-3 py-2">
+          <button onClick={() => setShowDeleteModel(true)} className="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-600 transition-colors px-3 py-2">
             <Trash2 size={12} /> Delete Model
           </button>
           <Button onClick={saveModel} disabled={saving}>
@@ -416,7 +417,7 @@ export default function ModelProfile({ params }: { params: { id: string } }) {
                         <Crop size={10} />
                       </button>
                     )}
-                    <button onClick={() => deleteMedia(m.id, m.storage_path)}
+                    <button onClick={() => setDeleteMediaTarget({ id: m.id, storagePath: m.storage_path })}
                       className="px-2 py-1.5 border border-neutral-200 text-neutral-300 hover:border-red-300 hover:text-red-400 transition-colors">
                       <Trash2 size={10} />
                     </button>
