@@ -27,7 +27,7 @@ export default function DatabaseLanding() {
             <span className="text-3xl">◈</span>
             <div>
               <p className="text-xs font-medium tracking-widest uppercase mb-1">Agent</p>
-              <p className="text-[10px] text-neutral-400 leading-relaxed">I represent talent and want to be in touch with this casting office</p>
+              <p className="text-[10px] text-neutral-400 leading-relaxed">I represent talent and want to add my contact information</p>
             </div>
           </Link>
 
