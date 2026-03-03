@@ -2,103 +2,197 @@
 import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
-import { Search, AlertCircle } from 'lucide-react'
+import { Search, SlidersHorizontal, X } from 'lucide-react'
 
 export default function ModelsPage() {
   const supabase = createClient()
   const [pending, setPending] = useState<any[]>([])
   const [reviewed, setReviewed] = useState<any[]>([])
-  const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
+  const [showFilters, setShowFilters] = useState(false)
 
-  const load = useCallback(async (q: string) => {
+  // Filters
+  const [search, setSearch] = useState('')
+  const [agency, setAgency] = useState('')
+  const [heightFt, setHeightFt] = useState('')
+  const [city, setCity] = useState('')
+  const [keyword, setKeyword] = useState('')
+  const [gender, setGender] = useState('')
+  const [ageMin, setAgeMin] = useState('')
+  const [ageMax, setAgeMax] = useState('')
+
+  const hasFilters = search || agency || heightFt || city || keyword || gender || ageMin || ageMax
+
+  const load = useCallback(async () => {
     setLoading(true)
     let query = supabase
       .from('models')
-      .select('id, first_name, last_name, agency, ethnicity_broad, height_ft, height_in, reviewed, created_at')
+      .select('id, first_name, last_name, agency, height_ft, height_in, based_in, gender, date_of_birth, skills, hobbies, reviewed, created_at')
       .order('created_at', { ascending: false })
-      .limit(200)
+      .limit(300)
 
-    if (q) {
-      query = query.or(`first_name.ilike.%${q}%,last_name.ilike.%${q}%,agency.ilike.%${q}%`)
-    }
+    if (search) query = query.or(`first_name.ilike.%${search}%,last_name.ilike.%${search}%`)
+    if (agency) query = query.ilike('agency', `%${agency}%`)
+    if (heightFt) query = query.eq('height_ft', parseInt(heightFt))
+    if (city) query = query.ilike('based_in', `%${city}%`)
+    if (gender) query = query.ilike('gender', `%${gender}%`)
+    if (keyword) query = query.or(`skills.cs.{${keyword}},hobbies.cs.{${keyword}},agency.ilike.%${keyword}%,based_in.ilike.%${keyword}%`)
 
     const { data: modelData } = await query
     if (!modelData) { setLoading(false); return }
 
-    const ids = modelData.map((m: any) => m.id)
+    // Age filter client-side
+    let filtered = modelData
+    if (ageMin || ageMax) {
+      const now = new Date()
+      filtered = filtered.filter(m => {
+        if (!m.date_of_birth) return false
+        const age = Math.floor((now.getTime() - new Date(m.date_of_birth).getTime()) / (365.25 * 24 * 60 * 60 * 1000))
+        if (ageMin && age < parseInt(ageMin)) return false
+        if (ageMax && age > parseInt(ageMax)) return false
+        return true
+      })
+    }
+
+    const ids = filtered.map(m => m.id)
+    if (!ids.length) { setPending([]); setReviewed([]); setLoading(false); return }
+
     const { data: media } = await supabase
-      .from('model_media')
-      .select('model_id, public_url')
-      .in('model_id', ids)
-      .eq('is_visible', true)
-      .eq('type', 'photo')
-      .order('display_order')
+      .from('model_media').select('model_id, public_url')
+      .in('model_id', ids).eq('is_visible', true).eq('type', 'photo').order('display_order')
 
     const photoMap = new Map<string, string>()
-    ;(media || []).forEach((m: any) => {
-      if (!photoMap.has(m.model_id)) photoMap.set(m.model_id, m.public_url)
-    })
+    ;(media || []).forEach((m: any) => { if (!photoMap.has(m.model_id)) photoMap.set(m.model_id, m.public_url) })
 
-    const enriched = modelData.map((m: any) => ({ ...m, photo: photoMap.get(m.id) || null }))
-    setPending(enriched.filter((m: any) => !m.reviewed))
-    setReviewed(enriched.filter((m: any) => m.reviewed))
+    const enriched = filtered.map(m => ({ ...m, photo: photoMap.get(m.id) || null }))
+    setPending(enriched.filter(m => !m.reviewed))
+    setReviewed(enriched.filter(m => m.reviewed))
     setLoading(false)
-  }, [])
+  }, [search, agency, heightFt, city, keyword, gender, ageMin, ageMax])
 
   useEffect(() => {
-    const t = setTimeout(() => load(search), 300)
+    const t = setTimeout(load, 300)
     return () => clearTimeout(t)
-  }, [search, load])
+  }, [load])
 
-  const ModelCard = ({ m }: { m: any }) => (
-    <Link key={m.id} href={`/admin/models/${m.id}`} className="group">
-      <div className="aspect-[3/4] bg-neutral-100 overflow-hidden mb-2 relative">
-        {m.photo ? (
-          <img src={m.photo} alt={`${m.first_name} ${m.last_name}`}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-        ) : (
-          <div className="w-full h-full flex flex-col items-center justify-center text-neutral-300">
-            <div className="w-12 h-12 rounded-full border-2 border-neutral-200 flex items-center justify-center text-lg font-light mb-2">
-              {m.first_name?.[0]}{m.last_name?.[0]}
+  const clearFilters = () => { setSearch(''); setAgency(''); setHeightFt(''); setCity(''); setKeyword(''); setGender(''); setAgeMin(''); setAgeMax('') }
+
+  const ModelCard = ({ m }: { m: any }) => {
+    const age = m.date_of_birth ? Math.floor((Date.now() - new Date(m.date_of_birth).getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : null
+    return (
+      <Link href={`/admin/models/${m.id}`} className="group">
+        <div className="aspect-[3/4] bg-neutral-100 overflow-hidden mb-2 relative">
+          {m.photo ? (
+            <img src={m.photo} alt={`${m.first_name} ${m.last_name}`}
+              className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-300" />
+          ) : (
+            <div className="w-full h-full flex flex-col items-center justify-center text-neutral-300">
+              <div className="w-12 h-12 rounded-full border-2 border-neutral-200 flex items-center justify-center text-lg font-light mb-2">
+                {m.first_name?.[0]}{m.last_name?.[0]}
+              </div>
             </div>
-            <p className="text-[10px] tracking-wider uppercase">No photo</p>
-          </div>
-        )}
-      </div>
-      <p className="text-xs font-medium tracking-wider uppercase truncate">{m.first_name} {m.last_name}</p>
-      {m.agency && <p className="text-[10px] text-neutral-400 truncate">{m.agency}</p>}
-      {m.height_ft && <p className="text-[10px] text-neutral-400">{m.height_ft}'{m.height_in}"</p>}
-    </Link>
-  )
+          )}
+        </div>
+        <p className="text-xs font-medium tracking-wider uppercase truncate">{m.first_name} {m.last_name}</p>
+        {m.agency && <p className="text-[10px] text-neutral-400 truncate">{m.agency}</p>}
+        <p className="text-[10px] text-neutral-400">
+          {m.height_ft ? `${m.height_ft}'${m.height_in}"` : ''}
+          {m.height_ft && (m.based_in || age) ? ' · ' : ''}
+          {m.based_in || ''}
+          {age ? (m.based_in ? ` · ` : '') + `${age}y` : ''}
+        </p>
+      </Link>
+    )
+  }
+
+  const total = pending.length + reviewed.length
 
   return (
     <div>
-      <h1 className="text-2xl font-light tracking-widest uppercase mb-10">Models</h1>
-
-      <div className="relative mb-8 max-w-md">
-        <Search size={14} className="absolute left-0 top-3 text-neutral-400" />
-        <input
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          placeholder="Search by name, agency..."
-          className="w-full pl-5 border-b border-neutral-300 bg-transparent py-2 text-sm focus:outline-none focus:border-black placeholder:text-neutral-400"
-        />
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="text-2xl font-light tracking-widest uppercase">Models</h1>
+        <span className="text-xs text-neutral-400">{total} shown</span>
       </div>
+
+      {/* Search bar */}
+      <div className="flex gap-3 mb-4">
+        <div className="relative flex-1">
+          <Search size={14} className="absolute left-0 top-3 text-neutral-400" />
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by name..."
+            className="w-full pl-5 border-b border-neutral-300 bg-transparent py-2 text-sm focus:outline-none focus:border-black placeholder:text-neutral-400" />
+        </div>
+        <button onClick={() => setShowFilters(!showFilters)}
+          className={`flex items-center gap-2 text-xs tracking-widest uppercase border px-4 py-2 transition-colors ${showFilters || hasFilters ? 'bg-black text-white border-black' : 'border-neutral-300 hover:border-black'}`}>
+          <SlidersHorizontal size={12} /> Filters {hasFilters ? '·' : ''}
+        </button>
+        {hasFilters && (
+          <button onClick={clearFilters} className="flex items-center gap-1 text-xs text-neutral-400 hover:text-black transition-colors">
+            <X size={12} /> Clear
+          </button>
+        )}
+      </div>
+
+      {/* Filter panel */}
+      {showFilters && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 p-5 bg-neutral-50 border border-neutral-100">
+          <div>
+            <label className="label text-[10px] block mb-1">AGENCY</label>
+            <input value={agency} onChange={e => setAgency(e.target.value)} placeholder="Any agency"
+              className="w-full border-b border-neutral-300 bg-transparent py-1.5 text-sm focus:outline-none focus:border-black placeholder:text-neutral-300" />
+          </div>
+          <div>
+            <label className="label text-[10px] block mb-1">CITY / BASED IN</label>
+            <input value={city} onChange={e => setCity(e.target.value)} placeholder="Any city"
+              className="w-full border-b border-neutral-300 bg-transparent py-1.5 text-sm focus:outline-none focus:border-black placeholder:text-neutral-300" />
+          </div>
+          <div>
+            <label className="label text-[10px] block mb-1">HEIGHT (FT)</label>
+            <select value={heightFt} onChange={e => setHeightFt(e.target.value)}
+              className="w-full border-b border-neutral-300 bg-transparent py-1.5 text-sm focus:outline-none focus:border-black">
+              <option value="">Any</option>
+              {[4,5,6,7].map(h => <option key={h} value={h}>{h} ft</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="label text-[10px] block mb-1">GENDER</label>
+            <select value={gender} onChange={e => setGender(e.target.value)}
+              className="w-full border-b border-neutral-300 bg-transparent py-1.5 text-sm focus:outline-none focus:border-black">
+              <option value="">Any</option>
+              <option>Female</option>
+              <option>Male</option>
+              <option>Non-binary</option>
+            </select>
+          </div>
+          <div>
+            <label className="label text-[10px] block mb-1">AGE MIN</label>
+            <input type="number" value={ageMin} onChange={e => setAgeMin(e.target.value)} placeholder="e.g. 18"
+              className="w-full border-b border-neutral-300 bg-transparent py-1.5 text-sm focus:outline-none focus:border-black placeholder:text-neutral-300" />
+          </div>
+          <div>
+            <label className="label text-[10px] block mb-1">AGE MAX</label>
+            <input type="number" value={ageMax} onChange={e => setAgeMax(e.target.value)} placeholder="e.g. 35"
+              className="w-full border-b border-neutral-300 bg-transparent py-1.5 text-sm focus:outline-none focus:border-black placeholder:text-neutral-300" />
+          </div>
+          <div className="col-span-2">
+            <label className="label text-[10px] block mb-1">KEYWORD (skill, hobby, etc.)</label>
+            <input value={keyword} onChange={e => setKeyword(e.target.value)} placeholder="e.g. Dancing, Swimming..."
+              className="w-full border-b border-neutral-300 bg-transparent py-1.5 text-sm focus:outline-none focus:border-black placeholder:text-neutral-300" />
+          </div>
+        </div>
+      )}
 
       {loading && <div className="text-xs text-neutral-400">Loading...</div>}
 
       {!loading && (
         <>
-          {/* Pending Review */}
           {pending.length > 0 && (
             <div className="mb-12">
               <div className="flex items-center gap-2 mb-6 pb-3 border-b border-amber-200">
-                <AlertCircle size={14} className="text-amber-500" />
+                <span className="text-amber-500 text-sm">⚠</span>
                 <h2 className="text-xs tracking-widest uppercase font-medium text-amber-600">
                   Pending Review ({pending.length})
                 </h2>
-                <span className="text-[10px] text-neutral-400 ml-2">New sign-ins — click a model to review &amp; approve</span>
+                <span className="text-[10px] text-neutral-400 ml-2">Click a model to review &amp; approve</span>
               </div>
               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-4">
                 {pending.map(m => <ModelCard key={m.id} m={m} />)}
@@ -106,11 +200,10 @@ export default function ModelsPage() {
             </div>
           )}
 
-          {/* Reviewed Models */}
           {reviewed.length > 0 && (
             <div>
               {pending.length > 0 && (
-                <h2 className="text-xs tracking-widest uppercase mb-6 pb-3 border-b border-neutral-100">
+                <h2 className="text-xs tracking-widest uppercase mb-6 pb-3 border-b border-neutral-100 text-neutral-500">
                   All Models ({reviewed.length})
                 </h2>
               )}
@@ -120,9 +213,7 @@ export default function ModelsPage() {
             </div>
           )}
 
-          {pending.length === 0 && reviewed.length === 0 && (
-            <p className="text-sm text-neutral-400">No models found.</p>
-          )}
+          {total === 0 && <p className="text-sm text-neutral-400">No models found.</p>}
         </>
       )}
     </div>
