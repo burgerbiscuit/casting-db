@@ -38,3 +38,11 @@ export async function GET(req: NextRequest) {
   }
   return NextResponse.json(all)
 }
+
+export async function PATCH(req: Request) {
+  const { id, is_main_contact } = await req.json()
+  const supabase = await createServiceClient()
+  const { error } = await supabase.from('agency_contacts').update({ is_main_contact }).eq('id', id)
+  if (error) return Response.json({ error: error.message }, { status: 500 })
+  return Response.json({ ok: true })
+}

@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Search, Mail, X } from 'lucide-react'
+import { Search, Mail, X, Star } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { ContactEditModal } from '@/components/ContactEditModal'
 
@@ -61,10 +61,21 @@ export default function AgencyContactsPage() {
     if (section !== 'ALL') filtered = filtered.filter(c => c.section === section)
     if (gender !== 'ALL') filtered = filtered.filter(c => c.gender === gender)
     
+    filtered.sort((a: any, b: any) => (b.is_main_contact ? 1 : 0) - (a.is_main_contact ? 1 : 0))
     setContacts(filtered)
   }
 
-  const toggleSelect = (id: string) => {
+  const toggleMain = async (contact: any) => {
+    const newVal = !contact.is_main_contact
+    await fetch('/api/agency-contacts', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: contact.id, is_main_contact: newVal }),
+    })
+    setAllContacts(prev => prev.map(c => c.id === contact.id ? { ...c, is_main_contact: newVal } : c))
+  }
+
+    const toggleSelect = (id: string) => {
     const newSet = new Set(selected)
     if (newSet.has(id)) newSet.delete(id)
     else newSet.add(id)
@@ -167,21 +178,28 @@ export default function AgencyContactsPage() {
                     if (selected.size === contacts.length) setSelected(new Set())
                     else setSelected(new Set(contacts.map(c => c.id)))
                   }} className="cursor-pointer" /></th>
+                <th className="w-6 py-2 pr-2"></th>
                 <th className="text-left label py-2 pr-6">Agency</th>
                 <th className="text-left label py-2 pr-6">Agent</th>
                 <th className="text-left label py-2 pr-6">Board</th>
                 <th className="text-left label py-2 pr-6">City</th>
                 <th className="text-left label py-2 pr-6">Email</th>
+                <th className="text-left label py-2 pr-6">Office</th>
                 <th className="text-left label py-2">Cell</th>
               </tr>
             </thead>
             <tbody>
               {contacts.map(c => (
-                <tr key={c.id} className={`border-b border-neutral-100 hover:bg-neutral-50 ${selected.has(c.id) ? 'bg-blue-50' : ''}`}>
+                <tr key={c.id} className={`border-b border-neutral-100 hover:bg-neutral-50 ${selected.has(c.id) ? 'bg-blue-50' : c.is_main_contact ? 'bg-amber-50' : ''}`}>
                   <td className="py-2.5 px-2"><input type="checkbox" 
                     checked={selected.has(c.id)}
                     onChange={() => toggleSelect(c.id)}
                     className="cursor-pointer" /></td>
+                  <td className="py-2 pr-2">
+                    <button onClick={() => toggleMain(c)} title="Set as main contact">
+                      <Star size={13} className={c.is_main_contact ? "fill-black text-black" : "text-neutral-200 hover:text-neutral-400"} />
+                    </button>
+                  </td>
                   <td className="py-2.5 pr-6 font-medium text-xs">{c.agency_name}</td>
                   <td className="py-2.5 pr-6 text-neutral-600 text-xs">{c.agent_name || '—'}</td>
                   <td className="py-2.5 pr-6 text-neutral-500 text-xs">{c.board || '—'}</td>
@@ -189,6 +207,7 @@ export default function AgencyContactsPage() {
                   <td className="py-2.5 pr-6">
                     {c.email ? <a href={`mailto:${c.email}`} className="underline underline-offset-2 hover:opacity-60 text-xs">{c.email}</a> : '—'}
                   </td>
+                  <td className="py-2.5 pr-6 text-neutral-500 text-xs">{c.office_phone || '—'}</td>
                   <td className="py-2.5 text-neutral-500 text-xs">{c.cell_phone || '—'}</td>
                   <td className="py-2.5 text-right">
                     <button onClick={() => setEditTarget(c)} className="text-[10px] tracking-widest uppercase text-neutral-400 hover:text-black transition-colors">Edit</button>
