@@ -41,6 +41,13 @@ export default async function PresentationView({ params }: { params: { id: strin
   const { data: allMedia } = await supabase
     .from('model_media').select('*').in('model_id', modelIds).order('display_order')
 
+  const { data: clientProfile } = await supabase
+    .from('client_profiles').select('name').eq('user_id', user.id).single()
+  // Also check team_members for their name
+  const { data: teamMember } = !clientProfile ? await supabase
+    .from('team_members').select('name').eq('user_id', user.id).single() : { data: null }
+  const clientFirstName = ((clientProfile?.name || teamMember?.name || '').split(' ')[0]) || ''
+
   const { data: shortlists } = await supabase
     .from('client_shortlists').select('*').eq('presentation_id', id).eq('client_id', user?.id)
 
@@ -81,6 +88,7 @@ export default async function PresentationView({ params }: { params: { id: strin
         mediaByModel={mediaByModel}
         presentationId={id}
         clientId={user?.id || ''}
+        clientFirstName={clientFirstName}
         shortlistMap={shortlistMap}
         confirmMap={confirmMap}
         presentationName={presentation.name}

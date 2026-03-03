@@ -10,13 +10,14 @@ interface Props {
   clientId: string
   shortlistMap: Record<string, any>
   confirmMap: Record<string, boolean>
+  clientFirstName: string
   presentationName: string
   projectName: string
   projectSpecs: string
 }
 
 export function PresentationViewer({
-  presentationModels, mediaByModel, presentationId, clientId, shortlistMap, confirmMap: initialConfirmMap, presentationName, projectName, projectSpecs
+  presentationModels, mediaByModel, presentationId, clientId, shortlistMap, confirmMap: initialConfirmMap, clientFirstName, presentationName, projectName, projectSpecs
 }: Props) {
   const [view, setView] = useState<'grid' | 'slides'>('grid')
   const [slideIndex, setSlideIndex] = useState(0)
@@ -239,7 +240,7 @@ export function PresentationViewer({
           {shortlistedCount > 0 && (
             <div className="mb-8">
               <p className="label mb-4 flex items-center gap-2"><Heart size={10} className="fill-black text-black" /> Shortlisted</p>
-              <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
                 {sorted.filter(pm => shortlists[pm.model_id]).map(pm => (
                   <div key={pm.id} className="relative">
                     {confirms[pm.model_id] && (
@@ -265,7 +266,7 @@ export function PresentationViewer({
               <div className="border-t border-neutral-100 mt-8 mb-6" />
             </div>
           )}
-          <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
             {sorted.filter(pm => !shortlists[pm.model_id]).map(pm => (
               <div key={pm.id} className="relative">
                 {confirms[pm.model_id] && (
@@ -313,8 +314,8 @@ export function PresentationViewer({
                 {confirms[current.model_id] ? '✓ Confirmed' : 'Confirm Talent'}
               </button>
               <SlideActions presentationId={presentationId} modelId={current.model_id} clientId={clientId}
-                initialShortlisted={!!shortlists[current.model_id]} initialNotes={shortlistMap[current.model_id]?.notes || ""}
-                onShortlistChange={(v) => handleShortlistChange(current.model_id, v)} compact={true} model={currentModel} projectName={projectName} />
+                initialShortlisted={!!shortlists[current.model_id]} initialNotes={shortlistMap[current.model_id]?.notes || ""} initialAuthor={shortlistMap[current.model_id]?.author_name || ''}
+                onShortlistChange={(v) => handleShortlistChange(current.model_id, v)} compact={true} model={currentModel} projectName={projectName} clientFirstName={clientFirstName} />
               <button onClick={() => setView('grid')} className="text-xs tracking-widest uppercase text-neutral-400 hover:text-black transition-colors">✕</button>
             </div>
           </div>
@@ -415,8 +416,8 @@ export function PresentationViewer({
   )
 }
 
-function SlideActions({ presentationId, modelId, clientId, initialShortlisted, initialNotes, onShortlistChange, compact, model, projectName }: {
-  presentationId: string, modelId: string, clientId: string, initialShortlisted: boolean, initialNotes: string, onShortlistChange?: (v: boolean) => void, compact?: boolean, model?: any, projectName?: string
+function SlideActions({ presentationId, modelId, clientId, initialShortlisted, initialNotes, initialAuthor, onShortlistChange, compact, model, projectName, clientFirstName }: {
+  presentationId: string, modelId: string, clientId: string, initialShortlisted: boolean, initialNotes: string, initialAuthor?: string, onShortlistChange?: (v: boolean) => void, compact?: boolean, model?: any, projectName?: string, clientFirstName?: string
 }) {
   const [shortlisted, setShortlisted] = useState(initialShortlisted)
   const [notes, setNotes] = useState(initialNotes)
@@ -444,7 +445,10 @@ function SlideActions({ presentationId, modelId, clientId, initialShortlisted, i
     setNotes(val)
     const { createClient } = await import('@/lib/supabase/client')
     const supabase = createClient()
-    await supabase.from('client_shortlists').upsert({ presentation_id: presentationId, model_id: modelId, client_id: clientId, notes: val })
+    await supabase.from('client_shortlists').upsert(
+      { presentation_id: presentationId, model_id: modelId, client_id: clientId, notes: val, author_name: clientFirstName || null },
+      { onConflict: 'presentation_id,model_id,client_id' }
+    )
   }
 
 
@@ -471,7 +475,10 @@ function SlideActions({ presentationId, modelId, clientId, initialShortlisted, i
         <Heart size={12} className={shortlisted ? 'fill-white text-white' : ''} />
         {shortlisted ? 'Shortlisted' : 'Add to Shortlist'}
       </button>
-      <textarea value={notes} onChange={e => saveNotes(e.target.value)} placeholder="Your notes..."
+      {notes && initialAuthor && (
+        <p className="text-[10px] text-neutral-400 tracking-wider">{initialAuthor}</p>
+      )}
+      <textarea value={notes} onChange={e => saveNotes(e.target.value)} placeholder="Your notes..." 
         rows={2} className="w-full text-sm border-b border-neutral-200 bg-transparent py-2 focus:outline-none focus:border-black resize-none placeholder:text-neutral-300" />
     </div>
   )
