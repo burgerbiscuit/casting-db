@@ -431,31 +431,31 @@ export function PresentationViewer({
 
             {/* Bottom info panel */}
             <div className="flex-shrink-0 px-5 pt-4 pb-5 border-t border-neutral-100 bg-white">
-              <div className="flex items-start justify-between mb-2">
-                <div>
-                  <h2 className="text-lg font-light tracking-widest uppercase leading-tight">{model?.first_name} {model?.last_name}</h2>
-                  {model?.agency && <p className="text-xs text-neutral-400 mt-0.5">{model.agency}</p>}
-                  {sizing.length > 0 && <p className="text-[10px] text-neutral-400 mt-1">{sizing.join(' · ')}</p>}
-                  {pm?.admin_notes && <p className="text-xs text-neutral-500 mt-1 italic">{pm.admin_notes}</p>}
-                </div>
+              {/* Name row — full width, no overlap */}
+              <h2 className="text-base font-light tracking-widest uppercase leading-tight mb-0.5">{model?.first_name} {model?.last_name}</h2>
+              {model?.agency && <p className="text-[11px] text-neutral-400 mb-1">{model.agency}</p>}
+              {sizing.length > 0 && <p className="text-[10px] text-neutral-400 mb-1">{sizing.join(' · ')}</p>}
+              {pm?.admin_notes && <p className="text-[10px] text-neutral-500 mb-2 italic">{pm.admin_notes}</p>}
+              {/* Action buttons row */}
+              <div className="flex gap-2 mt-2">
+                <button
+                  onClick={() => {
+                    const isPending = pendings[pm.model_id]
+                    if (confirms[pm.model_id] || isPending) return
+                    setConfirmModal({ modelId: pm.model_id, modelName: `${model?.first_name} ${model?.last_name}` })
+                  }}
+                  className={`flex-1 py-2.5 text-[10px] tracking-widest uppercase transition-colors border ${confirms[pm.model_id] ? 'bg-green-600 text-white border-green-600' : pendings[pm.model_id] ? 'bg-amber-400 text-white border-amber-400' : 'border-neutral-300 text-neutral-500 hover:border-black hover:text-black'}`}>
+                  {confirms[pm.model_id] ? '✓ Confirmed' : pendings[pm.model_id] ? '⏳ Pending' : 'Confirm Talent'}
+                </button>
                 <button
                   onClick={() => isShortlisted
                     ? supabase.from('client_shortlists').delete().eq('presentation_id', presentationId).eq('model_id', pm.model_id).eq('client_id', clientId).then(() => setShortlists(s => ({ ...s, [pm.model_id]: false })))
                     : supabase.from('client_shortlists').upsert({ presentation_id: presentationId, model_id: pm.model_id, client_id: clientId, status: 'shortlisted', author_name: clientFirstName }, { onConflict: 'presentation_id,model_id,client_id' }).then(() => setShortlists(s => ({ ...s, [pm.model_id]: true })))}
-                  className="ml-4 flex-shrink-0">
-                  <Heart size={22} className={isShortlisted ? 'fill-black text-black' : 'text-neutral-300'} />
+                  className={`px-4 py-2.5 border transition-colors flex items-center gap-1.5 text-[10px] tracking-widest uppercase ${isShortlisted ? 'bg-black text-white border-black' : 'border-neutral-300 text-neutral-500 hover:border-black'}`}>
+                  <Heart size={13} className={isShortlisted ? 'fill-white text-white' : ''} />
+                  {isShortlisted ? 'Shortlisted' : 'Shortlist'}
                 </button>
               </div>
-              <button
-                onClick={() => {
-                  if (isConfirmed) { handleConfirm(pm.model_id) }
-                  else setConfirmModal({ modelId: pm.model_id, modelName: `${model?.first_name} ${model?.last_name}` })
-                }}
-                className={`w-full py-2.5 text-[10px] tracking-widest uppercase transition-colors border ${isConfirmed ? 'bg-green-600 text-white border-green-600' : 'border-neutral-300 text-neutral-500 hover:border-black hover:text-black'}`}>
-                {isConfirmed ? '✓ Confirmed' : 'Confirm Talent'}
-              </button>
-              {/* Swipe hint */}
-
             </div>
           </div>
         )
@@ -464,28 +464,48 @@ export function PresentationViewer({
       {view === 'slides' && current && currentModel && (
         <div onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} className="fixed inset-0 bg-white z-40 flex flex-col overflow-hidden">
 
-          {/* Centered header: brand → name → sizing */}
-          <div className="flex-shrink-0 text-center pt-4 pb-3 px-6 relative border-b border-neutral-100">
-            <img src="/logo.jpg" alt="" className="h-4 w-auto mx-auto mb-2 opacity-60" />
-            <h2 className="text-2xl md:text-3xl font-light tracking-[0.15em] uppercase leading-tight">
-              {currentModel.first_name} {currentModel.last_name}
-            </h2>
-            <p className="text-xs text-neutral-500 mt-1 tracking-wider">
-              {getSizingParts(current, currentModel).join('  ·  ')}
-            </p>
-            <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-3">
+          {/* Centered header: brand → name → sizing → actions */}
+          <div className="flex-shrink-0 border-b border-neutral-100">
+            {/* Top row: logo + close (desktop: also action buttons) */}
+            <div className="flex items-center justify-between px-5 pt-3 pb-2">
+              <img src="/logo.jpg" alt="" className="h-3.5 w-auto opacity-60" />
+              <div className="hidden md:flex items-center gap-3">
+                <button
+                  onClick={() => {
+                    if (confirms[current.model_id] || pendings[current.model_id]) return
+                    setConfirmModal({ modelId: current.model_id, modelName: `${currentModel?.first_name} ${currentModel?.last_name}` })
+                  }}
+                  className={`text-[9px] tracking-widest uppercase border px-3 py-1.5 transition-colors ${confirms[current.model_id] ? 'bg-green-600 text-white border-green-600' : pendings[current.model_id] ? 'bg-amber-400 text-white border-amber-400' : 'border-neutral-300 hover:border-black text-neutral-500 hover:text-black'}`}>
+                  {confirms[current.model_id] ? '✓ Confirmed' : pendings[current.model_id] ? '⏳ Pending' : 'Confirm Talent'}
+                </button>
+                <SlideActions presentationId={presentationId} modelId={current.model_id} clientId={clientId}
+                  initialShortlisted={!!shortlists[current.model_id]} initialNotes={shortlistMap[current.model_id]?.notes || ""} initialAuthor={shortlistMap[current.model_id]?.author_name || ''}
+                  onShortlistChange={(v) => handleShortlistChange(current.model_id, v)} compact={true} model={currentModel} projectName={projectName} clientFirstName={clientFirstName} />
+              </div>
+              <button onClick={() => setView('grid')} className="text-xs tracking-widest uppercase text-neutral-400 hover:text-black transition-colors">✕</button>
+            </div>
+            {/* Name + sizing centered */}
+            <div className="text-center px-4 pb-3">
+              <h2 className="text-xl md:text-3xl font-light tracking-[0.15em] uppercase leading-tight">
+                {currentModel.first_name} {currentModel.last_name}
+              </h2>
+              <p className="text-[11px] text-neutral-500 mt-1 tracking-wider">
+                {getSizingParts(current, currentModel).join('  ·  ')}
+              </p>
+            </div>
+            {/* Mobile-only action buttons below name */}
+            <div className="md:hidden flex gap-2 px-4 pb-3">
               <button
                 onClick={() => {
-                  if (confirms[current.model_id]) { handleConfirm(current.model_id) }
-                  else setConfirmModal({ modelId: current.model_id, modelName: `${currentModel?.first_name} ${currentModel?.last_name}` })
+                  if (confirms[current.model_id] || pendings[current.model_id]) return
+                  setConfirmModal({ modelId: current.model_id, modelName: `${currentModel?.first_name} ${currentModel?.last_name}` })
                 }}
-                className={`text-[9px] tracking-widest uppercase border px-3 py-1.5 transition-colors ${confirms[current.model_id] ? 'bg-green-600 text-white border-green-600' : pendings[current.model_id] ? 'bg-amber-400 text-white border-amber-400' : 'border-neutral-300 hover:border-black text-neutral-500 hover:text-black'}`}>
+                className={`flex-1 text-[9px] tracking-widest uppercase border px-3 py-2 transition-colors ${confirms[current.model_id] ? 'bg-green-600 text-white border-green-600' : pendings[current.model_id] ? 'bg-amber-400 text-white border-amber-400' : 'border-neutral-300 text-neutral-500'}`}>
                 {confirms[current.model_id] ? '✓ Confirmed' : pendings[current.model_id] ? '⏳ Pending' : 'Confirm Talent'}
               </button>
               <SlideActions presentationId={presentationId} modelId={current.model_id} clientId={clientId}
                 initialShortlisted={!!shortlists[current.model_id]} initialNotes={shortlistMap[current.model_id]?.notes || ""} initialAuthor={shortlistMap[current.model_id]?.author_name || ''}
                 onShortlistChange={(v) => handleShortlistChange(current.model_id, v)} compact={true} model={currentModel} projectName={projectName} clientFirstName={clientFirstName} />
-              <button onClick={() => setView('grid')} className="text-xs tracking-widest uppercase text-neutral-400 hover:text-black transition-colors">✕</button>
             </div>
           </div>
 
