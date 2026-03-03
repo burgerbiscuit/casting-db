@@ -24,12 +24,16 @@ interface Props {
   onChange: (items: PresentationModel[]) => void
   onRemove: (id: string) => void
   onFieldChange: (id: string, field: keyof PresentationModel, value: any) => void
+  categories?: { id: string; name: string }[]
+  onCategoryChange?: (pmId: string, categoryId: string | null) => void
 }
 
-function SortableItem({ item, onRemove, onFieldChange }: {
+function SortableItem({ item, onRemove, onFieldChange, categories, onCategoryChange }: {
   item: PresentationModel
   onRemove: (id: string) => void
   onFieldChange: (id: string, field: keyof PresentationModel, value: any) => void
+  categories?: { id: string; name: string }[]
+  onCategoryChange?: (pmId: string, categoryId: string | null) => void
 }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: item.id })
   const style = { transform: CSS.Transform.toString(transform), transition }
@@ -99,7 +103,7 @@ function SortableItem({ item, onRemove, onFieldChange }: {
   )
 }
 
-export function SortableModelList({ items, onChange, onRemove, onFieldChange }: Props) {
+export function SortableModelList({ items, onChange, onRemove, onFieldChange, categories, onCategoryChange }: Props) {
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
@@ -119,7 +123,7 @@ export function SortableModelList({ items, onChange, onRemove, onFieldChange }: 
       <SortableContext items={items.map(i => i.id)} strategy={verticalListSortingStrategy}>
         <div className="space-y-2">
           {items.map(item => (
-            <SortableItem key={item.id} item={item} onRemove={onRemove} onFieldChange={onFieldChange} />
+            <SortableItem key={item.id} item={item} onRemove={onRemove} onFieldChange={onFieldChange} categories={categories} onCategoryChange={onCategoryChange} />
           ))}
         </div>
       </SortableContext>

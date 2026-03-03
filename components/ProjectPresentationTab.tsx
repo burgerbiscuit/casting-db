@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/Button'
 import { SortableModelList } from '@/components/SortableModelList'
-import { Copy, ExternalLink } from 'lucide-react'
+import { Copy, ExternalLink, Plus, Trash2, GripVertical } from 'lucide-react'
 
 interface Props {
   projectId: string
@@ -17,6 +17,8 @@ export function ProjectPresentationTab({ projectId, presentationId: initialPresI
   const [isPublished, setIsPublished] = useState(initialPublished)
   const [presentationModels, setPresentationModels] = useState<any[]>([])
   const [availableModels, setAvailableModels] = useState<any[]>([])
+  const [categories, setCategories] = useState<any[]>([])
+  const [newCatName, setNewCatName] = useState('')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -26,17 +28,13 @@ export function ProjectPresentationTab({ projectId, presentationId: initialPresI
 
   const load = useCallback(async () => {
     if (!presId) return
-    const { data: pm } = await supabase
-      .from('presentation_models')
-      .select('*, models(first_name, last_name, agency)')
-      .eq('presentation_id', presId)
-      .order('display_order')
+    const [{ data: pm }, { data: projectModels }, { data: cats }] = await Promise.all([
+      supabase.from('presentation_models').select('*, models(first_name, last_name, agency)').eq('presentation_id', presId).order('display_order'),
+      supabase.from('project_models').select('models(id, first_name, last_name, agency)').eq('project_id', projectId),
+      supabase.from('presentation_categories').select('*').eq('presentation_id', presId).order('display_order'),
+    ])
     setPresentationModels(pm || [])
-
-    const { data: projectModels } = await supabase
-      .from('project_models')
-      .select('models(id, first_name, last_name, agency)')
-      .eq('project_id', projectId)
+    setCategories(cats || [])
     const alreadyIn = new Set((pm || []).map((m: any) => m.model_id))
     const available = (projectModels || []).map((pm: any) => pm.models).filter((m: any) => m && !alreadyIn.has(m.id))
     setAvailableModels(available)
@@ -54,16 +52,10 @@ export function ProjectPresentationTab({ projectId, presentationId: initialPresI
     }).select().single()
     if (pres) {
       setPresId(pres.id)
-      // Add all project models automatically
-      const { data: projectModels } = await supabase
-        .from('project_models').select('model_id').eq('project_id', projectId)
+      const { data: projectModels } = await supabase.from('project_models').select('model_id').eq('project_id', projectId)
       if (projectModels?.length) {
         await supabase.from('presentation_models').insert(
-          projectModels.map((pm: any, i: number) => ({
-            presentation_id: pres.id,
-            model_id: pm.model_id,
-            display_order: i,
-          }))
+          projectModels.map((pm: any, i: number) => ({ presentation_id: pres.id, model_id: pm.model_id, display_order: i }))
         )
       }
       load()
@@ -87,42 +79,49 @@ export function ProjectPresentationTab({ projectId, presentationId: initialPresI
     setPresentationModels(prev => prev.map(m => m.id === pmId ? { ...m, [field]: value } : m))
   }
 
+  const assignCategory = async (pmId: string, categoryId: string | null) => {
+    await supabase.from('presentation_models').update({ category_id: categoryId || null }).eq('id', pmId)
+    setPresentationModels(prev => prev.map(m => m.id === pmId ? { ...m, category_id: categoryId } : m))
+  }
+
+  const addCategory = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!presId || !newCatName.trim()) return
+    const maxOrder = Math.max(-1, ...categories.map(c => c.display_order))
+    await supabase.from('presentation_categories').insert({ presentation_id: presId, name: newCatName.trim(), display_order: maxOrder + 1 })
+    setNewCatName('')
+    load()
+  }
+
+  const deleteCategory = async (catId: string) => {
+    await supabase.from('presentation_models').update({ category_id: null }).eq('category_id', catId)
+    await supabase.from('presentation_categories').delete().eq('id', catId)
+    load()
+  }
+
   const save = async () => {
     setSaving(true)
     for (let i = 0; i < presentationModels.length; i++) {
       const m = presentationModels[i]
       await supabase.from('presentation_models').update({
-        display_order: i,
-        show_sizing: m.show_sizing,
-        show_instagram: m.show_instagram,
-        show_portfolio: m.show_portfolio,
-        admin_notes: m.admin_notes,
-        location: m.location || '',
-        rate: m.rate || '',
-        client_notes: m.client_notes || '',
-        is_visible: m.is_visible,
+        display_order: i, show_sizing: m.show_sizing, show_instagram: m.show_instagram,
+        show_portfolio: m.show_portfolio, admin_notes: m.admin_notes,
+        location: m.location || '', rate: m.rate || '', client_notes: m.client_notes || '',
+        is_visible: m.is_visible, category_id: m.category_id || null,
       }).eq('id', m.id)
     }
-    setSaving(false)
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2000)
+    setSaving(false); setSaved(true); setTimeout(() => setSaved(false), 2000)
   }
 
   const doPublish = async (fromEmail: string) => {
     if (!presId) return
     setShowEmailPicker(false)
     await supabase.from('presentations').update({ is_published: true }).eq('id', presId)
-    setIsPublished(true)
-    setEmailStatus('Sending...')
+    setIsPublished(true); setEmailStatus('Sending...')
     try {
-      const res = await fetch('/api/send-presentation-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ presentationId: presId, fromEmail })
-      })
+      const res = await fetch('/api/send-presentation-email', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ presentationId: presId, fromEmail }) })
       const data = await res.json()
-      if (data.sent > 0) setEmailStatus(`✓ Email sent to ${data.sent} client${data.sent > 1 ? 's' : ''}`)
-      else setEmailStatus('Published (no clients assigned)')
+      setEmailStatus(data.sent > 0 ? `✓ Email sent to ${data.sent} client${data.sent > 1 ? 's' : ''}` : 'Published (no clients assigned)')
     } catch { setEmailStatus('⚠ Published but email failed') }
     setTimeout(() => setEmailStatus(''), 5000)
   }
@@ -130,9 +129,15 @@ export function ProjectPresentationTab({ projectId, presentationId: initialPresI
   const copyLink = () => {
     if (!presId) return
     navigator.clipboard.writeText(`${window.location.origin}/client/presentations/${presId}`)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+    setCopied(true); setTimeout(() => setCopied(false), 2000)
   }
+
+  // Group models by category for display
+  const uncategorized = presentationModels.filter(pm => !pm.category_id)
+  const byCategory = categories.map(cat => ({
+    ...cat,
+    models: presentationModels.filter(pm => pm.category_id === cat.id)
+  }))
 
   if (!presId) return (
     <div className="border border-dashed border-neutral-200 p-12 text-center">
@@ -145,10 +150,9 @@ export function ProjectPresentationTab({ projectId, presentationId: initialPresI
     <div>
       {/* Toolbar */}
       <div className="flex items-center justify-between mb-8 flex-wrap gap-3">
-        <p className="text-xs text-neutral-400">{presentationModels.length} model{presentationModels.length !== 1 ? 's' : ''} in presentation</p>
+        <p className="text-xs text-neutral-400">{presentationModels.length} model{presentationModels.length !== 1 ? 's' : ''} · {categories.length} section{categories.length !== 1 ? 's' : ''}</p>
         <div className="flex gap-3 items-center flex-wrap">
           {emailStatus && <span className="text-xs text-neutral-500 tracking-wider">{emailStatus}</span>}
-
           {isPublished ? (
             <button onClick={async () => { await supabase.from('presentations').update({ is_published: false }).eq('id', presId); setIsPublished(false) }}
               className="text-xs px-4 py-3 border tracking-widest uppercase bg-black text-white border-black hover:opacity-70 transition-opacity">
@@ -160,31 +164,21 @@ export function ProjectPresentationTab({ projectId, presentationId: initialPresI
               Publish
             </button>
           )}
-
-          <Button variant="secondary" size="sm" onClick={copyLink}>
-            {copied ? '✓ Copied' : <><Copy size={12} className="mr-1" />Copy Link</>}
-          </Button>
-          <a href={`/client/presentations/${presId}`} target="_blank">
-            <Button variant="ghost" size="sm"><ExternalLink size={12} className="mr-1" />Preview</Button>
-          </a>
-          <Button onClick={save} disabled={saving} size="sm">
-            {saving ? 'Saving...' : saved ? '✓ Saved' : 'Save'}
-          </Button>
+          <Button variant="secondary" size="sm" onClick={copyLink}>{copied ? '✓ Copied' : <><Copy size={12} className="mr-1" />Copy Link</>}</Button>
+          <a href={`/client/presentations/${presId}`} target="_blank"><Button variant="ghost" size="sm"><ExternalLink size={12} className="mr-1" />Preview</Button></a>
+          <a href={`/api/pdf/${presId}`} target="_blank"><Button variant="ghost" size="sm">↓ PDF</Button></a>
+          <Button onClick={save} disabled={saving} size="sm">{saving ? 'Saving...' : saved ? '✓ Saved' : 'Save'}</Button>
         </div>
       </div>
 
-      {/* Email picker modal */}
       {showEmailPicker && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white p-8 max-w-sm w-full mx-4">
             <h3 className="text-sm font-medium tracking-widest uppercase mb-6">Send From</h3>
-            <p className="text-xs text-neutral-500 mb-6">Choose which email to send the client notification from:</p>
             <div className="space-y-3 mb-8">
               {['tasha@tashatongpreecha.com', 'hi@tashatongpreecha.com'].map(email => (
                 <button key={email} onClick={() => doPublish(email)}
-                  className="w-full text-left px-4 py-3 border border-neutral-200 hover:border-black transition-colors text-sm">
-                  {email}
-                </button>
+                  className="w-full text-left px-4 py-3 border border-neutral-200 hover:border-black transition-colors text-sm">{email}</button>
               ))}
             </div>
             <button onClick={() => setShowEmailPicker(false)} className="text-xs text-neutral-400 tracking-widest uppercase hover:text-black">Cancel</button>
@@ -192,38 +186,77 @@ export function ProjectPresentationTab({ projectId, presentationId: initialPresI
         </div>
       )}
 
-      <div className="grid grid-cols-3 gap-8">
-        {/* Add models panel */}
-        <div>
-          <p className="label mb-4">Add Models</p>
-          {availableModels.length === 0 && <p className="text-xs text-neutral-400">All project models are in the presentation.</p>}
-          <div className="space-y-2">
-            {availableModels.map(m => (
-              <div key={m.id} className="flex items-center justify-between border border-neutral-100 px-3 py-2">
-                <div>
-                  <p className="text-xs font-medium">{m.first_name} {m.last_name}</p>
-                  {m.agency && <p className="text-[10px] text-neutral-400">{m.agency}</p>}
+      <div className="grid grid-cols-4 gap-8">
+        {/* Left: Add models + Sections */}
+        <div className="space-y-8">
+          <div>
+            <p className="label mb-3">Add Models</p>
+            {availableModels.length === 0 && <p className="text-xs text-neutral-400">All project models added.</p>}
+            <div className="space-y-1.5">
+              {availableModels.map(m => (
+                <div key={m.id} className="flex items-center justify-between border border-neutral-100 px-3 py-2">
+                  <div><p className="text-xs font-medium">{m.first_name} {m.last_name}</p>{m.agency && <p className="text-[10px] text-neutral-400">{m.agency}</p>}</div>
+                  <button onClick={() => addModel(m)} className="text-[10px] tracking-wider uppercase underline text-neutral-500 hover:text-black">Add</button>
                 </div>
-                <button onClick={() => addModel(m)} className="text-[10px] tracking-wider uppercase underline text-neutral-500 hover:text-black">Add</button>
-              </div>
-            ))}
+              ))}
+            </div>
+          </div>
+
+          {/* Sections / Categories */}
+          <div>
+            <p className="label mb-3">Sections</p>
+            <div className="space-y-1.5 mb-3">
+              {categories.map(cat => (
+                <div key={cat.id} className="flex items-center justify-between border border-neutral-100 px-3 py-2 group">
+                  <div>
+                    <p className="text-xs font-medium">{cat.name}</p>
+                    <p className="text-[10px] text-neutral-400">{byCategory.find(b => b.id === cat.id)?.models.length || 0} models</p>
+                  </div>
+                  <button onClick={() => deleteCategory(cat.id)} className="opacity-0 group-hover:opacity-100 text-neutral-300 hover:text-red-400 transition-all"><Trash2 size={12} /></button>
+                </div>
+              ))}
+            </div>
+            <form onSubmit={addCategory} className="flex gap-2">
+              <input value={newCatName} onChange={e => setNewCatName(e.target.value)} placeholder="New section..."
+                className="flex-1 border-b border-neutral-300 bg-transparent py-1.5 text-xs focus:outline-none focus:border-black placeholder:text-neutral-300" />
+              <button type="submit" className="text-neutral-400 hover:text-black transition-colors"><Plus size={14} /></button>
+            </form>
           </div>
         </div>
 
-        {/* Sortable list */}
-        <div className="col-span-2">
-          <p className="label mb-4">Presentation Order ({presentationModels.length} models)</p>
-          {presentationModels.length === 0 && (
-            <div className="border border-dashed border-neutral-200 p-8 text-center text-sm text-neutral-400">
-              Models who sign in appear here automatically. You can also add them from the left panel.
+        {/* Right: Model list grouped by category */}
+        <div className="col-span-3">
+          <p className="label mb-4">Presentation Order — assign sections using the dropdown on each model</p>
+
+          {/* Uncategorized */}
+          {uncategorized.length > 0 && (
+            <div className="mb-6">
+              <p className="text-[10px] tracking-widest uppercase text-neutral-400 mb-2 pb-1 border-b border-neutral-100">Uncategorized ({uncategorized.length})</p>
+              <SortableModelList
+                items={uncategorized}
+                onChange={(items) => setPresentationModels(prev => [...items, ...prev.filter(m => m.category_id)])}
+                onRemove={removeModel}
+                onFieldChange={onFieldChange}
+                categories={categories}
+                onCategoryChange={assignCategory}
+              />
             </div>
           )}
-          <SortableModelList
-            items={presentationModels}
-            onChange={setPresentationModels}
-            onRemove={removeModel}
-            onFieldChange={onFieldChange}
-          />
+
+          {byCategory.map(cat => (
+            <div key={cat.id} className="mb-6">
+              <p className="text-[10px] tracking-widest uppercase font-medium mb-2 pb-1 border-b border-black">{cat.name} ({cat.models.length})</p>
+              {cat.models.length === 0 && <p className="text-xs text-neutral-300 py-2">No models in this section yet.</p>}
+              <SortableModelList
+                items={cat.models}
+                onChange={(items) => setPresentationModels(prev => [...prev.filter(m => m.category_id !== cat.id), ...items])}
+                onRemove={removeModel}
+                onFieldChange={onFieldChange}
+                categories={categories}
+                onCategoryChange={assignCategory}
+              />
+            </div>
+          ))}
         </div>
       </div>
     </div>

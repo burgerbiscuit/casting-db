@@ -48,6 +48,9 @@ export default async function PresentationView({ params }: { params: { id: strin
     .from('team_members').select('name').eq('user_id', user.id).single() : { data: null }
   const clientFirstName = ((clientProfile?.name || teamMember?.name || '').split(' ')[0]) || ''
 
+  const { data: categories } = await supabase
+    .from('presentation_categories').select('*').eq('presentation_id', id).order('display_order')
+
   const { data: shortlists } = await supabase
     .from('client_shortlists').select('*').eq('presentation_id', id).eq('client_id', user?.id)
 
@@ -86,6 +89,7 @@ export default async function PresentationView({ params }: { params: { id: strin
         presentationId={id}
         clientId={user?.id || ''}
         clientFirstName={clientFirstName}
+        categories={categories || []}
         shortlistMap={shortlistMap}
         confirmMap={confirmMap}
         presentationName={presentation.name}

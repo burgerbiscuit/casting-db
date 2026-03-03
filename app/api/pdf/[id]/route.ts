@@ -3,12 +3,8 @@ import { NextRequest, NextResponse } from 'next/server'
 
 const esc = (s = '') => (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   const { id } = params
-
   try {
     const authSupabase = await createClient()
     const { data: { user } } = await authSupabase.auth.getUser()
@@ -27,139 +23,187 @@ export async function GET(
     }
 
     const supabase = await createServiceClient()
-
-    const { data: presentation } = await supabase
-      .from('presentations')
-      .select('*, projects(name)')
-      .eq('id', id)
-      .single()
-
+    const { data: presentation } = await supabase.from('presentations').select('*, projects(name)').eq('id', id).single()
     const { data: presentationModels } = await supabase
-      .from('presentation_models')
-      .select('*, models(*)')
-      .eq('presentation_id', id)
-      .eq('is_visible', true)
-      .order('display_order')
+      .from('presentation_models').select('*, models(*)').eq('presentation_id', id).eq('is_visible', true).order('display_order')
+    const { data: categories } = await supabase
+      .from('presentation_categories').select('*').eq('presentation_id', id).order('display_order')
 
     if (!presentation || !presentationModels?.length) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 })
     }
 
-    // Get shortlisted model IDs from client_shortlists
-    const { data: shortlists } = await supabase
-      .from('client_shortlists')
-      .select('model_id')
-      .eq('presentation_id', id)
+    const modelIds = presentationModels.map((pm: any) => pm.model_id)
+    const { data: allMedia } = await supabase.from('model_media').select('*').in('model_id', modelIds).eq('is_visible', true).order('display_order')
+    const mediaByModel: Record<string, any[]> = {}
+    ;(allMedia || []).forEach((m: any) => { if (!mediaByModel[m.model_id]) mediaByModel[m.model_id] = []; mediaByModel[m.model_id].push(m) })
 
-    const shortlistedIds = new Set((shortlists || []).map((s: any) => s.model_id))
-
-    // Get client notes
-    const { data: clientNoteRows } = await supabase
-      .from('client_shortlists')
-      .select('model_id, notes')
-      .eq('presentation_id', id)
-
-    const clientNotesMap = new Map<string, string>()
-    ;(clientNoteRows || []).forEach((r: any) => { if (r.notes) clientNotesMap.set(r.model_id, r.notes) })
-
-    const modelIds = (presentationModels || []).map((pm: any) => pm.model_id)
-    const { data: allMedia } = await supabase
-      .from('model_media')
-      .select('*')
-      .in('model_id', modelIds)
-      .eq('is_visible', true)
-      .eq('type', 'photo')
-      .order('display_order')
-
-    const mediaByModel = new Map<string, any[]>()
-    ;(allMedia || []).forEach(m => {
-      if (!mediaByModel.has(m.model_id)) mediaByModel.set(m.model_id, [])
-      mediaByModel.get(m.model_id)!.push(m)
+    const cats = categories || []
+    // Group models by category
+    interface CategoryGroup { id: string; name: string; models: any[] }
+    const grouped: CategoryGroup[] = []
+    cats.forEach((cat: any) => {
+      const models = presentationModels.filter((pm: any) => pm.category_id === cat.id)
+      if (models.length) grouped.push({ id: cat.id, name: cat.name, models })
     })
+    const uncategorized = presentationModels.filter((pm: any) => !pm.category_id)
+    if (uncategorized.length) grouped.push({ id: 'none', name: '', models: uncategorized })
 
-    // Sort: shortlisted first
-    const shortlisted = (presentationModels || []).filter((pm: any) => shortlistedIds.has(pm.model_id))
-    const rest = (presentationModels || []).filter((pm: any) => !shortlistedIds.has(pm.model_id))
+    const projectName = (presentation.projects as any)?.name || ''
+    const presName = presentation.name
 
-    const renderModelPage = (pm: any) => {
-      const model = pm.models
-      const photos = mediaByModel.get(model.id) || []
-      const photo1 = photos[0]?.public_url || ''
-      const photo2 = photos[1]?.public_url || ''
-      const clientNotes = clientNotesMap.get(model.id) || ''
+    const modelSlide = (pm: any) => {
+      const m = pm.models
+      const media = (mediaByModel[pm.model_id] || []).filter((med: any) => med.type !== 'video')
+      const primaryPhoto = media.find((med: any) => med.is_pdf_primary) || media[0]
+      const secondaryPhoto = media.find((med: any) => med.is_pdf_secondary) || media[1]
 
-      const sizingFields = [
-        model.height_ft ? `<div><div style="font-size:10px;color:#aaa;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:2px">Height</div><div>${esc(String(model.height_ft))}'${esc(String(model.height_in || 0))}"</div></div>` : '',
-        model.bust ? `<div><div style="font-size:10px;color:#aaa;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:2px">Bust</div><div>${esc(model.bust)}</div></div>` : '',
-        model.waist ? `<div><div style="font-size:10px;color:#aaa;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:2px">Waist</div><div>${esc(model.waist)}</div></div>` : '',
-        model.hips ? `<div><div style="font-size:10px;color:#aaa;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:2px">Hips</div><div>${esc(model.hips)}</div></div>` : '',
-        model.chest ? `<div><div style="font-size:10px;color:#aaa;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:2px">Chest</div><div>${esc(model.chest)}</div></div>` : '',
-        model.shoe_size ? `<div><div style="font-size:10px;color:#aaa;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:2px">Shoe</div><div>US ${esc(model.shoe_size)}</div></div>` : '',
-        model.dress_size ? `<div><div style="font-size:10px;color:#aaa;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:2px">Dress</div><div>${esc(model.dress_size)}</div></div>` : '',
-        pm.show_instagram && model.instagram_handle ? `<div><div style="font-size:10px;color:#aaa;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:2px">Instagram</div><div><a href="https://instagram.com/${esc(model.instagram_handle)}" style="color:#111;text-decoration:underline">@${esc(model.instagram_handle)}</a></div></div>` : '',
-        pm.show_portfolio && model.portfolio_url ? `<div><div style="font-size:10px;color:#aaa;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:2px">Portfolio</div><div><a href="${esc(model.portfolio_url.startsWith('http') ? model.portfolio_url : 'https://' + model.portfolio_url)}" style="color:#111;text-decoration:underline">View ↗</a></div></div>` : '',
-      ].filter(Boolean).join('')
+      const sizing = []
+      if (m.height_ft) sizing.push(`${m.height_ft}'${m.height_in || 0}" HT`)
+      if (m.bust) sizing.push(`${m.bust} B`)
+      if (m.waist) sizing.push(`${m.waist} W`)
+      if (m.hips) sizing.push(`${m.hips} H`)
+      if (m.chest) sizing.push(`${m.chest} CH`)
+      if (m.inseam) sizing.push(`${m.inseam} IN`)
+      if (m.dress_size) sizing.push(`Dress ${m.dress_size}`)
+      if (m.suit_size) sizing.push(`Suit ${m.suit_size}`)
+      if (m.shoe_size) sizing.push(`Shoe ${m.shoe_size}`)
 
-      return `<div style="page-break-after: always; padding: 40px; font-family: 'Inter', sans-serif;">
-  <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 20px;">
-    <div>
-      <h2 style="font-size:18px; font-weight:300; letter-spacing:0.1em; text-transform:uppercase; margin:0">${esc(model.first_name)} ${esc(model.last_name)}</h2>
-      ${model.agency ? `<p style="font-size:11px; color:#999; margin:4px 0 0">${esc(model.agency)}</p>` : ''}
-    </div>
-    <div style="display:flex; gap:20px; font-size:11px; color:#666; text-align:right">
-      ${sizingFields}
-    </div>
-  </div>
-  <div style="display:flex; gap:12px; margin-bottom:20px;">
-    ${photo1 ? `<img src="${esc(photo1)}" style="width:calc(50% - 6px); aspect-ratio:3/4; object-fit:cover; object-position:top;" />` : `<div style="width:calc(50% - 6px); aspect-ratio:3/4; background:#f5f5f5;"></div>`}
-    ${photo2 ? `<img src="${esc(photo2)}" style="width:calc(50% - 6px); aspect-ratio:3/4; object-fit:cover; object-position:top;" />` : `<div style="width:calc(50% - 6px); aspect-ratio:3/4; background:#f5f5f5;"></div>`}
-  </div>
-  ${clientNotes ? `<div style="font-size:12px; color:#555; border-top:1px solid #eee; padding-top:12px; line-height:1.6">${esc(clientNotes)}</div>` : ''}
-</div>`
+      const igHandle = m.instagram_handle ? `@${m.instagram_handle.replace('@','')}` : ''
+
+      return `
+        <div class="model-slide">
+          <div class="slide-photos">
+            ${primaryPhoto ? `<div class="photo-primary"><img src="${esc(primaryPhoto.public_url)}" /></div>` : '<div class="photo-primary photo-empty"></div>'}
+            ${secondaryPhoto ? `<div class="photo-secondary"><img src="${esc(secondaryPhoto.public_url)}" /></div>` : ''}
+          </div>
+          <div class="slide-info">
+            <div class="model-name">${esc(m.first_name)} ${esc(m.last_name)}</div>
+            ${m.agency ? `<div class="model-agency">${esc(m.agency)}</div>` : ''}
+            ${sizing.length ? `<div class="model-sizing">${sizing.map(s => `<span>${esc(s)}</span>`).join('')}</div>` : ''}
+            ${igHandle ? `<div class="model-ig">${esc(igHandle)}</div>` : ''}
+            ${pm.admin_notes ? `<div class="model-notes">${esc(pm.admin_notes)}</div>` : ''}
+            ${pm.rate ? `<div class="model-rate">${esc(pm.rate)}</div>` : ''}
+            ${pm.location ? `<div class="model-location">${esc(pm.location)}</div>` : ''}
+          </div>
+        </div>`
     }
 
-    const shortlistedSection = shortlisted.length > 0 ? `
-<div style="page-break-after: always; padding: 40px; font-family: 'Inter', sans-serif; display:flex; align-items:center; justify-content:center; min-height:100vh;">
-  <div style="text-align:center">
-    <p style="font-size:10px; letter-spacing:0.2em; text-transform:uppercase; color:#999; margin-bottom:12px">Selected</p>
-    <h2 style="font-size:28px; font-weight:300; letter-spacing:0.08em; text-transform:uppercase;">${shortlisted.length} Model${shortlisted.length !== 1 ? 's' : ''}</h2>
-  </div>
-</div>
-${shortlisted.map(renderModelPage).join('')}` : ''
+    const sectionPages = grouped.map(group => {
+      const header = group.name ? `
+        <div class="section-header-slide">
+          <div class="section-header-name">${esc(group.name)}</div>
+        </div>` : ''
+      return header + group.models.map(modelSlide).join('')
+    }).join('')
 
-    const allTalentSection = rest.length > 0 ? `
-<div style="page-break-after: always; padding: 40px; font-family: 'Inter', sans-serif; display:flex; align-items:center; justify-content:center; min-height:100vh;">
-  <div style="text-align:center">
-    <p style="font-size:10px; letter-spacing:0.2em; text-transform:uppercase; color:#999; margin-bottom:12px">All Talent</p>
-    <h2 style="font-size:28px; font-weight:300; letter-spacing:0.08em; text-transform:uppercase;">${rest.length} Model${rest.length !== 1 ? 's' : ''}</h2>
-  </div>
-</div>
-${rest.map(renderModelPage).join('')}` : (!shortlisted.length ? (presentationModels || []).map(renderModelPage).join('') : '')
+    const html = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>${esc(presName)}</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: white; }
+  @page { size: A4 landscape; margin: 0; }
 
-    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${esc(presentation.name)}</title><style>
-@page { margin: 0; }
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body { font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif; color: #111; }
-</style></head><body>
-<div style="page-break-after: always; padding: 80px 40px; font-family: 'Inter', sans-serif; display:flex; align-items:center; justify-content:center; min-height:100vh;">
-  <div style="text-align:center">
-    <img src="/logo.jpg" style="height:32px; width:auto; margin-bottom:32px; display:block; margin-left:auto; margin-right:auto;" />
-    <h1 style="font-size:24px; font-weight:300; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:8px">${esc(presentation.name)}</h1>
-    <p style="font-size:12px; color:#999; letter-spacing:0.05em">${esc((presentation.projects as any)?.name || '')}</p>
-  </div>
-</div>
-${shortlisted.length > 0 ? shortlistedSection : ''}
-${rest.length > 0 || shortlisted.length === 0 ? allTalentSection : ''}
-</body></html>`
+  .model-slide, .section-header-slide {
+    width: 297mm; height: 210mm;
+    page-break-after: always;
+    display: flex;
+    overflow: hidden;
+    position: relative;
+  }
+  .section-header-slide {
+    align-items: center;
+    justify-content: center;
+    background: #000;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .section-header-slide::before {
+    content: '${esc(presName)}';
+    position: absolute;
+    top: 28px;
+    left: 40px;
+    font-size: 8px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.4);
+  }
+  .section-header-name {
+    font-size: 42px;
+    font-weight: 200;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: white;
+  }
+
+  /* Model slide layout */
+  .slide-photos {
+    display: flex;
+    gap: 3px;
+    height: 100%;
+    background: #f5f5f5;
+    flex-shrink: 0;
+    width: 55%;
+  }
+  .photo-primary { flex: 1; overflow: hidden; }
+  .photo-primary img, .photo-secondary img { width: 100%; height: 100%; object-fit: cover; object-position: top center; display: block; }
+  .photo-secondary { width: 38%; overflow: hidden; }
+  .photo-empty { background: #ececec; }
+
+  .slide-info {
+    flex: 1;
+    padding: 40px 36px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 14px;
+    border-left: 1px solid #e5e5e5;
+  }
+  .model-name {
+    font-size: 22px;
+    font-weight: 300;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    line-height: 1.2;
+  }
+  .model-agency { font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; color: #888; }
+  .model-sizing { display: flex; flex-wrap: wrap; gap: 6px 14px; }
+  .model-sizing span { font-size: 8px; letter-spacing: 0.15em; text-transform: uppercase; color: #444; }
+  .model-ig { font-size: 9px; letter-spacing: 0.1em; color: #888; }
+  .model-notes { font-size: 9px; color: #555; line-height: 1.6; font-style: italic; }
+  .model-rate { font-size: 11px; font-weight: 500; letter-spacing: 0.1em; }
+  .model-location { font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase; color: #888; }
+
+  /* Watermark presentation name */
+  .slide-info::after {
+    content: '${esc(presName)}';
+    position: absolute;
+    bottom: 24px;
+    right: 32px;
+    font-size: 7px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: #ddd;
+  }
+  .model-slide { position: relative; }
+</style>
+</head>
+<body>
+${sectionPages}
+<script>window.onload = () => window.print()</script>
+</body>
+</html>`
 
     return new NextResponse(html, {
       headers: {
-        'Content-Type': 'text/html;charset=utf-8',
-        'Content-Disposition': `attachment; filename="${esc(presentation.name)}.html"`
+        'Content-Type': 'text/html',
+        'Content-Disposition': `inline; filename="${esc(presName)}.pdf"`,
       }
     })
-  } catch (e) {
-    console.error('PDF error:', e)
-    return NextResponse.json({ error: 'Failed' }, { status: 500 })
+  } catch (e: any) {
+    return NextResponse.json({ error: e.message }, { status: 500 })
   }
 }

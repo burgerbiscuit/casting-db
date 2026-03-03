@@ -11,13 +11,14 @@ interface Props {
   shortlistMap: Record<string, any>
   confirmMap: Record<string, boolean>
   clientFirstName: string
+  categories: any[]
   presentationName: string
   projectName: string
   projectSpecs: string
 }
 
 export function PresentationViewer({
-  presentationModels, mediaByModel, presentationId, clientId, shortlistMap, confirmMap: initialConfirmMap, clientFirstName, presentationName, projectName, projectSpecs
+  presentationModels, mediaByModel, presentationId, clientId, shortlistMap, confirmMap: initialConfirmMap, clientFirstName, categories, presentationName, projectName, projectSpecs
 }: Props) {
   const [view, setView] = useState<'grid' | 'slides'>('grid')
   const [slideIndex, setSlideIndex] = useState(0)
@@ -195,7 +196,13 @@ export function PresentationViewer({
   }
 
   const confirmedCount = Object.values(confirms).filter(Boolean).length
-  const shortlistedCount = Object.values(shortlists).filter(Boolean).length
+
+  // Group sorted (non-shortlisted) by category for section headers
+  const uncategorized = sorted.filter(pm => !pm.category_id && !shortlists[pm.model_id])
+  const byCategory = categories.map(cat => ({
+    ...cat,
+    models: sorted.filter(pm => pm.category_id === cat.id && !shortlists[pm.model_id])
+  })).filter(cat => cat.models.length > 0)
 
   const getSizingParts = (pm: any, model: any): string[] => {
     const parts: string[] = []
@@ -305,8 +312,9 @@ export function PresentationViewer({
               <div className="border-t border-neutral-100 mt-8 mb-6" />
             </div>
           )}
-          <div className={`grid gap-3 ${isMobile ? 'grid-cols-2' : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6'}`}>
-            {sorted.filter(pm => !shortlists[pm.model_id]).map(pm => (
+          {/* Helper to render a model card */}
+          {(() => {
+            const renderCard = (pm: any) => (
               <div key={pm.id} className="relative">
                 {confirms[pm.model_id] && (
                   <div className="absolute top-2 left-2 z-10 bg-black text-white text-[9px] tracking-widest uppercase px-2 py-1">Confirmed</div>
@@ -326,8 +334,25 @@ export function PresentationViewer({
                   {confirms[pm.model_id] ? '✓ Confirmed' : 'Confirm Talent'}
                 </button>
               </div>
-            ))}
-          </div>
+            )
+            const gridClass = `grid gap-3 ${isMobile ? 'grid-cols-2' : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6'}`
+            return (
+              <>
+                {byCategory.map(cat => (
+                  <div key={cat.id} className="mb-8">
+                    <p className="text-xs tracking-widest uppercase font-medium mb-4 pb-2 border-b border-black">{cat.name}</p>
+                    <div className={gridClass}>{cat.models.map(renderCard)}</div>
+                  </div>
+                ))}
+                {uncategorized.length > 0 && (
+                  <div className={byCategory.length > 0 ? 'mb-8' : ''}>
+                    {byCategory.length > 0 && <p className="text-xs tracking-widest uppercase text-neutral-400 mb-4 pb-2 border-b border-neutral-200">Other</p>}
+                    <div className={gridClass}>{uncategorized.map(renderCard)}</div>
+                  </div>
+                )}
+              </>
+            )
+          })()}
           {isMobile && !isLandscape && (
             <div className="flex-shrink-0 py-3 text-center border-t border-neutral-100">
               <p className="text-[9px] tracking-widest uppercase text-neutral-300">↻ Rotate for slide view</p>
