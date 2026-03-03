@@ -11,6 +11,8 @@ export default function AdminDashboard() {
   const [projects, setProjects] = useState<any[]>([])
   const [archived, setArchived] = useState<any[]>([])
   const [pendingCount, setPendingCount] = useState(0)
+  const [pendingAgents, setPendingAgents] = useState(0)
+  const [pendingOther, setPendingOther] = useState(0)
   const [loading, setLoading] = useState(true)
 
   const load = async () => {
