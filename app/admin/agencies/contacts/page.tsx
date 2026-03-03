@@ -12,6 +12,7 @@ export default function AgencyContactsPage() {
   const [city, setCity] = useState('ALL')
   const [board, setBoard] = useState('ALL')
   const [section, setSection] = useState('ALL')
+  const [gender, setGender] = useState('ALL')
   const [cities, setCities] = useState<string[]>([])
   const [boards, setBoards] = useState<string[]>([])
   const [selected, setSelected] = useState<Set<string>>(new Set())
@@ -60,6 +61,7 @@ export default function AgencyContactsPage() {
     if (city !== 'ALL') filtered = filtered.filter(c => c.city === city)
     if (board !== 'ALL') filtered = filtered.filter(c => c.board === board)
     if (section !== 'ALL') filtered = filtered.filter(c => c.section === section)
+    if (gender !== 'ALL') filtered = filtered.filter(c => c.gender === gender)
     
     setContacts(filtered)
   }
@@ -91,7 +93,7 @@ export default function AgencyContactsPage() {
     setSelected(new Set())
   }
 
-  const sections = ['ALL', 'MAIN', 'MATURE', 'PLUS', 'COMMERCIAL', 'STREET SCOUTING']
+  const sections = ['ALL', 'WOMEN NY', 'MENS NY', 'WOMEN PARIS', 'MENS PARIS', 'WOMEN LONDON', 'MENS LONDON', 'WOMEN LA', 'MEN LA', 'TOKYO', 'MIAMI', 'SPAIN', 'MILAN', 'ITALY', 'MEXICO', 'TEXAS', 'GERMANY', 'MISC', 'CELEB', 'NY PRODUCTION', 'PARIS PRODUCTION', 'PRODUCTION ', 'DANCE ATHLETE', 'SPORTS', 'KIDS', 'PHOTOGRAPHERS', 'STYLIST', 'ART DIRECTORS', 'CASTING CALLS', 'MUSIC']
 
   return (
     <div>
@@ -110,6 +112,16 @@ export default function AgencyContactsPage() {
 
       {/* Filters */}
       <div className="flex gap-3 mb-6 flex-wrap">
+        <div>
+          <label className="label text-[10px] block mb-1">GENDER</label>
+          <select value={gender} onChange={e => setGender(e.target.value)}
+            className="text-xs border border-neutral-300 px-3 py-1.5 focus:outline-none focus:border-black">
+            <option value="ALL">ALL</option>
+            <option value="Women">Women</option>
+            <option value="Men">Men</option>
+          </select>
+        </div>
+
         <div>
           <label className="label text-[10px] block mb-1">SECTION</label>
           <select value={section} onChange={e => setSection(e.target.value)}
