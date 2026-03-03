@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Search, Mail, X, Star } from 'lucide-react'
+import { Search, Mail, X, Star, Copy, Check } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { ContactEditModal } from '@/components/ContactEditModal'
 
@@ -20,6 +20,7 @@ export default function AgencyContactsPage() {
   const [loading, setLoading] = useState(true)
   const [editTarget, setEditTarget] = useState<any>(null)
   const [showComposer, setShowComposer] = useState(false)
+  const [copied, setCopied] = useState(false)
   const [emailDraft, setEmailDraft] = useState({ subject: '', message: '' })
 
   useEffect(() => {
@@ -69,6 +70,21 @@ export default function AgencyContactsPage() {
       return 0
     })
     setContacts(filtered)
+  }
+
+  const copySelected = () => {
+    const lines = selectedContacts.map(c =>
+      [c.agent_name, c.agency_name, c.email, c.cell_phone, c.office_phone].filter(Boolean).join('\t')
+    ).join('\n')
+    navigator.clipboard.writeText(lines)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  const copyEmails = () => {
+    navigator.clipboard.writeText(selectedEmails.join(', '))
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
   }
 
   const toggleMain = async (contact: any) => {

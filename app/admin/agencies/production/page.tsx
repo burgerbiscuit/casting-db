@@ -20,6 +20,7 @@ export default function ProductionContactsPage() {
   const [loading, setLoading] = useState(true)
   const [editTarget, setEditTarget] = useState<any>(null)
   const [showComposer, setShowComposer] = useState(false)
+  const [copied, setCopied] = useState(false)
   const [emailDraft, setEmailDraft] = useState({ subject: '', message: '' })
 
   useEffect(() => {
