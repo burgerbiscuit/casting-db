@@ -34,7 +34,7 @@ export default function AgencyContactsPage() {
       .from('agency_contacts')
       .select('*')
       .order('agency_name')
-      .limit(500)
+      .limit(3000)
     
     if (data) {
       setAllContacts(data)
