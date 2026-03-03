@@ -277,6 +277,7 @@ export default function ModelProfile({ params }: { params: { id: string } }) {
           </div>
 
           <Input label="Instagram Handle" value={model.instagram_handle || ''} onChange={e => setModel({ ...model, instagram_handle: e.target.value.replace('@', '') })} placeholder="handle (no @)" />
+          <Input label="TikTok Handle" value={(model as any).tiktok_handle || ''} onChange={e => setModel({ ...model, tiktok_handle: e.target.value.replace('@', '') } as any)} placeholder="handle (no @)" />
           <Input label="Portfolio URL" value={model.portfolio_url || ''} onChange={e => setModel({ ...model, portfolio_url: e.target.value })} type="url" />
           <ChipInput label="Languages Spoken" value={model.languages || []} onChange={languages => setModel({ ...model, languages })} />
           <ChipInput label="Skills" value={model.skills || []} onChange={skills => setModel({ ...model, skills })} />

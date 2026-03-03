@@ -246,6 +246,7 @@ export default function CastPage({ params }: { params: { slug: string } }) {
         ethnicity_other: data.ethnicity_other || '',
         languages: data.languages || [],
         instagram_handle: data.instagram_handle || '',
+        tiktok_handle: data.tiktok_handle || '',
         portfolio_url: data.portfolio_url || '',
         website_url: data.website_url || '',
         skills: data.skills || [], hobbies: data.hobbies || [],
@@ -274,6 +275,7 @@ export default function CastPage({ params }: { params: { slug: string } }) {
       ethnicity_other: form.ethnicity_other || null,
       languages: form.languages,
       instagram_handle: form.instagram_handle,
+      tiktok_handle: form.tiktok_handle || null,
       portfolio_url: form.portfolio_url,
       website_url: form.website_url || null,
       skills: form.skills, hobbies: form.hobbies,
@@ -702,6 +704,9 @@ export default function CastPage({ params }: { params: { slug: string } }) {
 
               <Input label="Instagram Handle" value={form.instagram_handle}
                 onChange={e => setForm(f => ({ ...f, instagram_handle: e.target.value.replace('@', '') }))}
+                placeholder="yourhandle (no @)" />
+              <Input label="TikTok Handle" value={form.tiktok_handle}
+                onChange={e => setForm(f => ({ ...f, tiktok_handle: e.target.value.replace('@', '') }))}
                 placeholder="yourhandle (no @)" />
 
               <Input label="Portfolio URL" value={form.portfolio_url}

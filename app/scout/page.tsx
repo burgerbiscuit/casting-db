@@ -52,7 +52,7 @@ export default function ScoutPage() {
     gender: '',
     gender_other: '',
     date_of_birth: '',
-    instagram_handle: '', portfolio_url: '', website_url: '',
+    instagram_handle: '', tiktok_handle: '', portfolio_url: '', website_url: '',
     agency: '', board: '', agent_name: '', based_in: '',
     height_ft: 5, height_in: 7,
     bust: '', waist: '', hips: '', chest: '', dress_size: '', shoe_size: '', suit_size: '', inseam: '',
@@ -384,6 +384,7 @@ export default function ScoutPage() {
           {/* Instagram + Portfolio */}
           <div className="grid grid-cols-2 gap-4">
             <div><label className={lbl}>Instagram</label><input value={form.instagram_handle} onChange={e => set('instagram_handle', e.target.value.replace('@',''))} placeholder="yourhandle" className={inp} /></div>
+            <div><label className={lbl}>TikTok</label><input value={form.tiktok_handle} onChange={e => set('tiktok_handle', e.target.value.replace('@',''))} placeholder="yourhandle" className={inp} /></div>
             <div><label className={lbl}>Portfolio URL</label><input value={form.portfolio_url} onChange={e => set('portfolio_url', e.target.value)} className={inp} /></div>
             <div><label className={lbl}>Website URL</label><input value={form.website_url} onChange={e => set('website_url', e.target.value)} className={inp} /></div>
           </div>
