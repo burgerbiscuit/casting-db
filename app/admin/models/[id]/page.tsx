@@ -34,7 +34,6 @@ export default function ModelProfile({ params }: { params: { id: string } }) {
   const [activeTab, setActiveTab] = useState<'profile' | 'media' | 'presenting'>('profile')
   const [cropTarget, setCropTarget] = useState<{url: string, storagePath: string, id: string} | null>(null)
   const [showDeleteModel, setShowDeleteModel] = useState(false)
-  const [deleteMediaTarget, setDeleteMediaTarget] = useState<{id: string, storagePath: string} | null>(null)
   const [presentations, setPresentations] = useState<any[]>([])
 
   const loadModel = useCallback(async () => {
@@ -417,7 +416,7 @@ export default function ModelProfile({ params }: { params: { id: string } }) {
                         <Crop size={10} />
                       </button>
                     )}
-                    <button onClick={() => setDeleteMediaTarget({ id: m.id, storagePath: m.storage_path })}
+                    <button onClick={() => deleteMedia(m.id, m.storage_path)}
                       className="px-2 py-1.5 border border-neutral-200 text-neutral-300 hover:border-red-300 hover:text-red-400 transition-colors">
                       <Trash2 size={10} />
                     </button>
