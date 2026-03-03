@@ -47,7 +47,35 @@ export function PresentationViewer({
     return m
   })
 
-  const sorted = [...presentationModels].sort((a, b) => {
+  const [search, setSearch] = useState('')
+  const [filterHeight, setFilterHeight] = useState('')
+  const [filterGender, setFilterGender] = useState('')
+
+  // All unique heights and genders for filter dropdowns
+  const allHeights = [...new Set(presentationModels.map(pm => {
+    const m = pm.models
+    return m?.height_ft ? `${m.height_ft}'${m.height_in || 0}"` : null
+  }).filter(Boolean))].sort()
+
+  const allGenders = [...new Set(presentationModels.map(pm => pm.models?.gender).filter(Boolean))].sort()
+
+  const filtered = presentationModels.filter(pm => {
+    const m = pm.models
+    if (!m) return true
+    const fullName = `${m.first_name} ${m.last_name}`.toLowerCase()
+    const skills = (m.skills || []).join(' ').toLowerCase()
+    const hobbies = (m.hobbies || []).join(' ').toLowerCase()
+    const agency = (m.agency || '').toLowerCase()
+    const q = search.toLowerCase()
+    const heightStr = m.height_ft ? `${m.height_ft}'${m.height_in || 0}"` : ''
+
+    if (search && !fullName.includes(q) && !skills.includes(q) && !hobbies.includes(q) && !agency.includes(q)) return false
+    if (filterHeight && heightStr !== filterHeight) return false
+    if (filterGender && m.gender !== filterGender) return false
+    return true
+  })
+
+  const sorted = [...filtered].sort((a, b) => {
     const aS = !!shortlists[a.model_id]
     const bS = !!shortlists[b.model_id]
     if (aS && !bS) return -1
@@ -149,6 +177,40 @@ export function PresentationViewer({
 
       {view === 'grid' && (
         <div>
+          {/* Search & filter bar */}
+          <div className="flex gap-3 mb-6 flex-wrap items-end">
+            <div className="relative flex-1 min-w-[180px]">
+              <input
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Search name, agency, skill, hobby..."
+                className="w-full border-b border-neutral-300 py-2 text-sm focus:outline-none focus:border-black placeholder:text-neutral-300 bg-transparent pr-6"
+              />
+              {search && (
+                <button onClick={() => setSearch('')} className="absolute right-0 top-2 text-neutral-300 hover:text-black">
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+            <select value={filterHeight} onChange={e => setFilterHeight(e.target.value)}
+              className="text-xs border-b border-neutral-300 py-2 focus:outline-none focus:border-black bg-transparent pr-4">
+              <option value="">All Heights</option>
+              {allHeights.map(h => <option key={h} value={h}>{h}</option>)}
+            </select>
+            <select value={filterGender} onChange={e => setFilterGender(e.target.value)}
+              className="text-xs border-b border-neutral-300 py-2 focus:outline-none focus:border-black bg-transparent pr-4">
+              <option value="">All Genders</option>
+              {allGenders.map(g => <option key={g} value={g}>{g}</option>)}
+            </select>
+            {(search || filterHeight || filterGender) && (
+              <button onClick={() => { setSearch(''); setFilterHeight(''); setFilterGender('') }}
+                className="text-xs tracking-widest uppercase text-neutral-400 hover:text-black">
+                Clear
+              </button>
+            )}
+            <span className="text-xs text-neutral-400">{filtered.length} shown</span>
+          </div>
+
           {shortlistedCount > 0 && (
             <div className="mb-8">
               <p className="label mb-4 flex items-center gap-2"><Heart size={10} className="fill-black text-black" /> Shortlisted</p>
