@@ -30,8 +30,9 @@ export default function ModelProfile({ params }: { params: { id: string } }) {
   const [media, setMedia] = useState<any[]>([])
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
-  const [activeTab, setActiveTab] = useState<'profile' | 'media'>('profile')
+  const [activeTab, setActiveTab] = useState<'profile' | 'media' | 'presenting'>('profile')
   const [cropTarget, setCropTarget] = useState<{url: string, storagePath: string, id: string} | null>(null)
+  const [presentations, setPresentations] = useState<any[]>([])
 
   const loadModel = useCallback(async () => {
     const { data } = await supabase.from('models').select('*').eq('id', id).single()
@@ -43,7 +44,16 @@ export default function ModelProfile({ params }: { params: { id: string } }) {
     setMedia(data || [])
   }, [id])
 
-  useEffect(() => { loadModel(); loadMedia() }, [loadModel, loadMedia])
+  const loadPresentations = useCallback(async () => {
+    const { data } = await supabase
+      .from('presentation_models')
+      .select('id, is_visible, admin_notes, presentation_id, presentations(id, name, is_published, projects(name))')
+      .eq('model_id', id)
+      .order('created_at', { ascending: false })
+    setPresentations(data || [])
+  }, [id])
+
+  useEffect(() => { loadModel(); loadMedia(); loadPresentations() }, [loadModel, loadMedia, loadPresentations])
 
   const saveModel = async () => {
     setSaving(true)
@@ -72,6 +82,15 @@ export default function ModelProfile({ params }: { params: { id: string } }) {
     await supabase.from('model_media').update({ public_url: publicUrl, storage_path: path }).eq('id', cropTarget.id)
     setCropTarget(null)
     loadMedia()
+  }
+
+  const togglePresVisibility = async (pmId: string, current: boolean) => {
+    await supabase.from('presentation_models').update({ is_visible: !current }).eq('id', pmId)
+    loadPresentations()
+  }
+
+  const savePresAdminNotes = async (pmId: string, notes: string) => {
+    await supabase.from('presentation_models').update({ admin_notes: notes }).eq('id', pmId)
   }
 
   const deleteModel = async () => {
@@ -272,6 +291,53 @@ export default function ModelProfile({ params }: { params: { id: string } }) {
             <label className="label block mb-2">Admin Notes</label>
             <textarea value={model.notes || ''} onChange={e => setModel({ ...model, notes: e.target.value })} rows={4}
               className="w-full border-b border-neutral-300 bg-transparent py-2 text-sm focus:outline-none resize-none" />
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'presenting' && (
+        <div className="space-y-6">
+          <div>
+            <p className="text-xs text-neutral-400 mb-6">Control which presentations this model appears in, and add notes visible to clients in each presentation.</p>
+            {presentations.length === 0 && (
+              <p className="text-sm text-neutral-400 py-4">This model hasn't been added to any presentations yet.</p>
+            )}
+            <div className="space-y-4">
+              {presentations.map((pm: any) => {
+                const pres = pm.presentations
+                const project = pres?.projects
+                return (
+                  <div key={pm.id} className="border border-neutral-200 p-5">
+                    <div className="flex items-start justify-between mb-4">
+                      <div>
+                        <p className="text-sm font-medium">{pres?.name}</p>
+                        <p className="text-xs text-neutral-400">{project?.name}</p>
+                        <p className={`text-[10px] tracking-widest uppercase mt-1 ${pres?.is_published ? 'text-black' : 'text-neutral-400'}`}>
+                          {pres?.is_published ? '● Published' : '○ Draft'}
+                        </p>
+                      </div>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <span className="text-xs tracking-widest uppercase text-neutral-500">Show in presentation</span>
+                        <div onClick={() => togglePresVisibility(pm.id, pm.is_visible)}
+                          className={`relative w-10 h-5 rounded-full transition-colors cursor-pointer ${pm.is_visible !== false ? 'bg-black' : 'bg-neutral-200'}`}>
+                          <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${pm.is_visible !== false ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                        </div>
+                      </label>
+                    </div>
+                    <div>
+                      <label className="label text-[10px] block mb-2">Notes for client (visible in this presentation)</label>
+                      <textarea
+                        defaultValue={pm.admin_notes || ''}
+                        onBlur={e => savePresAdminNotes(pm.id, e.target.value)}
+                        rows={3}
+                        placeholder="Add notes that will appear on this model's slide for the client..."
+                        className="w-full border-b border-neutral-300 bg-transparent py-2 text-sm focus:outline-none resize-none placeholder:text-neutral-300"
+                      />
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
           </div>
         </div>
       )}

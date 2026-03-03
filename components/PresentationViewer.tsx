@@ -339,10 +339,9 @@ export function PresentationViewer({
 
             {/* Right panel: always visible */}
             <div className="w-48 xl:w-56 flex-shrink-0 flex flex-col px-5 py-5 justify-between">
-              {/* Private notes: option + rate */}
               <div className="space-y-4 text-center">
-                {current.notes && (
-                  <p className="text-base font-medium tracking-wider">{current.notes}</p>
+                {current.admin_notes && (
+                  <p className="text-xs text-neutral-600 italic leading-relaxed">{current.admin_notes}</p>
                 )}
                 {current.rate && (
                   <p className="text-base font-medium tracking-wider">{current.rate}</p>

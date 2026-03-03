@@ -63,11 +63,8 @@ export default async function PresentationView({ params }: { params: { id: strin
     mediaByModel[m.model_id].push(m)
   })
 
-  // Strip admin_notes before passing to client-facing component
-  const sanitizedModels = (presentationModels || []).map((pm: any) => {
-    const { admin_notes, ...pmWithoutNotes } = pm
-    return pmWithoutNotes
-  })
+  // admin_notes are team notes visible to clients on the presentation
+  const sanitizedModels = presentationModels || []
 
   return (
     <div className="max-w-7xl mx-auto">
