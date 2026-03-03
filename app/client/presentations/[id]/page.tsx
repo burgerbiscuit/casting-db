@@ -12,7 +12,7 @@ export default async function PresentationView({ params }: { params: { id: strin
   if (!user) redirect('/client/login')
 
   const { data: presentation } = await supabase
-    .from('presentations').select('*, projects(name, specs)').eq('id', id).single()
+    .from('presentations').select('*, projects(name, specs, status)').eq('id', id).single()
 
   if (!presentation) return <div>Presentation not found.</div>
 
@@ -24,11 +24,17 @@ export default async function PresentationView({ params }: { params: { id: strin
     .eq('project_id', presentation.project_id)
     .single()
 
+  const isTeamMember = !!access || false
+  let isMember = false
   if (!access) {
-    // Also allow team members
     const { data: member } = await supabase.from('team_members').select('id').eq('user_id', user.id).single()
     if (!member) redirect('/client')
+    isMember = true
   }
+
+  // Archived projects: only team members can still view
+  const projectStatus = (presentation.projects as any)?.status
+  if (projectStatus === 'archived' && !isMember) redirect('/client')
 
   const { data: presentationModels } = await supabase
     .from('presentation_models')

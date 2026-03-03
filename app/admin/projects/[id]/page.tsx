@@ -42,11 +42,7 @@ export default async function ProjectDetail({ params, searchParams }: { params: 
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
   const modelLink = `${appUrl}/cast/${project.slug}`
-  const publishedPres = presentations?.find(p => p.is_published)
-  const latestPres = presentations?.[0]
-  const clientLink = publishedPres
-    ? `${appUrl}/client/presentations/${publishedPres.id}`
-    : latestPres ? `${appUrl}/client/presentations/${latestPres.id}` : null
+  const clientLink = presentations?.[0] ? `${appUrl}/client/presentations/${presentations[0].id}` : null
 
   const modelsWithPhotos = (projectModels || []).map((pm: any) => ({
     ...pm,
@@ -103,13 +99,11 @@ export default async function ProjectDetail({ params, searchParams }: { params: 
               <div className="flex gap-4 items-center">
                 <a href={clientLink} target="_blank" className="text-xs tracking-widest uppercase underline">Open ↗</a>
                 <CopyButton text={clientLink} />
-                {!publishedPres && latestPres && (
-                  <span className="text-[10px] text-amber-600 uppercase tracking-wider">Draft — publish to activate</span>
-                )}
+
               </div>
             </>
           ) : (
-            <p className="text-xs text-neutral-400 italic">No presentation yet. Add models then go to the Presentation tab.</p>
+<p className="text-xs text-neutral-400 italic">Go to the Presentation tab to set up the client view.</p>
           )}
         </div>
       </div>

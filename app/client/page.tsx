@@ -4,38 +4,39 @@ import Link from 'next/link'
 export default async function ClientDashboard() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-
-  // Check if user is a team member
   const { data: isMember } = await supabase.from('team_members').select('id').eq('user_id', user?.id).single()
 
   let projectsWithPresentations: any[] = []
 
   if (isMember) {
-    // Team members see ALL published presentations
+    // Team members see all active projects with presentations
     const { data: allProjects } = await supabase
       .from('projects')
-      .select('id, name, presentations(id, name, is_published)')
+      .select('id, name, status, presentations(id, name)')
+      .eq('status', 'active')
       .order('created_at', { ascending: false })
     projectsWithPresentations = (allProjects || []).map(p => ({
       project: p,
-      presentations: (p.presentations || []).filter((pres: any) => pres.is_published),
+      presentations: p.presentations || [],
     })).filter(p => p.presentations.length > 0)
   } else {
-    // Regular clients see only assigned projects
+    // Clients see only assigned ACTIVE projects
     const { data: clientProjects } = await supabase
       .from('client_projects')
-      .select('*, projects(id, name, presentations(id, name, is_published))')
+      .select('*, projects(id, name, status, presentations(id, name))')
       .eq('client_id', user?.id)
-    projectsWithPresentations = (clientProjects || []).map(cp => ({
-      project: cp.projects as any,
-      presentations: ((cp.projects as any)?.presentations || []).filter((p: any) => p.is_published),
-    }))
+    projectsWithPresentations = (clientProjects || [])
+      .filter(cp => (cp.projects as any)?.status === 'active')
+      .map(cp => ({
+        project: cp.projects as any,
+        presentations: ((cp.projects as any)?.presentations || []),
+      }))
   }
 
   return (
     <div className="max-w-4xl mx-auto">
       <h1 className="text-2xl font-light tracking-widest uppercase mb-10">Your Projects</h1>
-      {!projectsWithPresentations.length && <p className="text-sm text-neutral-400">No projects assigned yet.</p>}
+      {!projectsWithPresentations.length && <p className="text-sm text-neutral-400">No projects available.</p>}
       <div className="space-y-8">
         {projectsWithPresentations.map(({ project, presentations }) => (
           <div key={project?.id} className="border border-neutral-200 p-6">
@@ -48,7 +49,6 @@ export default async function ClientDashboard() {
                   <span className="text-xs tracking-wider uppercase text-neutral-400">View →</span>
                 </Link>
               ))}
-              {!presentations.length && <p className="text-xs text-neutral-400">No presentations published yet.</p>}
             </div>
           </div>
         ))}

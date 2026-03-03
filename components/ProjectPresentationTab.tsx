@@ -14,7 +14,6 @@ interface Props {
 export function ProjectPresentationTab({ projectId, presentationId: initialPresId, isPublished: initialPublished }: Props) {
   const supabase = createClient()
   const [presId, setPresId] = useState<string | null>(initialPresId)
-  const [isPublished, setIsPublished] = useState(initialPublished)
   const [presentationModels, setPresentationModels] = useState<any[]>([])
   const [availableModels, setAvailableModels] = useState<any[]>([])
   const [categories, setCategories] = useState<any[]>([])
@@ -22,8 +21,6 @@ export function ProjectPresentationTab({ projectId, presentationId: initialPresI
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [copied, setCopied] = useState(false)
-  const [emailStatus, setEmailStatus] = useState('')
-  const [showEmailPicker, setShowEmailPicker] = useState(false)
   const [creating, setCreating] = useState(false)
 
   const load = useCallback(async () => {
@@ -113,16 +110,17 @@ export function ProjectPresentationTab({ projectId, presentationId: initialPresI
     setSaving(false); setSaved(true); setTimeout(() => setSaved(false), 2000)
   }
 
-  const doPublish = async (fromEmail: string) => {
+  const [emailStatus, setEmailStatus] = useState('')
+  const [showEmailPicker, setShowEmailPicker] = useState(false)
+
+  const sendEmail = async (fromEmail: string) => {
     if (!presId) return
-    setShowEmailPicker(false)
-    await supabase.from('presentations').update({ is_published: true }).eq('id', presId)
-    setIsPublished(true); setEmailStatus('Sending...')
+    setShowEmailPicker(false); setEmailStatus('Sending...')
     try {
       const res = await fetch('/api/send-presentation-email', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ presentationId: presId, fromEmail }) })
       const data = await res.json()
-      setEmailStatus(data.sent > 0 ? `✓ Email sent to ${data.sent} client${data.sent > 1 ? 's' : ''}` : 'Published (no clients assigned)')
-    } catch { setEmailStatus('⚠ Published but email failed') }
+      setEmailStatus(data.sent > 0 ? `✓ Email sent to ${data.sent} client${data.sent > 1 ? 's' : ''}` : '⚠ No clients assigned to this project')
+    } catch { setEmailStatus('⚠ Email failed') }
     setTimeout(() => setEmailStatus(''), 5000)
   }
 
@@ -153,17 +151,10 @@ export function ProjectPresentationTab({ projectId, presentationId: initialPresI
         <p className="text-xs text-neutral-400">{presentationModels.length} model{presentationModels.length !== 1 ? 's' : ''} · {categories.length} section{categories.length !== 1 ? 's' : ''}</p>
         <div className="flex gap-3 items-center flex-wrap">
           {emailStatus && <span className="text-xs text-neutral-500 tracking-wider">{emailStatus}</span>}
-          {isPublished ? (
-            <button onClick={async () => { await supabase.from('presentations').update({ is_published: false }).eq('id', presId); setIsPublished(false) }}
-              className="text-xs px-4 py-3 border tracking-widest uppercase bg-black text-white border-black hover:opacity-70 transition-opacity">
-              ● Published
-            </button>
-          ) : (
-            <button onClick={() => setShowEmailPicker(true)}
-              className="text-xs px-4 py-3 border tracking-widest uppercase border-neutral-300 hover:border-black transition-colors">
-              Publish
-            </button>
-          )}
+          <button onClick={() => setShowEmailPicker(true)}
+            className="text-xs px-4 py-3 border tracking-widest uppercase border-neutral-300 hover:border-black transition-colors">
+            ✉ Notify Clients
+          </button>
           <Button variant="secondary" size="sm" onClick={copyLink}>{copied ? '✓ Copied' : <><Copy size={12} className="mr-1" />Copy Link</>}</Button>
           <a href={`/client/presentations/${presId}`} target="_blank"><Button variant="ghost" size="sm"><ExternalLink size={12} className="mr-1" />Preview</Button></a>
           <a href={`/api/pdf/${presId}`} target="_blank"><Button variant="ghost" size="sm">↓ PDF</Button></a>
@@ -177,7 +168,7 @@ export function ProjectPresentationTab({ projectId, presentationId: initialPresI
             <h3 className="text-sm font-medium tracking-widest uppercase mb-6">Send From</h3>
             <div className="space-y-3 mb-8">
               {['tasha@tashatongpreecha.com', 'hi@tashatongpreecha.com'].map(email => (
-                <button key={email} onClick={() => doPublish(email)}
+                <button key={email} onClick={() => sendEmail(email)}
                   className="w-full text-left px-4 py-3 border border-neutral-200 hover:border-black transition-colors text-sm">{email}</button>
               ))}
             </div>
