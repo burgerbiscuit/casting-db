@@ -11,16 +11,20 @@ export async function POST(req: NextRequest) {
   if (!projectId) {
     console.error('[cast-signin] Missing projectId! modelData:', JSON.stringify(modelData).slice(0, 200))
     // Still create the model so they're not lost, but flag it
-    const { data, error } = await supabase.from('models').insert({ ...modelData, notes: '[MISSING PROJECT - check cast sign-in]' }).select('id').single()
+    const { gender_other: _go, ethnicity_other: _eo, ...safeData } = modelData as any
+    const { data, error } = await supabase.from('models').insert({ ...safeData, notes: '[MISSING PROJECT - check cast sign-in]' }).select('id').single()
     return NextResponse.json({ ok: true, modelId: data?.id, warning: 'project_missing' })
   }
+
+  // Strip fields that don't exist in the DB schema
+  const { gender_other, ethnicity_other, ...cleanModelData } = modelData as any
 
   let modelId = existingModelId
   try {
     if (isReturning && modelId) {
-      await supabase.from('models').update(modelData).eq('id', modelId)
+      await supabase.from('models').update(cleanModelData).eq('id', modelId)
     } else {
-      const { data, error } = await supabase.from('models').insert(modelData).select('id').single()
+      const { data, error } = await supabase.from('models').insert(cleanModelData).select('id').single()
       if (error) return NextResponse.json({ error: 'Failed to save' }, { status: 500 })
       modelId = data?.id
     }
