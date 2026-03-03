@@ -1,6 +1,6 @@
 import { NextResponse, NextRequest } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { createClient as createServerClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 
 const TASHA_USER_ID = 'f5fe2bb4-f429-4978-a052-6f00cc614ff8'
 
@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
 
   // Production contacts: only Tasha can access
   if (type === 'production') {
-    const serverSupabase = await createServerClient()
+    const serverSupabase = await createServiceClient()
     const { data: { user } } = await serverSupabase.auth.getUser()
     if (!user || user.id !== TASHA_USER_ID) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
