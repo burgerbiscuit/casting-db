@@ -69,6 +69,20 @@ function SortableItem({ item, onRemove, onFieldChange, categories, onCategoryCha
             ))}
           </div>
 
+          {/* Section assignment */}
+          {categories && categories.length > 0 && onCategoryChange && (
+            <div className="mt-2 mb-1">
+              <label className="text-[10px] tracking-wider uppercase text-neutral-400 block mb-0.5">Section</label>
+              <select
+                value={(item as any).category_id || ''}
+                onChange={e => onCategoryChange(item.id, e.target.value || null)}
+                className="w-full border-b border-neutral-200 bg-transparent py-1 text-xs focus:outline-none focus:border-black text-neutral-700">
+                <option value="">— No section —</option>
+                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>
+          )}
+
           {/* Client-visible notes */}
           <div className="space-y-2 border-t border-neutral-100 pt-3">
             <p className="text-[10px] tracking-widest uppercase text-neutral-400 mb-2">Client Notes (visible on slides)</p>
