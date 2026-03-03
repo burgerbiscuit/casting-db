@@ -70,6 +70,15 @@ export default function ClientLogin() {
             <Input label="Password" type="password" value={password} onChange={e => setPassword(e.target.value)} required />
             {error && <p className="text-xs text-red-500">{error}</p>}
             <Button type="submit" disabled={loading} className="w-full">{loading ? 'Signing in...' : 'Sign In'}</Button>
+            <p className="text-center">
+              <button type="button" onClick={async () => {
+                if (!email) { alert('Enter your email first'); return }
+                await supabase.auth.resetPasswordForEmail(email, { redirectTo: 'https://cast.tashatongpreecha.com/client/reset-password' })
+                alert('Reset link sent to ' + email)
+              }} className="text-xs text-neutral-400 hover:text-black transition-colors tracking-wider">
+                Forgot password?
+              </button>
+            </p>
           </form>
         ) : (
           <form onSubmit={requestAccess} className="space-y-6 text-left">
