@@ -501,10 +501,10 @@ export function PresentationViewer({
               <img src="/logo.jpg" alt="" className="h-3 w-auto opacity-50 hidden landscape:hidden md:block" />
               {/* Name + sizing */}
               <div className="flex-1 min-w-0">
-                <h2 className="text-sm md:text-xl font-light tracking-[0.12em] uppercase truncate">
+                <h2 className="text-base md:text-2xl font-light tracking-[0.12em] uppercase truncate">
                   {currentModel.first_name} {currentModel.last_name}
                 </h2>
-                <p className="text-[9px] text-neutral-400 tracking-wide truncate hidden landscape:block md:block">
+                <p className="text-xs text-neutral-500 tracking-wide truncate">
                   {getSizingParts(current, currentModel).join(' · ')}
                 </p>
               </div>
@@ -530,10 +530,10 @@ export function PresentationViewer({
             {/* Photos flush left */}
             <div className="flex flex-1 min-w-0 gap-2 pt-4 pb-0 pl-0 pr-0 overflow-hidden">
               {currentMedia.length === 0 && (
-                <div className="bg-neutral-100 flex items-center justify-center text-neutral-300 text-xs flex-1">No photos</div>
+                <div className="bg-neutral-200 flex items-center justify-center text-neutral-400 text-xs flex-1">No photos</div>
               )}
               {photoMedia.slice(0, 2).map((m: any, i: number) => (
-                <div key={m.id} className="bg-neutral-100 overflow-hidden flex-1" style={{maxWidth:'calc(50% - 4px)'}}>
+                <div key={m.id} className="bg-neutral-200 overflow-hidden flex-1" style={{maxWidth:'calc(50% - 4px)'}}>
                   {m.type === 'video'
                     ? <video src={m.public_url} className="w-full h-full object-cover" controls />
                     : <img src={m.public_url} alt="" className="w-full h-full object-cover object-top" />}
@@ -542,8 +542,8 @@ export function PresentationViewer({
             </div>
 
             {/* Right panel: sidebar on desktop, bottom strip on mobile landscape */}
-            <div className={`flex-shrink-0 flex flex-col justify-between ${isMobile ? 'w-36 px-3 py-3' : 'w-48 xl:w-56 px-5 py-5'}`}>
-              <div className="space-y-4 text-center">
+            <div className={`flex-shrink-0 flex flex-col ${isMobile ? 'w-36 px-3 py-3' : 'w-48 xl:w-56 px-5 py-5'}`}>
+              <div className="flex-1 flex flex-col items-center justify-center space-y-4 text-center">
                 {current.admin_notes && (
                   <p className="text-sm text-neutral-700 italic leading-relaxed">{current.admin_notes}</p>
                 )}
