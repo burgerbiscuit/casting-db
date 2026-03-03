@@ -30,19 +30,50 @@ export function PresentationViewer({
   const [mediaModal, setMediaModal] = useState<{ url: string; type: string } | null>(null)
   const clientNoteDebounce = useRef<any>(null)
 
+  const [isMobile, setIsMobile] = useState(false)
+  const [isLandscape, setIsLandscape] = useState(false)
+
   useEffect(() => {
-    if (view === 'slides') {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768)
+    const checkOrientation = () => {
+      const landscape = window.innerWidth > window.innerHeight
+      setIsLandscape(landscape)
+      if (window.innerWidth < 768) {
+        setView(landscape ? 'slides' : 'grid')
+      }
+    }
+    checkMobile()
+    checkOrientation()
+    window.addEventListener('resize', checkMobile)
+    window.addEventListener('resize', checkOrientation)
+    return () => {
+      window.removeEventListener('resize', checkMobile)
+      window.removeEventListener('resize', checkOrientation)
+    }
+  }, [])
+
+  useEffect(() => {
+    // On mobile always lock scroll for app-like feel
+    if (isMobile) {
       document.body.style.overflow = 'hidden'
       document.documentElement.style.overflow = 'hidden'
+      document.body.style.position = 'fixed'
+      document.body.style.width = '100%'
+    } else if (view === 'slides') {
+      document.body.style.overflow = 'hidden'
+      document.documentElement.style.overflow = 'hidden'
+      document.body.style.position = ''
     } else {
       document.body.style.overflow = ''
       document.documentElement.style.overflow = ''
+      document.body.style.position = ''
     }
     return () => {
       document.body.style.overflow = ''
       document.documentElement.style.overflow = ''
+      document.body.style.position = ''
     }
-  }, [view])
+  }, [view, isMobile])
 
   const [shortlists, setShortlists] = useState<Record<string, boolean>>(() => {
     const m: Record<string, boolean> = {}
@@ -202,7 +233,15 @@ export function PresentationViewer({
       </div>
 
       {view === 'grid' && (
-        <div>
+        <div className={isMobile ? 'fixed inset-0 bg-white flex flex-col overflow-hidden z-30' : ''}>
+          {/* Mobile header */}
+          {isMobile && (
+            <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-100 flex-shrink-0">
+              <img src="/logo.jpg" alt="Tasha Tongpreecha Casting" className="h-4 w-auto" />
+              <p className="text-[10px] tracking-widest uppercase text-neutral-400">{presentationName}</p>
+            </div>
+          )}
+          <div className={isMobile ? 'flex-1 overflow-y-auto overscroll-none' : ''}>
           {/* Search & filter bar */}
           <div className="flex gap-3 mb-6 flex-wrap items-end">
             <div className="relative flex-1 min-w-[180px]">
@@ -240,7 +279,7 @@ export function PresentationViewer({
           {shortlistedCount > 0 && (
             <div className="mb-8">
               <p className="label mb-4 flex items-center gap-2"><Heart size={10} className="fill-black text-black" /> Shortlisted</p>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+              <div className={`grid gap-3 ${isMobile ? 'grid-cols-2' : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6'}`}>
                 {sorted.filter(pm => shortlists[pm.model_id]).map(pm => (
                   <div key={pm.id} className="relative">
                     {confirms[pm.model_id] && (
@@ -266,7 +305,7 @@ export function PresentationViewer({
               <div className="border-t border-neutral-100 mt-8 mb-6" />
             </div>
           )}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+          <div className={`grid gap-3 ${isMobile ? 'grid-cols-2' : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6'}`}>
             {sorted.filter(pm => !shortlists[pm.model_id]).map(pm => (
               <div key={pm.id} className="relative">
                 {confirms[pm.model_id] && (
@@ -289,6 +328,12 @@ export function PresentationViewer({
               </div>
             ))}
           </div>
+          {isMobile && !isLandscape && (
+            <div className="flex-shrink-0 py-3 text-center border-t border-neutral-100">
+              <p className="text-[9px] tracking-widest uppercase text-neutral-300">↻ Rotate for slide view</p>
+            </div>
+          )}
+          </div>{/* end mobile scroll wrapper */}
         </div>
       )}
 
@@ -337,8 +382,8 @@ export function PresentationViewer({
               ))}
             </div>
 
-            {/* Right panel: always visible */}
-            <div className="w-48 xl:w-56 flex-shrink-0 flex flex-col px-5 py-5 justify-between">
+            {/* Right panel: sidebar on desktop, bottom strip on mobile landscape */}
+            <div className={`flex-shrink-0 flex flex-col justify-between ${isMobile ? 'w-36 px-3 py-3' : 'w-48 xl:w-56 px-5 py-5'}`}>
               <div className="space-y-4 text-center">
                 {current.admin_notes && (
                   <p className="text-xs text-neutral-600 italic leading-relaxed">{current.admin_notes}</p>
