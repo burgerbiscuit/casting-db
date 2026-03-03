@@ -2,7 +2,7 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { LayoutDashboard, FolderOpen, Users, UserCheck, Settings, LogOut, Building2, Clapperboard, CalendarDays, ClipboardList, Menu, X, BarChart3 } from 'lucide-react'
+import { LayoutDashboard, FolderOpen, Users, UserCheck, Settings, LogOut, Building2, Clapperboard, CalendarDays, ClipboardList, Menu, X, BarChart3, BookOpen } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 const TASHA_USER_ID = 'f5fe2bb4-f429-4978-a052-6f00cc614ff8'
@@ -16,6 +16,7 @@ const baseNav = [
   { href: '/admin/agencies/contacts', label: 'Model Agencies', icon: Building2 },
   { href: '/admin/clients', label: 'Clients', icon: UserCheck },
   { href: '/admin/billing', label: 'Billing', icon: BarChart3 },
+  { href: '/admin/resources', label: 'Resources', icon: BookOpen },
   { href: '/admin/team', label: 'Team', icon: Settings },
 ]
 
