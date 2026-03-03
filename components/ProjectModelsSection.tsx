@@ -19,19 +19,66 @@ const STATUS_ORDER: Record<string, number> = { confirmed: 0, pending_confirmatio
 const STATUS_LABEL: Record<string, string> = { confirmed: 'Confirmed', pending_confirmation: 'Pending Confirmation', shortlisted: 'Shortlisted' }
 const STATUS_COLOR: Record<string, string> = { confirmed: 'bg-green-600 text-white', pending_confirmation: 'bg-amber-400 text-white', shortlisted: 'bg-neutral-200 text-neutral-700' }
 
+
+function SectionField({ modelId, presModelId, categoryId, categories, presModelIds, onCategoryChange, onCategoryCreated, presentationId, supabase }: any) {
+  const [creating, setCreating] = useState(false)
+  const [newName, setNewName] = useState('')
+  if (!presModelIds.has(modelId)) return null
+
+  const handleAssign = async (catId: string | null) => {
+    onCategoryChange(catId)
+    if (presModelId) await supabase.from('presentation_models').update({ category_id: catId || null }).eq('id', presModelId)
+  }
+
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newName.trim() || !presentationId) return
+    const maxOrder = Math.max(-1, ...categories.map((c: any) => c.display_order || 0))
+    const { data } = await supabase.from('presentation_categories').insert({ presentation_id: presentationId, name: newName.trim(), display_order: maxOrder + 1 }).select().single()
+    await onCategoryCreated()
+    if (data) await handleAssign(data.id)
+    setNewName(''); setCreating(false)
+  }
+
+  return (
+    <div className="mb-1">
+      <p className="text-[9px] text-neutral-400 tracking-widest uppercase mb-1">Section</p>
+      {creating ? (
+        <form onSubmit={handleCreate} className="flex gap-2 items-center">
+          <input autoFocus value={newName} onChange={e => setNewName(e.target.value)} placeholder="Section name..."
+            className="flex-1 text-[10px] border-b border-neutral-300 bg-transparent py-1 focus:outline-none focus:border-black placeholder:text-neutral-300" />
+          <button type="submit" className="text-[9px] tracking-widest uppercase text-black hover:opacity-60">Add</button>
+          <button type="button" onClick={() => setCreating(false)} className="text-[9px] tracking-widest uppercase text-neutral-400 hover:text-black">Cancel</button>
+        </form>
+      ) : (
+        <div className="flex gap-2 items-center">
+          <select value={categoryId || ''} onChange={e => handleAssign(e.target.value || null)}
+            className="flex-1 text-[10px] border-b border-neutral-200 bg-transparent py-1 focus:outline-none focus:border-black text-neutral-700">
+            <option value="">— No section —</option>
+            {categories.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+          <button type="button" onClick={() => setCreating(true)} className="text-[9px] tracking-widest uppercase text-neutral-400 hover:text-black whitespace-nowrap">+ Create</button>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, presModelIds: initialPresModelIds }: Props) {
   const supabase = createClient()
   const [view, setView] = useState<'list' | 'grid'>('list')
   const [presModels, setPresModels] = useState<Record<string, any>>({}) // keyed by model_id
   const [shortlistStatus, setShortlistStatus] = useState<Record<string, string>>({}) // model_id → 'confirmed'|'pending_confirmation'|'shortlisted'
   const [adminConfirmed, setAdminConfirmed] = useState<Record<string, boolean>>({}) // project_model_id → admin_confirmed
+  const [categories, setCategories] = useState<{id:string;name:string}[]>([])
+  const [presModelCategories, setPresModelCategories] = useState<Record<string,string|null>>({}) // model_id → category_id
   const [presModelIds, setPresModelIds] = useState<Set<string>>(new Set(initialPresModelIds))
 
   const load = useCallback(async () => {
     if (!mainPres?.id) return
     const [{ data: pm }, { data: sl }] = await Promise.all([
       supabase.from('presentation_models')
-        .select('id, model_id, admin_notes, is_visible, rate, location, pm_option')
+        .select('id, model_id, admin_notes, is_visible, rate, location, pm_option, category_id')
         .eq('presentation_id', mainPres.id),
       supabase.from('client_shortlists')
         .select('model_id, status')
@@ -43,6 +90,14 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
     setPresModelIds(new Set(Object.keys(pmMap)))
 
     const { data: pmData } = await supabase.from('project_models').select('model_id, admin_confirmed').eq('project_id', projectId)
+    if (mainPres?.id) {
+      const { data: cats } = await supabase.from('presentation_categories').select('id, name').eq('presentation_id', mainPres.id).order('display_order')
+      setCategories(cats || [])
+    }
+    // Track category per model from presentation_models
+    const catMap: Record<string,string|null> = {}
+    ;(pm || []).forEach((m: any) => { catMap[m.model_id] = m.category_id || null })
+    setPresModelCategories(catMap)
     const statusMap: Record<string, string> = {}
     ;(sl || []).forEach((s: any) => { statusMap[s.model_id] = s.status || 'shortlisted' })
     setShortlistStatus(statusMap)
@@ -232,6 +287,23 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
             <input className="text-[10px] border-b border-neutral-200 bg-transparent py-1 focus:outline-none focus:border-black placeholder:text-neutral-300 col-span-2"
               placeholder="Location" value={location} onChange={e => setLocation(e.target.value)}
               onBlur={e => savePmField(pm.id, 'pm_location', e.target.value)} />
+            <div className="col-span-2">
+              <SectionField
+                modelId={mid}
+                presModelId={presModels[mid]?.id}
+                categoryId={presModelCategories[mid] || null}
+                categories={categories}
+                presModelIds={presModelIds}
+                onCategoryChange={(catId: string | null) => setPresModelCategories(prev => ({...prev, [mid]: catId}))}
+                onCategoryCreated={async () => {
+                  if (!mainPres?.id) return
+                  const { data: cats } = await supabase.from('presentation_categories').select('id, name').eq('presentation_id', mainPres.id).order('display_order')
+                  setCategories(cats || [])
+                }}
+                presentationId={mainPres?.id}
+                supabase={supabase}
+              />
+            </div>
             <div className="col-span-2">
               <p className="text-[9px] text-neutral-400 tracking-widest uppercase mb-1">Notes for client presentation</p>
               <textarea className="w-full text-[10px] border-b border-neutral-200 bg-transparent py-1 focus:outline-none focus:border-black resize-none placeholder:text-neutral-300"
