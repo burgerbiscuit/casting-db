@@ -112,19 +112,12 @@ export default function CastPage({ params }: { params: { slug: string } }) {
   }, [slug])
 
   const searchModels = async (fn: string, ln: string) => {
-    const term = (fn + ' ' + ln).trim()
-    if (!term || term.length < 2) { setSuggestions([]); return }
-    // Search by first name OR last name so partial matches work
-    const { data } = await supabase
-      .from('models').select('id, first_name, last_name, agency')
-      .or(`first_name.ilike.${fn}%,last_name.ilike.${ln || fn}%`)
-      .limit(8)
-    // Filter client-side to best matches
-    const filtered = (data || []).filter(m => {
-      const fullName = (m.first_name + ' ' + m.last_name).toLowerCase()
-      return fullName.includes(fn.toLowerCase()) || (ln && fullName.includes(ln.toLowerCase()))
-    })
-    setSuggestions(filtered)
+    const q = (fn + (ln ? ' ' + ln : '')).trim()
+    if (q.length < 2) { setSuggestions([]); return }
+    // Use server-side API — works for unauthenticated users on cast sign-in
+    const res = await fetch('/api/model-search?q=' + encodeURIComponent(q))
+    const data = await res.json()
+    setSuggestions(Array.isArray(data) ? data : [])
   }
 
   const onNameChange = (fn: string, ln: string) => {
