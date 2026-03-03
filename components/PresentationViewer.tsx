@@ -458,8 +458,6 @@ function SlideActions({ presentationId, modelId, clientId, initialShortlisted, i
         <Heart size={11} className={shortlisted ? 'fill-white text-white' : ''} />
         {shortlisted ? 'Shortlisted' : 'Shortlist'}
       </button>
-      {shortlisted && model?.agency && (
-      )}
     </div>
   )
 
@@ -473,8 +471,6 @@ function SlideActions({ presentationId, modelId, clientId, initialShortlisted, i
         <Heart size={12} className={shortlisted ? 'fill-white text-white' : ''} />
         {shortlisted ? 'Shortlisted' : 'Add to Shortlist'}
       </button>
-      {shortlisted && model?.agency && (
-      )}
       <textarea value={notes} onChange={e => saveNotes(e.target.value)} placeholder="Your notes..."
         rows={2} className="w-full text-sm border-b border-neutral-200 bg-transparent py-2 focus:outline-none focus:border-black resize-none placeholder:text-neutral-300" />
     </div>
