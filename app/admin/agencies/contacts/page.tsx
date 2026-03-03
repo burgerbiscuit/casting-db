@@ -61,7 +61,13 @@ export default function AgencyContactsPage() {
     if (section !== 'ALL') filtered = filtered.filter(c => c.section === section)
     if (gender !== 'ALL') filtered = filtered.filter(c => c.gender === gender)
     
-    filtered.sort((a: any, b: any) => (b.is_main_contact ? 1 : 0) - (a.is_main_contact ? 1 : 0))
+    filtered.sort((a: any, b: any) => {
+      if (a.is_main_contact && !b.is_main_contact) return -1
+      if (!a.is_main_contact && b.is_main_contact) return 1
+      if (a.email_invalid && !b.email_invalid) return 1
+      if (!a.email_invalid && b.email_invalid) return -1
+      return 0
+    })
     setContacts(filtered)
   }
 
@@ -190,7 +196,7 @@ export default function AgencyContactsPage() {
             </thead>
             <tbody>
               {contacts.map(c => (
-                <tr key={c.id} className={`border-b border-neutral-100 hover:bg-neutral-50 ${selected.has(c.id) ? 'bg-blue-50' : c.is_main_contact ? 'bg-amber-50' : ''}`}>
+                <tr key={c.id} className={`border-b border-neutral-100 hover:bg-neutral-50 ${selected.has(c.id) ? 'bg-blue-50' : c.is_main_contact ? 'bg-green-50' : c.email_invalid ? 'bg-red-50' : ''}`}>
                   <td className="py-2.5 px-2"><input type="checkbox" 
                     checked={selected.has(c.id)}
                     onChange={() => toggleSelect(c.id)}
@@ -205,7 +211,7 @@ export default function AgencyContactsPage() {
                   <td className="py-2.5 pr-6 text-neutral-500 text-xs">{c.board || '—'}</td>
                   <td className="py-2.5 pr-6 text-neutral-500 text-xs">{c.city || '—'}</td>
                   <td className="py-2.5 pr-6">
-                    {c.email ? <a href={`mailto:${c.email}`} className="underline underline-offset-2 hover:opacity-60 text-xs">{c.email}</a> : '—'}
+                    {c.email_invalid ? <span className="text-red-400 text-xs line-through">{c.email || 'invalid'}</span> : c.email ? <a href={`mailto:${c.email}`} className="underline underline-offset-2 hover:opacity-60 text-xs">{c.email}</a> : <span className="text-neutral-300 text-xs">—</span>}
                   </td>
                   <td className="py-2.5 pr-6 text-neutral-500 text-xs">{c.office_phone || '—'}</td>
                   <td className="py-2.5 text-neutral-500 text-xs">{c.cell_phone || '—'}</td>

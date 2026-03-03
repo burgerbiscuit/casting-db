@@ -188,7 +188,7 @@ export default function ProductionContactsPage() {
                   <td className="py-2.5 pr-6 text-neutral-500 text-xs">{c.board || '—'}</td>
                   <td className="py-2.5 pr-6 text-neutral-500 text-xs">{c.city || '—'}</td>
                   <td className="py-2.5 pr-6">
-                    {c.email ? <a href={`mailto:${c.email}`} className="underline underline-offset-2 hover:opacity-60 text-xs">{c.email}</a> : '—'}
+                    {c.email_invalid ? <span className="text-red-400 text-xs line-through">{c.email || 'invalid'}</span> : c.email ? <a href={`mailto:${c.email}`} className="underline underline-offset-2 hover:opacity-60 text-xs">{c.email}</a> : <span className="text-neutral-300 text-xs">—</span>}
                   </td>
                   <td className="py-2.5 text-neutral-500 text-xs">{c.cell_phone || '—'}</td>
                   <td className="py-2.5 text-right">
