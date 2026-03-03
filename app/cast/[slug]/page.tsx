@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { ChipInput } from '@/components/ChipInput'
 
-type Step = 'loading' | 'landing' | 'name' | 'confirm' | 'form' | 'done'
+type Step = 'loading' | 'landing' | 'name' | 'confirm' | 'verify' | 'not-me' | 'form' | 'done'
 type Gender = 'female' | 'male' | 'non-binary' | 'other' | ''
 
 const HEIGHT_FT = [4,5,6,7]
@@ -72,6 +72,8 @@ export default function CastPage({ params }: { params: { slug: string } }) {
   const { slug } = params
   const supabase = createClient()
   const [step, setStep] = useState<Step>('loading')
+  const [birthdayInput, setBirthdayInput] = useState('')
+  const [birthdayError, setBirthdayError] = useState('')
   const [project, setProject] = useState<any>(null)
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
@@ -213,6 +215,17 @@ export default function CastPage({ params }: { params: { slug: string } }) {
       setModelPhoto(photoData.public_url)
     }
     setStep('confirm')
+  }
+
+  const handleSkipSignIn = async () => {
+    setSaving(true)
+    const res = await fetch('/api/cast-signin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ modelId: selectedModel.id, projectId: project?.id, isReturning: true, modelData: {}, selfieBase64Files: [] })
+    })
+    setSaving(false)
+    setStep('done')
   }
 
   const confirmReturning = async () => {
@@ -372,8 +385,46 @@ export default function CastPage({ params }: { params: { slug: string } }) {
               </div>
             </div>
             <div className="flex gap-4 justify-center mb-8">
-              <Button onClick={confirmReturning}>Yes, This Is Me</Button>
+              <Button onClick={() => { setBirthdayInput(''); setBirthdayError(''); setStep('verify') }}>Yes, This Is Me</Button>
               <Button variant="secondary" onClick={() => setStep('not-me')}>Not Me</Button>
+            </div>
+          </div>
+        )}
+
+        {step === 'verify' && selectedModel && (
+          <div className="text-center">
+            <h2 className="text-xl font-light tracking-widest uppercase mb-4">One Quick Check</h2>
+            <p className="text-sm text-neutral-500 mb-10">Enter your date of birth to confirm it's you.</p>
+            <div className="max-w-xs mx-auto text-left mb-6">
+              <label className="label block mb-2">Date of Birth</label>
+              <input
+                type="date"
+                value={birthdayInput}
+                onChange={e => { setBirthdayInput(e.target.value); setBirthdayError('') }}
+                className="w-full border-b border-neutral-300 py-2 text-sm focus:outline-none focus:border-black bg-transparent"
+              />
+              {birthdayError && <p className="text-xs text-red-500 mt-2">{birthdayError}</p>}
+            </div>
+            <div className="flex flex-col gap-3 max-w-xs mx-auto">
+              <Button onClick={async () => {
+                if (!birthdayInput) { setBirthdayError('Please enter your date of birth'); return }
+                // Fetch dob from DB and compare
+                const { data } = await supabase.from('models').select('date_of_birth').eq('id', selectedModel.id).single()
+                const stored = data?.date_of_birth ? data.date_of_birth.slice(0, 10) : null
+                if (!stored) {
+                  // No birthday on file — just let them through
+                  confirmReturning()
+                } else if (stored === birthdayInput) {
+                  confirmReturning()
+                } else {
+                  setBirthdayError('That doesn't match. Please try again or select "Not Me" to go back.')
+                }
+              }}>Confirm</Button>
+              <Button variant="ghost" onClick={() => {
+                // Skip verification — go straight to sign-in complete
+                handleSkipSignIn()
+              }}>Skip — Just Sign Me In</Button>
+              <button onClick={() => setStep('confirm')} className="text-xs text-neutral-400 underline mt-1">← Back</button>
             </div>
           </div>
         )}
