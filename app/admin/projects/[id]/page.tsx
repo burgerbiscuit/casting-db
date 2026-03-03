@@ -43,6 +43,7 @@ export default async function ProjectDetail({ params, searchParams }: { params: 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
   const modelLink = `${appUrl}/cast/${project.slug}`
   const clientLink = presentations?.[0] ? `${appUrl}/client/presentations/${presentations[0].id}` : null
+  const contactSheetUrl = `/api/contact-sheet/${id}`
 
   const modelsWithPhotos = (projectModels || []).map((pm: any) => ({
     ...pm,

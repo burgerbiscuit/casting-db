@@ -15,15 +15,16 @@ function getInitials(model: any) {
   return ((model?.first_name?.[0] || '') + (model?.last_name?.[0] || '')).toUpperCase()
 }
 
-const STATUS_ORDER: Record<string, number> = { confirmed: 0, shortlisted: 1, none: 2 }
-const STATUS_LABEL: Record<string, string> = { confirmed: 'Confirmed', shortlisted: 'Shortlisted' }
-const STATUS_COLOR: Record<string, string> = { confirmed: 'bg-black text-white', shortlisted: 'bg-neutral-200 text-neutral-700' }
+const STATUS_ORDER: Record<string, number> = { confirmed: 0, pending_confirmation: 1, shortlisted: 2, none: 3 }
+const STATUS_LABEL: Record<string, string> = { confirmed: 'Confirmed', pending_confirmation: 'Pending Confirmation', shortlisted: 'Shortlisted' }
+const STATUS_COLOR: Record<string, string> = { confirmed: 'bg-green-600 text-white', pending_confirmation: 'bg-amber-400 text-white', shortlisted: 'bg-neutral-200 text-neutral-700' }
 
 export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, presModelIds: initialPresModelIds }: Props) {
   const supabase = createClient()
   const [view, setView] = useState<'list' | 'grid'>('list')
   const [presModels, setPresModels] = useState<Record<string, any>>({}) // keyed by model_id
-  const [shortlistStatus, setShortlistStatus] = useState<Record<string, string>>({}) // model_id → 'confirmed'|'shortlisted'
+  const [shortlistStatus, setShortlistStatus] = useState<Record<string, string>>({}) // model_id → 'confirmed'|'pending_confirmation'|'shortlisted'
+  const [adminConfirmed, setAdminConfirmed] = useState<Record<string, boolean>>({}) // project_model_id → admin_confirmed
   const [presModelIds, setPresModelIds] = useState<Set<string>>(new Set(initialPresModelIds))
 
   const load = useCallback(async () => {
@@ -41,9 +42,13 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
     setPresModels(pmMap)
     setPresModelIds(new Set(Object.keys(pmMap)))
 
+    const { data: pmData } = await supabase.from('project_models').select('model_id, admin_confirmed').eq('project_id', projectId)
     const statusMap: Record<string, string> = {}
     ;(sl || []).forEach((s: any) => { statusMap[s.model_id] = s.status || 'shortlisted' })
     setShortlistStatus(statusMap)
+    const adminMap: Record<string, boolean> = {}
+    ;(pmData || []).forEach((pm: any) => { if (pm.admin_confirmed) adminMap[pm.model_id] = true })
+    setAdminConfirmed(adminMap)
   }, [mainPres?.id])
 
   useEffect(() => { load() }, [load])
@@ -78,6 +83,18 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
     }
   }
 
+  const officialConfirm = async (modelId: string) => {
+    const next = !adminConfirmed[modelId]
+    setAdminConfirmed(r => ({ ...r, [modelId]: next }))
+    // Update project_models
+    await supabase.from('project_models').update({ admin_confirmed: next, status: next ? 'confirmed' : 'pending' })
+      .eq('project_id', projectId).eq('model_id', modelId)
+    // Update client_shortlists to reflect official confirmation
+    await supabase.from('client_shortlists')
+      .update({ status: next ? 'confirmed' : 'pending_confirmation' })
+      .eq('model_id', modelId)
+  }
+
   // Sort: confirmed → shortlisted → other
   const sorted = [...modelsWithPhotos].sort((a, b) => {
     const as = STATUS_ORDER[shortlistStatus[a.models?.id] || 'none']
@@ -86,7 +103,8 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
   })
 
   // Group for list view
-  const confirmed = sorted.filter(pm => shortlistStatus[pm.models?.id] === 'confirmed')
+  const pending = sorted.filter(pm => shortlistStatus[pm.models?.id] === 'pending_confirmation')
+  const confirmed = sorted.filter(pm => shortlistStatus[pm.models?.id] === 'confirmed' || adminConfirmed[pm.models?.id])
   const shortlisted = sorted.filter(pm => shortlistStatus[pm.models?.id] === 'shortlisted')
   const others = sorted.filter(pm => !shortlistStatus[pm.models?.id])
 
@@ -118,6 +136,15 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
             <div className="flex items-center gap-2">
               <p className="text-xs font-medium">{model?.first_name} {model?.last_name}</p>
               {status && <span className={`text-[8px] tracking-widest uppercase px-1.5 py-0.5 ${STATUS_COLOR[status]}`}>{STATUS_LABEL[status]}</span>}
+              {status === 'pending_confirmation' && (
+                <button onClick={() => officialConfirm(mid)}
+                  className="text-[8px] tracking-widest uppercase px-2 py-0.5 border border-green-500 text-green-600 hover:bg-green-600 hover:text-white transition-colors ml-1">
+                  ✓ Officially Confirm
+                </button>
+              )}
+              {adminConfirmed[mid] && status !== 'pending_confirmation' && (
+                <span className="text-[8px] tracking-widest uppercase px-1.5 py-0.5 bg-green-600 text-white ml-1">✓ Confirmed</span>
+              )}
             </div>
             {model?.agency && <p className="text-[10px] text-neutral-400">{model?.agency}</p>}
           </div>
@@ -210,7 +237,7 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
     )
   }
 
-  const hasGroups = confirmed.length > 0 || shortlisted.length > 0
+  const hasGroups = confirmed.length > 0 || pending.length > 0 || shortlisted.length > 0
 
   return (
     <div>
@@ -241,7 +268,8 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
         <>
           {hasGroups ? (
             <>
-              {renderGroup(confirmed, 'Confirmed')}
+              {pending.length > 0 && renderGroup(pending, 'Pending Confirmation ⏳')}
+              {renderGroup(confirmed, 'Officially Confirmed ✓')}
               {renderGroup(shortlisted, 'Shortlisted')}
               {renderGroup(others, others.length && hasGroups ? 'Other' : undefined)}
             </>

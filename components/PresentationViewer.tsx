@@ -91,6 +91,12 @@ export function PresentationViewer({
     return m
   })
   const [confirms, setConfirms] = useState<Record<string, boolean>>(initialConfirmMap || {})
+  // pending = client requested confirm, waiting for admin
+  const [pendings, setPendings] = useState<Record<string, boolean>>(() => {
+    const m: Record<string, boolean> = {}
+    Object.entries(shortlistMap).forEach(([k, v]: any) => { if (v?.status === 'pending_confirmation') m[k] = true })
+    return m
+  })
   const [confirmModal, setConfirmModal] = useState<{ modelId: string; modelName: string } | null>(null)
 
   const [search, setSearch] = useState('')
@@ -326,8 +332,8 @@ export function PresentationViewer({
                         if (confirms[pm.model_id]) { handleConfirm(pm.model_id) }
                         else setConfirmModal({ modelId: pm.model_id, modelName: `${pm.models?.first_name} ${pm.models?.last_name}` })
                       }}
-                      className={`w-full mt-1 py-1.5 text-[9px] tracking-widest uppercase transition-colors border ${confirms[pm.model_id] ? 'bg-green-600 text-white border-green-600 hover:bg-green-700' : 'border-neutral-200 hover:border-black text-neutral-400 hover:text-black'}`}>
-                      {confirms[pm.model_id] ? '✓ Confirmed' : 'Confirm Talent'}
+                      className={`w-full mt-1 py-1.5 text-[9px] tracking-widest uppercase transition-colors border ${confirms[pm.model_id] ? 'bg-green-600 text-white border-green-600' : pendings[pm.model_id] ? 'bg-amber-400 text-white border-amber-400 cursor-default' : 'border-neutral-200 hover:border-black text-neutral-400 hover:text-black'}`}>
+                      {confirms[pm.model_id] ? '✓ Confirmed' : pendings[pm.model_id] ? '⏳ Pending Confirmation' : 'Confirm Talent'}
                     </button>
                   </div>
                 ))}
@@ -353,8 +359,8 @@ export function PresentationViewer({
                     if (confirms[pm.model_id]) { handleConfirm(pm.model_id) }
                     else setConfirmModal({ modelId: pm.model_id, modelName: `${pm.models?.first_name} ${pm.models?.last_name}` })
                   }}
-                  className={`w-full mt-1 py-1.5 text-[9px] tracking-widest uppercase transition-colors border ${confirms[pm.model_id] ? 'bg-green-600 text-white border-green-600 hover:bg-green-700' : 'border-neutral-200 hover:border-black text-neutral-400 hover:text-black'}`}>
-                  {confirms[pm.model_id] ? '✓ Confirmed' : 'Confirm Talent'}
+                  className={`w-full mt-1 py-1.5 text-[9px] tracking-widest uppercase transition-colors border ${confirms[pm.model_id] ? 'bg-green-600 text-white border-green-600' : pendings[pm.model_id] ? 'bg-amber-400 text-white border-amber-400 cursor-default' : 'border-neutral-200 hover:border-black text-neutral-400 hover:text-black'}`}>
+                  {confirms[pm.model_id] ? '✓ Confirmed' : pendings[pm.model_id] ? '⏳ Pending Confirmation' : 'Confirm Talent'}
                 </button>
               </div>
             )
@@ -473,8 +479,8 @@ export function PresentationViewer({
                   if (confirms[current.model_id]) { handleConfirm(current.model_id) }
                   else setConfirmModal({ modelId: current.model_id, modelName: `${currentModel?.first_name} ${currentModel?.last_name}` })
                 }}
-                className={`text-[9px] tracking-widest uppercase border px-3 py-1.5 transition-colors ${confirms[current.model_id] ? 'bg-green-600 text-white border-green-600 hover:bg-green-700' : 'border-neutral-300 hover:border-black text-neutral-500 hover:text-black'}`}>
-                {confirms[current.model_id] ? '✓ Confirmed' : 'Confirm Talent'}
+                className={`text-[9px] tracking-widest uppercase border px-3 py-1.5 transition-colors ${confirms[current.model_id] ? 'bg-green-600 text-white border-green-600' : pendings[current.model_id] ? 'bg-amber-400 text-white border-amber-400' : 'border-neutral-300 hover:border-black text-neutral-500 hover:text-black'}`}>
+                {confirms[current.model_id] ? '✓ Confirmed' : pendings[current.model_id] ? '⏳ Pending' : 'Confirm Talent'}
               </button>
               <SlideActions presentationId={presentationId} modelId={current.model_id} clientId={clientId}
                 initialShortlisted={!!shortlists[current.model_id]} initialNotes={shortlistMap[current.model_id]?.notes || ""} initialAuthor={shortlistMap[current.model_id]?.author_name || ''}
