@@ -39,6 +39,12 @@ export function ProjectPresentationTab({ projectId, presentationId: initialPresI
 
   useEffect(() => { load() }, [load])
 
+  // Auto-refresh every 30s to pick up new sign-ins
+  useEffect(() => {
+    const interval = setInterval(load, 30_000)
+    return () => clearInterval(interval)
+  }, [load])
+
   const createPresentation = async () => {
     setCreating(true)
     const { data: project } = await supabase.from('projects').select('name').eq('id', projectId).single()
@@ -151,6 +157,10 @@ export function ProjectPresentationTab({ projectId, presentationId: initialPresI
         <p className="text-xs text-neutral-400">{presentationModels.length} model{presentationModels.length !== 1 ? 's' : ''} · {categories.length} section{categories.length !== 1 ? 's' : ''}</p>
         <div className="flex gap-3 items-center flex-wrap">
           {emailStatus && <span className="text-xs text-neutral-500 tracking-wider">{emailStatus}</span>}
+          <button onClick={load} title="Refresh"
+            className="text-xs px-3 py-3 border tracking-widest uppercase border-neutral-300 hover:border-black transition-colors">
+            ↻
+          </button>
           <button onClick={() => setShowEmailPicker(true)}
             className="text-xs px-4 py-3 border tracking-widest uppercase border-neutral-300 hover:border-black transition-colors">
             ✉ Notify Clients
