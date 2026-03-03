@@ -12,9 +12,10 @@ interface ModelCardProps {
   initialShortlisted: boolean
   onShortlistChange?: (v: boolean) => void
   initialNotes: string
+  onCardClick?: () => void
 }
 
-export function ModelCard({ presentationModel, model, media, presentationId, clientId, initialShortlisted, initialNotes, onShortlistChange }: ModelCardProps) {
+export function ModelCard({ presentationModel, model, media, presentationId, clientId, initialShortlisted, initialNotes, onShortlistChange, onCardClick }: ModelCardProps) {
   const supabase = createClient()
   const [shortlisted, setShortlisted] = useState(initialShortlisted)
   const [notes, setNotes] = useState(initialNotes)
@@ -71,8 +72,8 @@ export function ModelCard({ presentationModel, model, media, presentationId, cli
 
   return (
     <div className="border border-neutral-200">
-      {/* Photos */}
-      <div className="relative aspect-[3/4] bg-neutral-100 overflow-hidden">
+      {/* Photos — click to open slides */}
+      <div className="relative aspect-[3/4] bg-neutral-100 overflow-hidden cursor-pointer" onClick={onCardClick}>
         {visibleMedia.length > 0 ? (
           visibleMedia[mediaIndex]?.type === 'video' ? (
             <video src={visibleMedia[mediaIndex].public_url} className="w-full h-full object-cover" controls />
@@ -82,14 +83,7 @@ export function ModelCard({ presentationModel, model, media, presentationId, cli
         ) : (
           <div className="w-full h-full flex items-center justify-center text-neutral-300 text-xs">No photo</div>
         )}
-        {visibleMedia.length > 1 && (
-          <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5">
-            {visibleMedia.map((_, i) => (
-              <button key={i} onClick={() => setMediaIndex(i)}
-                className={`w-1.5 h-1.5 rounded-full transition-colors ${i === mediaIndex ? 'bg-white' : 'bg-white/40'}`} />
-            ))}
-          </div>
-        )}
+
         <button
           onClick={toggleShortlist}
           className={`absolute top-3 right-3 p-2 rounded-full transition-colors ${shortlisted ? 'bg-black text-white' : 'bg-white/80 text-neutral-400 hover:text-black'}`}

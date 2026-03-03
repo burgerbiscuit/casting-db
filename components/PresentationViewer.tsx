@@ -254,12 +254,25 @@ export function PresentationViewer({
           )}
           <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
             {sorted.filter(pm => !shortlists[pm.model_id]).map(pm => (
-              <ModelCard key={pm.id} presentationModel={pm} model={pm.models}
-                media={mediaByModel[pm.model_id] || []} presentationId={presentationId}
-                clientId={clientId} initialShortlisted={false}
-                initialNotes={shortlistMap[pm.model_id]?.notes || ''}
-                onShortlistChange={(v) => handleShortlistChange(pm.model_id, v)}
-                onCardClick={() => { setSlideIndex(sorted.findIndex(s => s.model_id === pm.model_id)); setView('slides') }} />
+              <div key={pm.id} className="relative">
+                {confirms[pm.model_id] && (
+                  <div className="absolute top-2 left-2 z-10 bg-black text-white text-[9px] tracking-widest uppercase px-2 py-1">Confirmed</div>
+                )}
+                <ModelCard presentationModel={pm} model={pm.models}
+                  media={mediaByModel[pm.model_id] || []} presentationId={presentationId}
+                  clientId={clientId} initialShortlisted={false}
+                  initialNotes={shortlistMap[pm.model_id]?.notes || ''}
+                  onShortlistChange={(v) => handleShortlistChange(pm.model_id, v)}
+                  onCardClick={() => { setSlideIndex(sorted.findIndex(s => s.model_id === pm.model_id)); setView('slides') }} />
+                <button
+                  onClick={() => {
+                    if (confirms[pm.model_id]) { handleConfirm(pm.model_id) }
+                    else setConfirmModal({ modelId: pm.model_id, modelName: `${pm.models?.first_name} ${pm.models?.last_name}` })
+                  }}
+                  className={`w-full mt-1 py-1.5 text-[9px] tracking-widest uppercase transition-colors border ${confirms[pm.model_id] ? 'bg-black text-white border-black hover:opacity-70' : 'border-neutral-200 hover:border-black text-neutral-400 hover:text-black'}`}>
+                  {confirms[pm.model_id] ? '✓ Confirmed' : 'Confirm Talent'}
+                </button>
+              </div>
             ))}
           </div>
         </div>
@@ -278,6 +291,14 @@ export function PresentationViewer({
               {getSizingParts(current, currentModel).join('  ·  ')}
             </p>
             <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-3">
+              <button
+                onClick={() => {
+                  if (confirms[current.model_id]) { handleConfirm(current.model_id) }
+                  else setConfirmModal({ modelId: current.model_id, modelName: `${currentModel?.first_name} ${currentModel?.last_name}` })
+                }}
+                className={`text-[9px] tracking-widest uppercase border px-3 py-1.5 transition-colors ${confirms[current.model_id] ? 'bg-black text-white border-black hover:opacity-70' : 'border-neutral-300 hover:border-black text-neutral-500 hover:text-black'}`}>
+                {confirms[current.model_id] ? '✓ Confirmed' : 'Confirm Talent'}
+              </button>
               <SlideActions presentationId={presentationId} modelId={current.model_id} clientId={clientId}
                 initialShortlisted={!!shortlists[current.model_id]} initialNotes={shortlistMap[current.model_id]?.notes || ""}
                 onShortlistChange={(v) => handleShortlistChange(current.model_id, v)} compact={true} model={currentModel} projectName={projectName} />
