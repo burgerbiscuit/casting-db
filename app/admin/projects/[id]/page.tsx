@@ -5,6 +5,8 @@ import { revalidatePath } from 'next/cache'
 import { CopyButton } from '@/components/CopyButton'
 import { ProjectModelsSection } from '@/components/ProjectModelsSection'
 import { ProjectPresentationTab } from '@/components/ProjectPresentationTab'
+import ProjectSpecsPanel from '@/components/ProjectSpecsPanel'
+import ProjectFilesTab from '@/components/ProjectFilesTab'
 
 async function archiveProject(id: string, status: string) {
   'use server'
@@ -24,6 +26,7 @@ export default async function ProjectDetail({ params, searchParams }: { params: 
     .select('*, models(id, first_name, last_name, agency, gender, height_ft, height_in)')
     .eq('project_id', id)
     .order('signed_in_at', { ascending: false })
+  const { data: projectFiles } = await supabase.from('project_files').select('*').eq('project_id', id).order('created_at', { ascending: true })
   const { data: presentations } = await supabase
     .from('presentations').select('*').eq('project_id', id).order('created_at', { ascending: false })
   const mainPres = presentations?.[0]
@@ -65,21 +68,7 @@ export default async function ProjectDetail({ params, searchParams }: { params: 
         </form>
       </div>
 
-      {(project.shoot_date || project.client_name || project.location || project.specs || (project.presentation_rounds?.length > 0)) && (
-        <div className="border border-neutral-100 p-6 mb-4 grid grid-cols-2 md:grid-cols-4 gap-3">
-          {project.client_name && <div><p className="label mb-1">Client</p><p className="text-sm">{project.client_name}</p></div>}
-          {project.location && <div><p className="label mb-1">Location</p><p className="text-sm">{project.location}</p></div>}
-          {project.shoot_date && <div><p className="label mb-1">Shoot Date</p><p className="text-sm">{new Date(project.shoot_date).toLocaleDateString('en-US', {month:'long',day:'numeric',year:'numeric'})}</p></div>}
-          {project.presentation_rounds?.length > 0 && (
-            <div><p className="label mb-1">Presentation Rounds</p>
-              {project.presentation_rounds.map((r: any, i: number) => (
-                <p key={i} className="text-sm">{r.label}: {new Date(r.date).toLocaleDateString('en-US', {month:'short',day:'numeric'})}</p>
-              ))}
-            </div>
-          )}
-          {project.specs && <div className="col-span-2 md:col-span-4"><p className="label mb-1">Specs</p><p className="text-sm text-neutral-600 whitespace-pre-wrap">{project.specs}</p></div>}
-        </div>
-      )}
+      <ProjectSpecsPanel project={project} />
 
       <div className="grid grid-cols-2 gap-4 mb-10">
         <div className="border border-neutral-200 p-6">
@@ -118,6 +107,10 @@ export default async function ProjectDetail({ params, searchParams }: { params: 
         <Link href={`/admin/projects/${id}?tab=presentation`}
           className={`px-6 py-3 text-xs tracking-widest uppercase transition-colors border-b-2 -mb-[1px] ${tab === 'presentation' ? 'border-black text-black' : 'border-transparent text-neutral-400 hover:text-black'}`}>
           Presentation
+        </Link>
+        <Link href={`/admin/projects/${id}?tab=files`}
+          className={`px-6 py-3 text-xs tracking-widest uppercase transition-colors border-b-2 -mb-[1px] ${tab === 'files' ? 'border-black text-black' : 'border-transparent text-neutral-400 hover:text-black'}`}>
+          Files ({projectFiles?.length || 0})
         </Link>
       </div>
 
