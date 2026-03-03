@@ -196,6 +196,7 @@ export function PresentationViewer({
   }
 
   const confirmedCount = Object.values(confirms).filter(Boolean).length
+  const shortlistedCount = Object.values(shortlists).filter(Boolean).length
 
   // Group sorted (non-shortlisted) by category for section headers
   const uncategorized = sorted.filter(pm => !pm.category_id && !shortlists[pm.model_id])
