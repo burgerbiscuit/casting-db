@@ -7,7 +7,7 @@ export async function POST(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { presentationId } = await req.json()
+  const { presentationId, fromEmail } = await req.json()
   const serviceSupabase = await createServiceClient()
 
   const { data: pres } = await serviceSupabase
@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
   const results = []
   for (const client of clients) {
     const { data, error } = await resend.emails.send({
-      from: 'Tasha Tongpreecha Casting <casting@tashatongpreecha.com>',
+      from: `Tasha Tongpreecha Casting <${fromEmail || 'tasha@tashatongpreecha.com'}>`,
       to: client.email,
       subject: `Presentation Ready: ${projectName}`,
       html: `

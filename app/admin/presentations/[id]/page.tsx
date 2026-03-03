@@ -86,20 +86,19 @@ export default function PresentationBuilder({ params }: { params: { id: string }
   }
 
   const [emailStatus, setEmailStatus] = useState<string>('')
+  const [fromEmail, setFromEmail] = useState('tasha@tashatongpreecha.com')
+  const [showEmailPicker, setShowEmailPicker] = useState(false)
 
-  const togglePublish = async () => {
-    const newVal = !presentation?.is_published
-    await supabase.from('presentations').update({ is_published: newVal }).eq('id', id)
-    setPresentation({ ...presentation, is_published: newVal })
-
-    // Auto-email clients when publishing (not when unpublishing)
-    if (newVal) {
-      setEmailStatus('Sending...')
+  const doPublish = async (selectedFrom: string) => {
+    setShowEmailPicker(false)
+    await supabase.from('presentations').update({ is_published: true }).eq('id', id)
+    setPresentation({ ...presentation, is_published: true })
+    setEmailStatus('Sending...')
       try {
         const res = await fetch('/api/send-presentation-email', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ presentationId: id })
+          body: JSON.stringify({ presentationId: id, fromEmail: selectedFrom })
         })
         const data = await res.json()
         if (data.sent > 0) {
@@ -113,7 +112,6 @@ export default function PresentationBuilder({ params }: { params: { id: string }
         setEmailStatus('⚠ Published but email failed')
       }
       setTimeout(() => setEmailStatus(''), 5000)
-    }
   }
 
   const copyLink = () => {
@@ -133,10 +131,38 @@ export default function PresentationBuilder({ params }: { params: { id: string }
           <p className="text-sm text-neutral-400">{(presentation.projects as any)?.name}</p>
         </div>
         <div className="flex gap-3">
-          <button onClick={togglePublish} className={`text-xs px-4 py-3 border tracking-widest uppercase transition-colors ${presentation.is_published ? 'bg-black text-white border-black' : 'border-neutral-300 hover:border-black'}`}>
-            {presentation.is_published ? 'Published' : 'Publish'}
-          </button>
+          {/* Publish button — if already published, toggle off; if not, show email picker */}
+          {presentation.is_published ? (
+            <button onClick={async () => { await supabase.from('presentations').update({ is_published: false }).eq('id', id); setPresentation({ ...presentation, is_published: false }) }}
+              className="text-xs px-4 py-3 border tracking-widest uppercase bg-black text-white border-black hover:opacity-70 transition-opacity">
+              Published
+            </button>
+          ) : (
+            <button onClick={() => setShowEmailPicker(true)}
+              className="text-xs px-4 py-3 border tracking-widest uppercase border-neutral-300 hover:border-black transition-colors">
+              Publish
+            </button>
+          )}
           {emailStatus && <span className="text-xs text-neutral-500 tracking-wider">{emailStatus}</span>}
+
+          {/* Email from picker modal */}
+          {showEmailPicker && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+              <div className="bg-white p-8 max-w-sm w-full mx-4">
+                <h3 className="text-sm font-medium tracking-widest uppercase mb-6">Send From</h3>
+                <p className="text-xs text-neutral-500 mb-6">Choose which email address to send the client notification from:</p>
+                <div className="space-y-3 mb-8">
+                  {['tasha@tashatongpreecha.com', 'hi@tashatongpreecha.com'].map(email => (
+                    <button key={email} onClick={() => doPublish(email)}
+                      className="w-full text-left px-4 py-3 border border-neutral-200 hover:border-black transition-colors text-sm">
+                      {email}
+                    </button>
+                  ))}
+                </div>
+                <button onClick={() => setShowEmailPicker(false)} className="text-xs text-neutral-400 tracking-widest uppercase hover:text-black">Cancel</button>
+              </div>
+            </div>
+          )}
           <Button variant="secondary" size="sm" onClick={copyLink}>
             {copied ? '✓ Copied' : <><Copy size={12} className="mr-1" />Copy Link</>}
           </Button>
