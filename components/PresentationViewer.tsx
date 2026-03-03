@@ -585,6 +585,30 @@ export function PresentationViewer({
             : <img src={mediaModal.url} alt="" className="max-w-full max-h-full object-contain" />}
         </div>
       )}
+
+      {/* Confirm talent modal */}
+      {confirmModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-6">
+          <div className="bg-white max-w-sm w-full p-8">
+            <h3 className="text-sm tracking-widest uppercase font-medium mb-2">Confirm Talent</h3>
+            <p className="text-sm text-neutral-600 mb-6">
+              Request confirmation for <strong>{confirmModal.modelName}</strong>? Your casting director will be notified.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => { handleConfirm(confirmModal.modelId); setConfirmModal(null) }}
+                className="flex-1 py-3 text-xs tracking-widest uppercase bg-black text-white hover:bg-neutral-800 transition-colors">
+                Yes, Confirm
+              </button>
+              <button
+                onClick={() => setConfirmModal(null)}
+                className="flex-1 py-3 text-xs tracking-widest uppercase border border-neutral-300 hover:border-black transition-colors">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
