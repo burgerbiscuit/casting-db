@@ -447,28 +447,6 @@ function SlideActions({ presentationId, modelId, clientId, initialShortlisted, i
     await supabase.from('client_shortlists').upsert({ presentation_id: presentationId, model_id: modelId, client_id: clientId, notes: val })
   }
 
-  const emailAgent = async () => {
-    if (!model?.agency) return
-    const firstName = model.first_name || ''
-    const lastName = model.last_name || ''
-    const proj = projectName || 'this project'
-    const subject = encodeURIComponent(`Shortlist Notification - ${proj}`)
-    const body = encodeURIComponent(`Hi, we wanted to let you know that ${firstName} ${lastName} has been shortlisted for ${proj}. Please get in touch to discuss next steps.`)
-
-    try {
-      const res = await fetch(`/api/agency-email?name=${encodeURIComponent(model.agency)}`)
-      const data = await res.json()
-      if (data.email) {
-        window.location.href = `mailto:${data.email}?subject=${subject}&body=${body}`
-      } else {
-        showToast('No agency email on file')
-        window.location.href = `mailto:?subject=${subject}&body=${body}`
-      }
-    } catch {
-      showToast('No agency email on file')
-      window.location.href = `mailto:?subject=${subject}&body=${body}`
-    }
-  }
 
   if (compact) return (
     <div className="flex items-center gap-2 relative">
@@ -481,10 +459,6 @@ function SlideActions({ presentationId, modelId, clientId, initialShortlisted, i
         {shortlisted ? 'Shortlisted' : 'Shortlist'}
       </button>
       {shortlisted && model?.agency && (
-        <button onClick={emailAgent}
-          className="flex items-center gap-1 px-3 py-2 text-xs tracking-widest uppercase border border-neutral-300 hover:border-black transition-colors">
-          ✉ Email Agent
-        </button>
       )}
     </div>
   )
@@ -500,10 +474,6 @@ function SlideActions({ presentationId, modelId, clientId, initialShortlisted, i
         {shortlisted ? 'Shortlisted' : 'Add to Shortlist'}
       </button>
       {shortlisted && model?.agency && (
-        <button onClick={emailAgent}
-          className="w-full py-2 text-xs tracking-widest uppercase border border-neutral-200 hover:border-black transition-colors flex items-center justify-center gap-2">
-          ✉ Email Agent
-        </button>
       )}
       <textarea value={notes} onChange={e => saveNotes(e.target.value)} placeholder="Your notes..."
         rows={2} className="w-full text-sm border-b border-neutral-200 bg-transparent py-2 focus:outline-none focus:border-black resize-none placeholder:text-neutral-300" />
