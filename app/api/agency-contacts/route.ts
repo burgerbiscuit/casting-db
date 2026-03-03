@@ -7,11 +7,11 @@ const TASHA_USER_ID = 'f5fe2bb4-f429-4978-a052-6f00cc614ff8'
 export async function GET(req: NextRequest) {
   const type = req.nextUrl.searchParams.get('type') || 'model'
 
-  // Production contacts: only Tasha can access
+  // Require auth for production contacts (any team member)
   if (type === 'production') {
     const serverSupabase = await createServiceClient()
     const { data: { user } } = await serverSupabase.auth.getUser()
-    if (!user || user.id !== TASHA_USER_ID) {
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
   }
