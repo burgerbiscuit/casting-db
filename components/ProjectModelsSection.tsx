@@ -441,11 +441,18 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
     )
   }
 
-  const renderGroup = (group: any[], label?: string) => {
+  const renderGroup = (group: any[], label?: string, color?: string) => {
     if (!group.length) return null
+    const barColor = color || 'bg-neutral-200'
+    const textColor = color ? 'text-white' : 'text-neutral-600'
     return (
-      <div className="mb-4">
-        {label && <p className="text-[10px] tracking-widest uppercase font-medium mb-2 pb-1 border-b border-neutral-200 text-neutral-500">{label} ({group.length})</p>}
+      <div className="mb-5">
+        {label && (
+          <div className={`flex items-center gap-2 mb-2 px-2 py-1.5 ${barColor}`}>
+            <p className={`text-[10px] tracking-widest uppercase font-semibold ${textColor}`}>{label}</p>
+            <span className={`text-[10px] font-bold ${textColor} opacity-70`}>{group.length}</span>
+          </div>
+        )}
         {view === 'list'
           ? <div className="space-y-1">{group.map((pm, i) => <ModelListRow key={pm.id} pm={pm} i={i} />)}</div>
           : <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">{group.map((pm, i) => <ModelGridCard key={pm.id} pm={pm} i={i} />)}</div>
@@ -572,10 +579,10 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
         <>
           {hasGroups ? (
             <>
-              {pending.length > 0 && renderGroup(pending, 'Pending Confirmation ⏳')}
-              {renderGroup(confirmed, 'Officially Confirmed ✓')}
-              {renderGroup(shortlisted, 'Shortlisted')}
-              {renderGroup(others, others.length && hasGroups ? 'Other' : undefined)}
+              {renderGroup(confirmed, 'Officially Confirmed ✓', 'bg-green-600')}
+              {renderGroup(pending, 'Confirmation Requested', 'bg-amber-400')}
+              {renderGroup(shortlisted, 'Shortlisted by Client', 'bg-neutral-700')}
+              {renderGroup(others, others.length && hasGroups ? 'Signed In' : undefined)}
             </>
           ) : renderGroup(sorted)}
         </>
