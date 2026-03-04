@@ -160,6 +160,7 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
   const officialConfirm = async (modelId: string) => {
     const next = !adminConfirmed[modelId]
     setAdminConfirmed(r => ({ ...r, [modelId]: next }))
+    setShortlistStatus(r => ({ ...r, [modelId]: next ? 'confirmed' : 'pending_confirmation' }))
     // Update project_models
     await supabase.from('project_models').update({ admin_confirmed: next, status: next ? 'confirmed' : 'pending' })
       .eq('project_id', projectId).eq('model_id', modelId)
@@ -274,14 +275,13 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
             <div className="flex items-center gap-2">
               <p className="text-xs font-medium">{model?.first_name} {model?.last_name}</p>
               {status && <span className={`text-[8px] tracking-widest uppercase px-1.5 py-0.5 ${STATUS_COLOR[status]}`}>{STATUS_LABEL[status]}</span>}
-              {status === 'pending_confirmation' && (
+              {adminConfirmed[mid] ? (
+                <span className="text-[8px] tracking-widest uppercase px-1.5 py-0.5 bg-green-600 text-white ml-1">✓ Confirmed</span>
+              ) : status === 'pending_confirmation' && (
                 <button onClick={() => officialConfirm(mid)}
                   className="text-[8px] tracking-widest uppercase px-2 py-0.5 border border-green-500 text-green-600 hover:bg-green-600 hover:text-white transition-colors ml-1">
                   ✓ Officially Confirm
                 </button>
-              )}
-              {adminConfirmed[mid] && status !== 'pending_confirmation' && (
-                <span className="text-[8px] tracking-widest uppercase px-1.5 py-0.5 bg-green-600 text-white ml-1">✓ Confirmed</span>
               )}
             </div>
             {model?.agency && <p className="text-[10px] text-neutral-400">{model?.agency}</p>}
