@@ -106,13 +106,25 @@ export function PresentationViewer({
   useEffect(() => {
     const fetchConfirms = async () => {
       const supabase = (await import('@/lib/supabase/client')).createClient()
-      const { data } = await supabase
-        .from('project_models')
-        .select('model_id, admin_confirmed')
-      if (data) {
+      // Re-fetch both project_models and client_shortlists to rebuild confirmMap correctly
+      const [{ data: pms }, { data: shortlists }] = await Promise.all([
+        supabase.from('project_models').select('model_id, admin_confirmed'),
+        supabase.from('client_shortlists').select('model_id, status').eq('client_id', clientId)
+      ])
+      if (pms) {
+        const shortlistStatusMap: Record<string, string> = {}
+        ;(shortlists || []).forEach((s: any) => { shortlistStatusMap[s.model_id] = s.status })
         const map: Record<string, boolean> = {}
-        data.filter((pm: any) => pm.admin_confirmed).forEach((pm: any) => { map[pm.model_id] = true })
+        pms.filter((pm: any) => pm.admin_confirmed).forEach((pm: any) => {
+          if (shortlistStatusMap[pm.model_id] === 'confirmed') map[pm.model_id] = true
+        })
         setConfirms(map)
+        // Also update pendings
+        const pendingMap: Record<string, boolean> = {}
+        ;(shortlists || []).forEach((s: any) => {
+          if (s.status === 'pending_confirmation' || s.status === 'confirmed') pendingMap[s.model_id] = true
+        })
+        setPendings(pendingMap)
       }
     }
 
