@@ -22,6 +22,7 @@ type ModelEntry = {
   confirmedDays: string
   confirmedNotes: string
   w9Status: string
+  chartHidden: boolean
 }
 
 type ProjectData = {
@@ -60,8 +61,19 @@ export function ConfirmationChartEditor({ models, project }: { models: ModelEntr
     })
     return map
   })
+  const [hidden, setHidden] = useState<Record<string, boolean>>(() => {
+    const map: Record<string, boolean> = {}
+    models.forEach(m => { map[m.pmId] = m.chartHidden })
+    return map
+  })
 
   const [savingState, setSavingState] = useState<Record<string, 'idle' | 'saving' | 'saved'>>({})
+
+  const toggleHidden = async (pmId: string) => {
+    const next = !hidden[pmId]
+    setHidden(h => ({ ...h, [pmId]: next }))
+    await supabase.from('project_models').update({ chart_hidden: next }).eq('id', pmId)
+  }
 
   const save = useCallback(async (pmId: string) => {
     setSavingState(s => ({ ...s, [pmId]: 'saving' }))
@@ -93,7 +105,7 @@ export function ConfirmationChartEditor({ models, project }: { models: ModelEntr
             </td>
           </tr>
           <tr className="bg-neutral-100">
-            {['PHOTO', 'NAME + CONTACT', 'AGENT CONTACT', 'USAGE', 'RATE', 'DATE', 'SIZE', 'NOTES / ADD\'L USAGE', 'W-9'].map(col => (
+            {['PHOTO', 'NAME + CONTACT', 'AGENT CONTACT', 'RATE', 'DATE', 'SIZE', 'USAGE', 'NOTES / ADD\'L USAGE', 'W-9', 'HIDE'].map(col => (
               <th key={col} className="border border-neutral-300 px-2 py-2 text-[9px] tracking-widest uppercase font-semibold text-neutral-600 text-center whitespace-nowrap">
                 {col}
               </th>
@@ -109,7 +121,7 @@ export function ConfirmationChartEditor({ models, project }: { models: ModelEntr
             const sizing: string[] = []
 
             return (
-              <tr key={model.pmId} className="align-top border-b border-neutral-100">
+              <tr key={model.pmId} className={`align-top border-b border-neutral-100 transition-opacity ${hidden[model.pmId] ? 'opacity-40' : ''}`}>
                 {/* Photo */}
                 <td className="border border-neutral-200 p-1.5" style={{ width: 64 }}>
                   <div className="w-14 h-[72px] bg-neutral-100 overflow-hidden shrink-0">
@@ -144,18 +156,6 @@ export function ConfirmationChartEditor({ models, project }: { models: ModelEntr
                   {!model.agentName && !model.agentEmail && model.agency && (
                     <p className="text-[9px] text-neutral-300 italic">No contact on file</p>
                   )}
-                </td>
-
-                {/* Usage — editable */}
-                <td className="border border-neutral-200 p-1" style={{ width: 120 }}>
-                  <textarea
-                    value={f.confirmedUsage}
-                    onChange={e => upd(model.pmId, 'confirmedUsage', e.target.value)}
-                    onBlur={() => save(model.pmId)}
-                    placeholder={project.usage || 'Usage…'}
-                    rows={3}
-                    className="w-full text-[11px] px-1.5 py-1 border-0 focus:outline-none resize-none bg-transparent placeholder:text-neutral-300 leading-snug"
-                  />
                 </td>
 
                 {/* Rate — editable */}
@@ -193,6 +193,18 @@ export function ConfirmationChartEditor({ models, project }: { models: ModelEntr
                   <SizeCell modelId={model.modelId} />
                 </td>
 
+                {/* Usage — editable (after size) */}
+                <td className="border border-neutral-200 p-1" style={{ width: 120 }}>
+                  <textarea
+                    value={f.confirmedUsage}
+                    onChange={e => upd(model.pmId, 'confirmedUsage', e.target.value)}
+                    onBlur={() => save(model.pmId)}
+                    placeholder={project.usage || 'Usage…'}
+                    rows={3}
+                    className="w-full text-[11px] px-1.5 py-1 border-0 focus:outline-none resize-none bg-transparent placeholder:text-neutral-300 leading-snug"
+                  />
+                </td>
+
                 {/* Notes / Additional Usage — editable */}
                 <td className="border border-neutral-200 p-1" style={{ width: 200 }}>
                   <textarea
@@ -220,6 +232,17 @@ export function ConfirmationChartEditor({ models, project }: { models: ModelEntr
                   </select>
                   {state === 'saving' && <p className="text-[8px] text-neutral-400 mt-0.5">saving…</p>}
                   {state === 'saved' && <p className="text-[8px] text-green-600 mt-0.5">✓ saved</p>}
+                </td>
+
+                {/* Hide toggle */}
+                <td className="border border-neutral-200 p-1.5 text-center align-middle" style={{ width: 56 }}>
+                  <button
+                    onClick={() => toggleHidden(model.pmId)}
+                    title={hidden[model.pmId] ? 'Hidden from client — click to show' : 'Click to hide from client'}
+                    className={`text-[9px] tracking-widest uppercase px-2 py-1 border transition-colors ${hidden[model.pmId] ? 'border-neutral-400 bg-neutral-100 text-neutral-500 hover:bg-neutral-200' : 'border-neutral-200 text-neutral-400 hover:border-neutral-400 hover:text-neutral-600'}`}
+                  >
+                    {hidden[model.pmId] ? 'Hidden' : 'Hide'}
+                  </button>
                 </td>
               </tr>
             )

@@ -48,6 +48,7 @@ export default async function ConfirmationChartPage({ params }: { params: { id: 
     .select('*, models(id, first_name, last_name, agency, height_ft, height_in, bust, waist, hips, shoe_size, dress_size)')
     .eq('project_id', project.id)
     .eq('admin_confirmed', true)
+    .eq('chart_hidden', false)
 
   const confirmed = projectModels || []
   const modelIds = confirmed.map((pm: any) => pm.models?.id).filter(Boolean)
@@ -110,7 +111,7 @@ export default async function ConfirmationChartPage({ params }: { params: { id: 
                 </td>
               </tr>
               <tr className="bg-neutral-100">
-                {['PHOTO', 'NAME', 'CONTACT', 'USAGE', 'RATE', 'DATE', 'SIZE', 'ADDITIONAL USAGE', 'W-9'].map(col => (
+                {['PHOTO', 'NAME', 'CONTACT', 'RATE', 'DATE', 'SIZE', 'USAGE', 'ADDITIONAL USAGE', 'W-9'].map(col => (
                   <th key={col} className="border border-neutral-300 px-2 py-2 text-[9px] tracking-widest uppercase font-semibold text-neutral-600 text-center whitespace-nowrap">
                     {col}
                   </th>
@@ -190,11 +191,6 @@ export default async function ConfirmationChartPage({ params }: { params: { id: 
                       )}
                     </td>
 
-                    {/* Usage */}
-                    <td className="border border-neutral-200 px-3 py-2.5 text-center align-middle" style={{ width: 110 }}>
-                      <p className="text-[11px]">{displayUsage || '—'}</p>
-                    </td>
-
                     {/* Rate */}
                     <td className="border border-neutral-200 px-3 py-2.5 text-center align-middle font-medium" style={{ width: 110 }}>
                       <p className="text-[11px]">{displayRate || '—'}</p>
@@ -214,6 +210,11 @@ export default async function ConfirmationChartPage({ params }: { params: { id: 
                           ))}
                         </div>
                       ) : <p className="text-neutral-300 text-[10px]">—</p>}
+                    </td>
+
+                    {/* Usage (after Size) */}
+                    <td className="border border-neutral-200 px-3 py-2.5 text-center align-middle" style={{ width: 110 }}>
+                      <p className="text-[11px]">{displayUsage || '—'}</p>
                     </td>
 
                     {/* Additional Usage / Notes */}

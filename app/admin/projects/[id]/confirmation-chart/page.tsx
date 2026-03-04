@@ -32,7 +32,7 @@ export default async function AdminConfirmationChartPage({ params }: { params: {
     .from('project_models')
     .select(`
       id, model_id, pm_rate, pm_option, pm_location,
-      confirmed_usage, confirmed_days, confirmed_date, confirmed_notes,
+      confirmed_usage, confirmed_days, confirmed_date, confirmed_notes, w9_status, chart_hidden,
       models(id, first_name, last_name, phone, email, agency)
     `)
     .eq('project_id', projectId)
@@ -89,6 +89,7 @@ export default async function AdminConfirmationChartPage({ params }: { params: {
       confirmedDays: pm.confirmed_days || '',
       confirmedNotes: pm.confirmed_notes || '',
       w9Status: pm.w9_status || '',
+      chartHidden: pm.chart_hidden ?? false,
     }
   })
 
@@ -115,8 +116,14 @@ export default async function AdminConfirmationChartPage({ params }: { params: {
           {presId && (
             <Link href={`/client/presentations/${presId}/chart`} target="_blank"
               className="text-[11px] tracking-widest uppercase border border-neutral-300 px-4 py-2 hover:border-black transition-colors">
-              Preview Client View ↗
+              Preview ↗
             </Link>
+          )}
+          {presId && (
+            <a href={`/api/confirmation-chart-pdf/${presId}`} target="_blank"
+              className="text-[11px] tracking-widest uppercase border border-neutral-300 px-4 py-2 hover:border-black transition-colors">
+              Download PDF
+            </a>
           )}
           {presId && (
             <ChartApprovalToggle presId={presId} initialApproved={chartApproved} />
