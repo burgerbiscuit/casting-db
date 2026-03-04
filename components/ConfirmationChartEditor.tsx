@@ -1,6 +1,13 @@
 'use client'
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
+
+const ALL_COLS = ['photo','contact','rate','date','size','usage','notes','w9'] as const
+type ColKey = typeof ALL_COLS[number]
+const COL_LABELS: Record<ColKey, string> = {
+  photo: 'Photo', contact: 'Agent Contact', rate: 'Rate',
+  date: 'Date', size: 'Size', usage: 'Usage', notes: 'Notes', w9: 'W-9',
+}
 
 type ModelEntry = {
   pmId: string
@@ -43,8 +50,33 @@ function formatDate(dateStr: string): string {
   } catch { return dateStr }
 }
 
-export function ConfirmationChartEditor({ models, project }: { models: ModelEntry[]; project: ProjectData }) {
+export function ConfirmationChartEditor({ models, project, presId }: { models: ModelEntry[]; project: ProjectData; presId?: string }) {
   const supabase = createClient()
+
+  const storageKey = presId ? `chart-hidden-cols-${presId}` : null
+  const [hiddenCols, setHiddenCols] = useState<Set<ColKey>>(new Set())
+  useEffect(() => {
+    if (!storageKey) return
+    try {
+      const saved = localStorage.getItem(storageKey)
+      if (saved) setHiddenCols(new Set(JSON.parse(saved) as ColKey[]))
+    } catch {}
+  }, [storageKey])
+
+  const toggleCol = (col: ColKey) => {
+    setHiddenCols(prev => {
+      const next = new Set(prev)
+      if (next.has(col)) next.delete(col); else next.add(col)
+      if (storageKey) {
+        try { localStorage.setItem(storageKey, JSON.stringify([...next])) } catch {}
+      }
+      return next
+    })
+  }
+
+  const pdfUrl = presId
+    ? `/api/confirmation-chart-pdf/${presId}${hiddenCols.size > 0 ? `?hidden=${[...hiddenCols].join(',')}` : ''}`
+    : null
 
   type Fields = { pmRate: string; confirmedDate: string; confirmedUsage: string; confirmedDays: string; confirmedNotes: string; w9Status: string }
   const [fields, setFields] = useState<Record<string, Fields>>(() => {
@@ -95,7 +127,31 @@ export function ConfirmationChartEditor({ models, project }: { models: ModelEntr
 
   const projectLabel = [project.name, formatDate(project.shootDate), project.location].filter(Boolean).join(' / ').toUpperCase()
 
+  const show = (col: ColKey) => !hiddenCols.has(col)
+
   return (
+    <div>
+      {/* Column visibility toggles */}
+      <div className="flex flex-wrap items-center gap-2 mb-4 pb-4 border-b border-neutral-200">
+        <span className="text-[9px] tracking-widest uppercase text-neutral-400 mr-1">Show columns:</span>
+        {ALL_COLS.map(col => (
+          <button key={col} onClick={() => toggleCol(col)}
+            className={`text-[9px] tracking-widest uppercase px-2.5 py-1 border transition-colors ${
+              hiddenCols.has(col)
+                ? 'border-neutral-200 text-neutral-300 line-through'
+                : 'border-neutral-600 text-neutral-700'
+            }`}>
+            {COL_LABELS[col]}
+          </button>
+        ))}
+        {pdfUrl && (
+          <a href={pdfUrl} target="_blank"
+            className="ml-auto text-[9px] tracking-widest uppercase px-3 py-1 border border-neutral-300 text-neutral-600 hover:border-black hover:text-black transition-colors">
+            Download PDF ↗
+          </a>
+        )}
+      </div>
+
     <div className="overflow-x-auto">
       <table className="w-full border-collapse text-[11px]" style={{ minWidth: 1100 }}>
         <thead>
@@ -105,11 +161,16 @@ export function ConfirmationChartEditor({ models, project }: { models: ModelEntr
             </td>
           </tr>
           <tr className="bg-neutral-100">
-            {['PHOTO', 'NAME + CONTACT', 'AGENT CONTACT', 'RATE', 'DATE', 'SIZE', 'USAGE', 'NOTES / ADD\'L USAGE', 'W-9', 'HIDE'].map(col => (
-              <th key={col} className="border border-neutral-300 px-2 py-2 text-[9px] tracking-widest uppercase font-semibold text-neutral-600 text-center whitespace-nowrap">
-                {col}
-              </th>
-            ))}
+            {show('photo') && <th className="border border-neutral-300 px-2 py-2 text-[9px] tracking-widest uppercase font-semibold text-neutral-600 text-center whitespace-nowrap">PHOTO</th>}
+            <th className="border border-neutral-300 px-2 py-2 text-[9px] tracking-widest uppercase font-semibold text-neutral-600 text-center whitespace-nowrap">NAME + CONTACT</th>
+            {show('contact') && <th className="border border-neutral-300 px-2 py-2 text-[9px] tracking-widest uppercase font-semibold text-neutral-600 text-center whitespace-nowrap">AGENT CONTACT</th>}
+            {show('rate') && <th className="border border-neutral-300 px-2 py-2 text-[9px] tracking-widest uppercase font-semibold text-neutral-600 text-center whitespace-nowrap">RATE</th>}
+            {show('date') && <th className="border border-neutral-300 px-2 py-2 text-[9px] tracking-widest uppercase font-semibold text-neutral-600 text-center whitespace-nowrap">DATE</th>}
+            {show('size') && <th className="border border-neutral-300 px-2 py-2 text-[9px] tracking-widest uppercase font-semibold text-neutral-600 text-center whitespace-nowrap">SIZE</th>}
+            {show('usage') && <th className="border border-neutral-300 px-2 py-2 text-[9px] tracking-widest uppercase font-semibold text-neutral-600 text-center whitespace-nowrap">USAGE</th>}
+            {show('notes') && <th className="border border-neutral-300 px-2 py-2 text-[9px] tracking-widest uppercase font-semibold text-neutral-600 text-center whitespace-nowrap">NOTES / ADD&apos;L USAGE</th>}
+            {show('w9') && <th className="border border-neutral-300 px-2 py-2 text-[9px] tracking-widest uppercase font-semibold text-neutral-600 text-center whitespace-nowrap">W-9</th>}
+            <th className="border border-neutral-300 px-2 py-2 text-[9px] tracking-widest uppercase font-semibold text-neutral-600 text-center whitespace-nowrap">HIDE</th>
           </tr>
         </thead>
         <tbody>
@@ -123,6 +184,7 @@ export function ConfirmationChartEditor({ models, project }: { models: ModelEntr
             return (
               <tr key={model.pmId} className={`align-top border-b border-neutral-100 transition-opacity ${hidden[model.pmId] ? 'opacity-40' : ''}`}>
                 {/* Photo */}
+                {show('photo') && (
                 <td className="border border-neutral-200 p-1.5" style={{ width: 64 }}>
                   <div className="w-14 h-[72px] bg-neutral-100 overflow-hidden shrink-0">
                     {model.photo ? (
@@ -133,8 +195,9 @@ export function ConfirmationChartEditor({ models, project }: { models: ModelEntr
                     )}
                   </div>
                 </td>
+                )}
 
-                {/* Name + model contact */}
+                {/* Name + model contact (always visible) */}
                 <td className="border border-neutral-200 px-2.5 py-2" style={{ width: 130 }}>
                   <p className="font-semibold tracking-wide text-[11px] uppercase">
                     {model.firstName} {model.lastName}
@@ -145,6 +208,7 @@ export function ConfirmationChartEditor({ models, project }: { models: ModelEntr
                 </td>
 
                 {/* Agent contact */}
+                {show('contact') && (
                 <td className="border border-neutral-200 px-2.5 py-2" style={{ width: 160 }}>
                   {model.agency && (
                     <p className="font-bold tracking-wide text-[11px] uppercase">{model.agency}</p>
@@ -157,8 +221,10 @@ export function ConfirmationChartEditor({ models, project }: { models: ModelEntr
                     <p className="text-[9px] text-neutral-300 italic">No contact on file</p>
                   )}
                 </td>
+                )}
 
                 {/* Rate — editable */}
+                {show('rate') && (
                 <td className="border border-neutral-200 p-1" style={{ width: 110 }}>
                   <textarea
                     value={f.pmRate}
@@ -169,8 +235,10 @@ export function ConfirmationChartEditor({ models, project }: { models: ModelEntr
                     className="w-full text-[11px] px-1.5 py-1 border-0 focus:outline-none resize-none bg-transparent placeholder:text-neutral-300 leading-snug font-medium"
                   />
                 </td>
+                )}
 
                 {/* Date — editable */}
+                {show('date') && (
                 <td className="border border-neutral-200 p-1" style={{ width: 90 }}>
                   <input
                     value={f.confirmedDate}
@@ -187,13 +255,17 @@ export function ConfirmationChartEditor({ models, project }: { models: ModelEntr
                     className="w-full text-[10px] px-1.5 py-0.5 border-0 focus:outline-none bg-transparent placeholder:text-neutral-300 text-neutral-500"
                   />
                 </td>
+                )}
 
                 {/* Size (read-only from model profile) */}
+                {show('size') && (
                 <td className="border border-neutral-200 px-2.5 py-2" style={{ width: 100 }}>
                   <SizeCell modelId={model.modelId} />
                 </td>
+                )}
 
                 {/* Usage — editable (after size) */}
+                {show('usage') && (
                 <td className="border border-neutral-200 p-1" style={{ width: 120 }}>
                   <textarea
                     value={f.confirmedUsage}
@@ -204,8 +276,10 @@ export function ConfirmationChartEditor({ models, project }: { models: ModelEntr
                     className="w-full text-[11px] px-1.5 py-1 border-0 focus:outline-none resize-none bg-transparent placeholder:text-neutral-300 leading-snug"
                   />
                 </td>
+                )}
 
                 {/* Notes / Additional Usage — editable */}
+                {show('notes') && (
                 <td className="border border-neutral-200 p-1" style={{ width: 200 }}>
                   <textarea
                     value={f.confirmedNotes}
@@ -216,8 +290,10 @@ export function ConfirmationChartEditor({ models, project }: { models: ModelEntr
                     className="w-full text-[11px] px-1.5 py-1 border-0 focus:outline-none resize-none bg-transparent placeholder:text-neutral-300 leading-snug"
                   />
                 </td>
+                )}
 
                 {/* W-9 — dropdown */}
+                {show('w9') && (
                 <td className="border border-neutral-200 p-1.5 text-center align-middle" style={{ width: 80 }}>
                   <select
                     value={f.w9Status}
@@ -233,6 +309,7 @@ export function ConfirmationChartEditor({ models, project }: { models: ModelEntr
                   {state === 'saving' && <p className="text-[8px] text-neutral-400 mt-0.5">saving…</p>}
                   {state === 'saved' && <p className="text-[8px] text-green-600 mt-0.5">✓ saved</p>}
                 </td>
+                )}
 
                 {/* Hide toggle */}
                 <td className="border border-neutral-200 p-1.5 text-center align-middle" style={{ width: 56 }}>
@@ -253,6 +330,7 @@ export function ConfirmationChartEditor({ models, project }: { models: ModelEntr
       <p className="mt-4 text-[10px] text-neutral-400 tracking-widest uppercase">
         All fields autosave on blur. Size data is pulled from model profiles.
       </p>
+    </div>
     </div>
   )
 }

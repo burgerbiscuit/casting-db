@@ -120,12 +120,6 @@ export default async function AdminConfirmationChartPage({ params }: { params: {
             </Link>
           )}
           {presId && (
-            <a href={`/api/confirmation-chart-pdf/${presId}`} target="_blank"
-              className="text-[11px] tracking-widest uppercase border border-neutral-300 px-4 py-2 hover:border-black transition-colors">
-              Download PDF
-            </a>
-          )}
-          {presId && (
             <ChartApprovalToggle presId={presId} initialApproved={chartApproved} />
           )}
         </div>
@@ -154,7 +148,7 @@ export default async function AdminConfirmationChartPage({ params }: { params: {
           <p className="text-sm text-neutral-400 mt-2">Confirm talent from the Models tab first.</p>
         </div>
       ) : (
-        <ConfirmationChartEditor models={modelsData} project={projectData} />
+        <ConfirmationChartEditor models={modelsData} project={projectData} presId={presId ?? undefined} />
       )}
     </div>
   )

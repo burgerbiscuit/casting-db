@@ -12,6 +12,9 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   const host = request.headers.get('host') || 'cast.tashatongpreecha.com'
   const proto = host.includes('localhost') ? 'http' : 'https'
   const baseUrl = `${proto}://${host}`
+  const hiddenParam = request.nextUrl.searchParams.get('hidden') || ''
+  const hiddenCols = new Set(hiddenParam.split(',').filter(Boolean))
+  const show = (col: string) => !hiddenCols.has(col)
 
   try {
     const authSupabase = await createClient()
@@ -77,24 +80,24 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       const displayUsage = pm.confirmed_usage || project.usage || ''
 
       return `<tr>
-        <td class="c-photo">${photo ? `<img src="${esc(photo)}" />` : ''}</td>
+        ${show('photo') ? `<td class="c-photo">${photo ? `<img src="${esc(photo)}" />` : ''}</td>` : ''}
         <td class="c-name">
           <b>${esc((model?.first_name || '').toUpperCase())} ${esc((model?.last_name || '').toUpperCase())}</b>
           ${pm.pm_option ? `<br><span class="sub">${esc(pm.pm_option)}</span>` : ''}
         </td>
-        <td class="c-contact">
+        ${show('contact') ? `<td class="c-contact">
           ${model?.agency ? `<b>${esc(model.agency)}</b><br>` : ''}
           ${agent?.agent_name ? `${esc(agent.agent_name)}<br>` : ''}
           ${agent?.email ? `<span class="sub">${esc(agent.email)}</span><br>` : ''}
           ${agent?.cell_phone ? `<span class="sub">C: ${esc(agent.cell_phone)}</span><br>` : ''}
           ${agent?.office_phone ? `<span class="sub">O: ${esc(agent.office_phone)}</span>` : ''}
-        </td>
-        <td class="c-rate">${esc(displayRate)}</td>
-        <td class="c-date">${esc(displayDate)}</td>
-        <td class="c-size">${sizing.map(s => `<span>${esc(s)}</span>`).join('<br>')}</td>
-        <td class="c-usage">${esc(displayUsage)}</td>
-        <td class="c-notes">${esc(pm.confirmed_notes || '')}</td>
-        <td class="c-w9 ${pm.w9_status === 'RECEIVED' ? 'w9-received' : ''}">${esc(pm.w9_status || '—')}</td>
+        </td>` : ''}
+        ${show('rate') ? `<td class="c-rate">${esc(displayRate)}</td>` : ''}
+        ${show('date') ? `<td class="c-date">${esc(displayDate)}</td>` : ''}
+        ${show('size') ? `<td class="c-size">${sizing.map(s => `<span>${esc(s)}</span>`).join('<br>')}</td>` : ''}
+        ${show('usage') ? `<td class="c-usage">${esc(displayUsage)}</td>` : ''}
+        ${show('notes') ? `<td class="c-notes">${esc(pm.confirmed_notes || '')}</td>` : ''}
+        ${show('w9') ? `<td class="c-w9 ${pm.w9_status === 'RECEIVED' ? 'w9-received' : ''}">${esc(pm.w9_status || '—')}</td>` : ''}
       </tr>`
     }).join('')
 
@@ -148,9 +151,15 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 <table>
   <thead>
     <tr>
-      <th>PHOTO</th><th>NAME</th><th>CONTACT</th>
-      <th>RATE</th><th>DATE</th><th>SIZE</th><th>USAGE</th>
-      <th>NOTES / ADD'L USAGE</th><th>W-9</th>
+      ${show('photo') ? '<th>PHOTO</th>' : ''}
+      <th>NAME</th>
+      ${show('contact') ? '<th>CONTACT</th>' : ''}
+      ${show('rate') ? '<th>RATE</th>' : ''}
+      ${show('date') ? '<th>DATE</th>' : ''}
+      ${show('size') ? '<th>SIZE</th>' : ''}
+      ${show('usage') ? '<th>USAGE</th>' : ''}
+      ${show('notes') ? "<th>NOTES / ADD'L USAGE</th>" : ''}
+      ${show('w9') ? '<th>W-9</th>' : ''}
     </tr>
   </thead>
   <tbody>${rows}</tbody>
