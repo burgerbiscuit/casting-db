@@ -12,6 +12,29 @@ export default function AgentForm() {
 
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }))
 
+  // Agency autocomplete
+  const [agencySuggestions, setAgencySuggestions] = useState<string[]>([])
+  const [showAgencyDropdown, setShowAgencyDropdown] = useState(false)
+  const agencyRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (agencyRef.current && !agencyRef.current.contains(e.target as Node)) {
+        setShowAgencyDropdown(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
+
+  const fetchAgencySuggestions = async (q: string) => {
+    if (!q.trim()) { setAgencySuggestions([]); return }
+    const res = await fetch(`/api/agency-suggestions?q=${encodeURIComponent(q)}`)
+    const data = await res.json()
+    setAgencySuggestions(data)
+    setShowAgencyDropdown(data.length > 0)
+  }
+
   // Board autocomplete
   const [boardSuggestions, setBoardSuggestions] = useState<string[]>([])
   const [showBoardDropdown, setShowBoardDropdown] = useState(false)
@@ -104,10 +127,32 @@ export default function AgentForm() {
             </div>
           </div>
 
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1" ref={agencyRef}>
             <label className="label">Agency Name *</label>
-            <input required value={form.agency_name} onChange={e => set('agency_name', e.target.value)}
-              className="w-full border-b border-neutral-300 bg-transparent py-2 text-sm focus:outline-none focus:border-black" />
+            <div className="relative">
+              <input
+                required
+                value={form.agency_name}
+                onChange={e => { set('agency_name', e.target.value); fetchAgencySuggestions(e.target.value) }}
+                onFocus={() => form.agency_name && setShowAgencyDropdown(agencySuggestions.length > 0)}
+                autoComplete="off"
+                className="w-full border-b border-neutral-300 bg-transparent py-2 text-sm focus:outline-none focus:border-black"
+              />
+              {showAgencyDropdown && agencySuggestions.length > 0 && (
+                <div className="absolute z-20 left-0 right-0 top-full bg-white border border-neutral-200 shadow-sm max-h-52 overflow-y-auto">
+                  {agencySuggestions.map(s => (
+                    <button
+                      key={s}
+                      type="button"
+                      onMouseDown={() => { set('agency_name', s); setShowAgencyDropdown(false) }}
+                      className="w-full text-left px-4 py-2.5 text-sm hover:bg-neutral-50 transition-colors border-b border-neutral-50 last:border-0"
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-6">
