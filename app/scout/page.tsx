@@ -10,15 +10,15 @@ const ETHNICITY_MAP: Record<string, string[]> = {
   'Black / African': ['Nigerian', 'Ghanaian', 'Ethiopian', 'Kenyan', 'South African', 'Jamaican', 'Haitian', 'Somali', 'Congolese', 'Senegalese'],
   'White / European': ['British', 'French', 'Italian', 'Spanish', 'German', 'Swedish', 'Dutch', 'Polish', 'Russian', 'Australian'],
   'Middle Eastern': ['Lebanese', 'Iranian', 'Turkish', 'Egyptian', 'Moroccan', 'Israeli', 'Saudi', 'Iraqi', 'Syrian', 'Jordanian'],
-  'Mixed': [],
   'Other': [],
 }
 
 const SKILL_SUGGESTIONS = ['Acting','Dancing','Singing','Modeling','Athletics','Swimming','Yoga','Pilates','Martial Arts','Horseback Riding','Figure Skating','Painting','Music','Comedy','Voice Over','Surfing','Skateboarding','Rock Climbing','Gymnastics','Boxing']
 
-const HEIGHT_FT = [4,5,6,7]
+const HEIGHT_FT = [3, 4, 5, 6, 7]
 const HEIGHT_IN = [0,1,2,3,4,5,6,7,8,9,10,11]
-const SHOE_SIZES = [
+
+const ADULT_SHOE_SIZES = [
   {us: '4', eu: '34'}, {us: '4.5', eu: '34-35'}, {us: '5', eu: '35'},
   {us: '5.5', eu: '35-36'}, {us: '6', eu: '36'}, {us: '6.5', eu: '36-37'},
   {us: '7', eu: '37'}, {us: '7.5', eu: '37-38'}, {us: '8', eu: '38'},
@@ -27,14 +27,28 @@ const SHOE_SIZES = [
   {us: '11.5', eu: '41-42'}, {us: '12', eu: '42'}, {us: '12.5', eu: '42-43'},
   {us: '13', eu: '43'}, {us: '14', eu: '44'}, {us: '15', eu: '45'},
 ]
-const heightToCm = (ft: number, inches: number) => Math.round((ft * 30.48) + (inches * 2.54))
 
+const KIDS_SHOE_SIZES = [
+  {us: '1C', label: 'US 1C (Toddler)'}, {us: '2C', label: 'US 2C'}, {us: '3C', label: 'US 3C'},
+  {us: '4C', label: 'US 4C'}, {us: '5C', label: 'US 5C'}, {us: '6C', label: 'US 6C'},
+  {us: '7C', label: 'US 7C'}, {us: '8C', label: 'US 8C'}, {us: '9C', label: 'US 9C'},
+  {us: '10C', label: 'US 10C'}, {us: '11C', label: 'US 11C'}, {us: '12C', label: 'US 12C'},
+  {us: '13C', label: 'US 13C'}, {us: '1Y', label: 'US 1Y (Youth)'}, {us: '2Y', label: 'US 2Y'},
+  {us: '3Y', label: 'US 3Y'}, {us: '4Y', label: 'US 4Y'}, {us: '5Y', label: 'US 5Y'},
+  {us: '6Y', label: 'US 6Y'}, {us: '7Y', label: 'US 7Y'},
+]
+
+const KIDS_CLOTHING_SIZES = ['2T','3T','4T','4','5','6','6X','7','8','10','12','14','16']
+
+const heightToCm = (ft: number, inches: number) => Math.round((ft * 30.48) + (inches * 2.54))
 
 export default function ScoutPage() {
   const supabase = createClient()
   const [step, setStep] = useState<'form' | 'done'>('form')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [sizeMode, setSizeMode] = useState<'adult' | 'kids'>('adult')
+
   const [agencySuggestions, setAgencySuggestions] = useState<string[]>([])
   const [agencyContacts, setAgencyContacts] = useState<any[]>([])
   const [showAgency, setShowAgency] = useState(false)
@@ -44,6 +58,7 @@ export default function ScoutPage() {
   const [showAgentName, setShowAgentName] = useState(false)
   const [basedInSuggestions, setBasedInSuggestions] = useState<string[]>([])
   const [showBasedIn, setShowBasedIn] = useState(false)
+  const [skillSuggestions, setSkillSuggestions] = useState<string[]>(SKILL_SUGGESTIONS)
   const [selfieFiles, setSelfieFiles] = useState<File[]>([])
   const [selfieUrls, setSelfieUrls] = useState<string[]>([])
 
@@ -56,6 +71,7 @@ export default function ScoutPage() {
     agency: '', board: '', agent_name: '', based_in: '',
     height_ft: 5, height_in: 7,
     bust: '', waist: '', hips: '', chest: '', dress_size: '', shoe_size: '', suit_size: '', inseam: '',
+    kids_clothing_size: '', kids_shoe_size: '', kids_age: '',
     ethnicity_broad: [] as string[], ethnicity_specific: [] as string[],
     ethnicity_other: '',
     languages: [] as string[],
@@ -94,6 +110,22 @@ export default function ScoutPage() {
     if (!q) { setBasedInSuggestions([]); return }
     const { data } = await supabase.from('models').select('based_in').ilike('based_in', q + '%').not('based_in', 'is', null).limit(8)
     setBasedInSuggestions([...new Set((data || []).map((r: any) => r.based_in).filter(Boolean))])
+  }
+
+  // Skills: fetch existing from DB so similar entries group together
+  const searchSkills = async (q: string) => {
+    if (!q) { setSkillSuggestions(SKILL_SUGGESTIONS); return }
+    const { data } = await supabase.from('models').select('skills').not('skills', 'is', null).limit(200)
+    const allSkills = (data || []).flatMap((r: any) => Array.isArray(r.skills) ? r.skills : [])
+    const counts: Record<string, number> = {}
+    allSkills.forEach((s: string) => { const k = s.trim(); if (k) counts[k] = (counts[k] || 0) + 1 })
+    // Sort by frequency, filter by query
+    const matched = Object.keys(counts)
+      .filter(s => s.toLowerCase().includes(q.toLowerCase()))
+      .sort((a, b) => counts[b] - counts[a])
+    // Merge with static suggestions
+    const staticMatched = SKILL_SUGGESTIONS.filter(s => s.toLowerCase().includes(q.toLowerCase()) && !matched.includes(s))
+    setSkillSuggestions([...matched, ...staticMatched])
   }
 
   const submit = async () => {
@@ -136,7 +168,7 @@ export default function ScoutPage() {
   const inp = 'w-full border-b border-neutral-200 py-2 text-sm focus:outline-none focus:border-black bg-transparent'
   const lbl = 'label block mb-1'
 
-  const hasOtherSpecific = form.ethnicity_specific.some(s => s.startsWith('Other '))
+  const hasOtherSpecific = form.ethnicity_specific.some(s => s.startsWith('Other'))
 
   if (step === 'done') return (
     <div className="min-h-screen flex flex-col bg-white">
@@ -198,6 +230,21 @@ export default function ScoutPage() {
             )}
           </div>
 
+          {/* Adult vs Kids size toggle */}
+          <div>
+            <p className="label mb-3">Size Type</p>
+            <div className="flex border border-neutral-200 w-fit">
+              <button type="button" onClick={() => setSizeMode('adult')}
+                className={`px-6 py-2 text-xs tracking-widest uppercase transition-colors ${sizeMode === 'adult' ? 'bg-black text-white' : 'text-neutral-500 hover:bg-neutral-50'}`}>
+                Adult
+              </button>
+              <button type="button" onClick={() => setSizeMode('kids')}
+                className={`px-6 py-2 text-xs tracking-widest uppercase transition-colors ${sizeMode === 'kids' ? 'bg-black text-white' : 'text-neutral-500 hover:bg-neutral-50'}`}>
+                Kids
+              </button>
+            </div>
+          </div>
+
           {/* Height */}
           <div>
             <p className="label mb-3">Height</p>
@@ -218,43 +265,83 @@ export default function ScoutPage() {
             <p className="text-xs text-neutral-400 mt-1">{heightToCm(form.height_ft, form.height_in)} cm</p>
           </div>
 
-          {/* Sizing */}
-          {form.gender === 'female' && (
-            <div className="grid grid-cols-2 gap-4">
-              <div><label className={lbl}>Bust</label><input value={form.bust} onChange={e => set('bust', e.target.value)} className={inp} placeholder='e.g. 34"' /></div>
-              <div><label className={lbl}>Waist</label><input value={form.waist} onChange={e => set('waist', e.target.value)} className={inp} placeholder='e.g. 26"' /></div>
-              <div><label className={lbl}>Hips</label><input value={form.hips} onChange={e => set('hips', e.target.value)} className={inp} placeholder='e.g. 36"' /></div>
-              <div><label className={lbl}>Dress Size</label><input value={form.dress_size} onChange={e => set('dress_size', e.target.value)} className={inp} /></div>
+          {/* ADULT SIZING */}
+          {sizeMode === 'adult' && (
+            <>
+              {form.gender === 'female' && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div><label className={lbl}>Bust</label><input value={form.bust} onChange={e => set('bust', e.target.value)} className={inp} placeholder='e.g. 34"' /></div>
+                  <div><label className={lbl}>Waist</label><input value={form.waist} onChange={e => set('waist', e.target.value)} className={inp} placeholder='e.g. 26"' /></div>
+                  <div><label className={lbl}>Hips</label><input value={form.hips} onChange={e => set('hips', e.target.value)} className={inp} placeholder='e.g. 36"' /></div>
+                  <div><label className={lbl}>Dress Size</label><input value={form.dress_size} onChange={e => set('dress_size', e.target.value)} className={inp} /></div>
+                </div>
+              )}
+              {form.gender === 'male' && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div><label className={lbl}>Chest</label><input value={form.chest} onChange={e => set('chest', e.target.value)} className={inp} placeholder='e.g. 40"' /></div>
+                  <div><label className={lbl}>Waist</label><input value={form.waist} onChange={e => set('waist', e.target.value)} className={inp} placeholder='e.g. 32"' /></div>
+                  <div><label className={lbl}>Inseam</label><input value={form.inseam} onChange={e => set('inseam', e.target.value)} className={inp} placeholder='e.g. 32"' /></div>
+                  <div><label className={lbl}>Suit Size</label><input value={form.suit_size} onChange={e => set('suit_size', e.target.value)} className={inp} placeholder='e.g. 40R' /></div>
+                </div>
+              )}
+              {(form.gender === 'non-binary' || form.gender === 'other') && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div><label className={lbl}>Bust</label><input value={form.bust} onChange={e => set('bust', e.target.value)} className={inp} /></div>
+                  <div><label className={lbl}>Chest</label><input value={form.chest} onChange={e => set('chest', e.target.value)} className={inp} /></div>
+                  <div><label className={lbl}>Waist</label><input value={form.waist} onChange={e => set('waist', e.target.value)} className={inp} /></div>
+                  <div><label className={lbl}>Hips</label><input value={form.hips} onChange={e => set('hips', e.target.value)} className={inp} /></div>
+                  <div><label className={lbl}>Dress Size</label><input value={form.dress_size} onChange={e => set('dress_size', e.target.value)} className={inp} /></div>
+                  <div><label className={lbl}>Suit Size</label><input value={form.suit_size} onChange={e => set('suit_size', e.target.value)} className={inp} /></div>
+                </div>
+              )}
+              <div>
+                <label className={lbl}>Shoe Size (US)</label>
+                <select value={form.shoe_size} onChange={e => set('shoe_size', e.target.value)}
+                  className="w-full border-b border-neutral-300 bg-transparent py-2 text-sm focus:outline-none">
+                  <option value="">Select...</option>
+                  {ADULT_SHOE_SIZES.map(s => (
+                    <option key={s.us} value={s.us}>US {s.us} / EU {s.eu}</option>
+                  ))}
+                </select>
+              </div>
+            </>
+          )}
+
+          {/* KIDS SIZING */}
+          {sizeMode === 'kids' && (
+            <div className="space-y-4">
+              <div>
+                <label className={lbl}>Age</label>
+                <input value={form.kids_age} onChange={e => set('kids_age', e.target.value)}
+                  placeholder="e.g. 7" className={inp} />
+              </div>
+              <div>
+                <label className={lbl}>Kids Clothing Size</label>
+                <div className="flex flex-wrap gap-2 mt-1">
+                  {KIDS_CLOTHING_SIZES.map(s => (
+                    <button key={s} type="button" onClick={() => set('kids_clothing_size', s)}
+                      className={`px-3 py-1.5 text-xs border transition-colors ${form.kids_clothing_size === s ? 'bg-black text-white border-black' : 'border-neutral-300 hover:border-black'}`}>
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className={lbl}>Kids Shoe Size</label>
+                <select value={form.kids_shoe_size} onChange={e => set('kids_shoe_size', e.target.value)}
+                  className="w-full border-b border-neutral-300 bg-transparent py-2 text-sm focus:outline-none">
+                  <option value="">Select...</option>
+                  {KIDS_SHOE_SIZES.map(s => (
+                    <option key={s.us} value={s.us}>{s.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div><label className={lbl}>Waist</label><input value={form.waist} onChange={e => set('waist', e.target.value)} className={inp} placeholder='e.g. 22"' /></div>
+                <div><label className={lbl}>Chest / Bust</label><input value={form.chest || form.bust} onChange={e => { set('chest', e.target.value); set('bust', e.target.value) }} className={inp} placeholder='e.g. 26"' /></div>
+              </div>
             </div>
           )}
-          {form.gender === 'male' && (
-            <div className="grid grid-cols-2 gap-4">
-              <div><label className={lbl}>Chest</label><input value={form.chest} onChange={e => set('chest', e.target.value)} className={inp} placeholder='e.g. 40"' /></div>
-              <div><label className={lbl}>Waist</label><input value={form.waist} onChange={e => set('waist', e.target.value)} className={inp} placeholder='e.g. 32"' /></div>
-              <div><label className={lbl}>Inseam</label><input value={form.inseam} onChange={e => set('inseam', e.target.value)} className={inp} placeholder='e.g. 32"' /></div>
-              <div><label className={lbl}>Suit Size</label><input value={form.suit_size} onChange={e => set('suit_size', e.target.value)} className={inp} placeholder='e.g. 40R' /></div>
-            </div>
-          )}
-          {(form.gender === 'non-binary' || form.gender === 'other') && (
-            <div className="grid grid-cols-2 gap-4">
-              <div><label className={lbl}>Bust</label><input value={form.bust} onChange={e => set('bust', e.target.value)} className={inp} /></div>
-              <div><label className={lbl}>Chest</label><input value={form.chest} onChange={e => set('chest', e.target.value)} className={inp} /></div>
-              <div><label className={lbl}>Waist</label><input value={form.waist} onChange={e => set('waist', e.target.value)} className={inp} /></div>
-              <div><label className={lbl}>Hips</label><input value={form.hips} onChange={e => set('hips', e.target.value)} className={inp} /></div>
-              <div><label className={lbl}>Dress Size</label><input value={form.dress_size} onChange={e => set('dress_size', e.target.value)} className={inp} /></div>
-              <div><label className={lbl}>Suit Size</label><input value={form.suit_size} onChange={e => set('suit_size', e.target.value)} className={inp} /></div>
-            </div>
-          )}
-          <div>
-            <label className={lbl}>Shoe Size (US)</label>
-            <select value={form.shoe_size} onChange={e => set('shoe_size', e.target.value)}
-              className="w-full border-b border-neutral-300 bg-transparent py-2 text-sm focus:outline-none">
-              <option value="">Select...</option>
-              {SHOE_SIZES.map(s => (
-                <option key={s.us} value={s.us}>US {s.us} / EU {s.eu}</option>
-              ))}
-            </select>
-          </div>
 
           {/* Agency autocomplete */}
           <div className="relative">
@@ -268,7 +355,7 @@ export default function ScoutPage() {
                   <button key={a} type="button" onClick={() => { set('agency', a); set('agent_name', ''); set('board', ''); setShowAgency(false); loadAgentContacts(a) }}
                     className="w-full px-4 py-2 text-left text-sm hover:bg-neutral-50 border-b border-neutral-100 last:border-0">{a}</button>
                 ))}
-                {form.agency && !agencySuggestions.map((a:string) => a.toLowerCase()).includes(form.agency.toLowerCase()) && (
+                {form.agency && !agencySuggestions.map((a: string) => a.toLowerCase()).includes(form.agency.toLowerCase()) && (
                   <button type="button" onClick={() => { setShowAgency(false); setAgencyContacts([]) }}
                     className="w-full px-4 py-2 text-left text-sm text-neutral-400 hover:bg-neutral-50 italic border-t border-neutral-100">
                     + Use "{form.agency}" as new agency
@@ -278,7 +365,7 @@ export default function ScoutPage() {
             )}
           </div>
 
-          {/* Agent picker */}
+          {/* Agent picker from agency roster */}
           {agencyContacts.length > 0 && (
             <div>
               <label className={lbl}>Select Your Agent</label>
@@ -299,25 +386,9 @@ export default function ScoutPage() {
             </div>
           )}
 
-          {/* Board autocomplete */}
+          {/* Agent Name manual */}
           <div className="relative">
-            <label className={lbl}>Board</label>
-            <input value={form.board} onChange={e => { set('board', e.target.value); searchBoards(e.target.value); setShowBoard(true) }}
-              onFocus={() => { if (form.board) { searchBoards(form.board); setShowBoard(true) } }}
-              placeholder="Board name (if applicable)" className={inp} />
-            {showBoard && boardSuggestions.length > 0 && (
-              <div className="absolute top-full left-0 right-0 bg-white border border-neutral-200 z-10 shadow-sm">
-                {boardSuggestions.map(a => (
-                  <button key={a} type="button" onClick={() => { set('board', a); setShowBoard(false) }}
-                    className="w-full px-4 py-2 text-left text-sm hover:bg-neutral-50 border-b border-neutral-100 last:border-0">{a}</button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Agent Name autocomplete */}
-          <div className="relative">
-            <label className={lbl}>Agent Name</label>
+            <label className={lbl}>Agent Name <span className="text-neutral-400 font-normal normal-case">(if applicable)</span></label>
             <input value={form.agent_name} onChange={e => { set('agent_name', e.target.value); searchAgentNames(e.target.value); setShowAgentName(true) }}
               onFocus={() => { if (form.agent_name) { searchAgentNames(form.agent_name); setShowAgentName(true) } }}
               placeholder="Your agent's name" className={inp} />
@@ -331,6 +402,22 @@ export default function ScoutPage() {
             )}
           </div>
 
+          {/* Board */}
+          <div className="relative">
+            <label className={lbl}>Board <span className="text-neutral-400 font-normal normal-case">(if applicable)</span></label>
+            <input value={form.board} onChange={e => { set('board', e.target.value); searchBoards(e.target.value); setShowBoard(true) }}
+              onFocus={() => { if (form.board) { searchBoards(form.board); setShowBoard(true) } }}
+              placeholder="Board name" className={inp} />
+            {showBoard && boardSuggestions.length > 0 && (
+              <div className="absolute top-full left-0 right-0 bg-white border border-neutral-200 z-10 shadow-sm">
+                {boardSuggestions.map(a => (
+                  <button key={a} type="button" onClick={() => { set('board', a); setShowBoard(false) }}
+                    className="w-full px-4 py-2 text-left text-sm hover:bg-neutral-50 border-b border-neutral-100 last:border-0">{a}</button>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* Ethnicity */}
           <div>
             <p className="label mb-3">Ethnicity</p>
@@ -338,7 +425,7 @@ export default function ScoutPage() {
             <div className="flex flex-wrap gap-2 mb-3">
               {Object.keys(ETHNICITY_MAP).map(b => (
                 <button key={b} type="button"
-                  onClick={() => set('ethnicity_broad', form.ethnicity_broad.includes(b) ? form.ethnicity_broad.filter((x:string) => x !== b) : [...form.ethnicity_broad, b])}
+                  onClick={() => set('ethnicity_broad', form.ethnicity_broad.includes(b) ? form.ethnicity_broad.filter((x: string) => x !== b) : [...form.ethnicity_broad, b])}
                   className={`text-xs px-3 py-2 border transition-colors ${form.ethnicity_broad.includes(b) ? 'bg-black text-white border-black' : 'border-neutral-300 hover:border-black'}`}>
                   {b}
                 </button>
@@ -351,17 +438,17 @@ export default function ScoutPage() {
                   placeholder="Please specify your ethnicity" className={inp} />
               </div>
             )}
-            {form.ethnicity_broad.length > 0 && (
+            {form.ethnicity_broad.filter((b: string) => b !== 'Other').length > 0 && (
               <>
                 <label className="label block mb-2">More Specific</label>
                 <div className="flex flex-wrap gap-2">
-                  {form.ethnicity_broad.flatMap((b: string) => {
+                  {form.ethnicity_broad.filter((b: string) => b !== 'Other').flatMap((b: string) => {
                     const specifics = ETHNICITY_MAP[b] || []
                     if (specifics.length === 0) return []
                     return [...specifics, 'Other']
                   }).map(s => (
                     <button key={s} type="button"
-                      onClick={() => set('ethnicity_specific', form.ethnicity_specific.includes(s) ? form.ethnicity_specific.filter((x:string) => x !== s) : [...form.ethnicity_specific, s])}
+                      onClick={() => set('ethnicity_specific', form.ethnicity_specific.includes(s) ? form.ethnicity_specific.filter((x: string) => x !== s) : [...form.ethnicity_specific, s])}
                       className={`text-xs px-3 py-2 border transition-colors ${form.ethnicity_specific.includes(s) ? 'bg-black text-white border-black' : 'border-neutral-300 hover:border-black'}`}>
                       {s}
                     </button>
@@ -381,19 +468,41 @@ export default function ScoutPage() {
           {/* Languages */}
           <ChipInput label="Languages Spoken" value={form.languages} onChange={v => set('languages', v)} placeholder="e.g. English, Spanish — press Enter" />
 
-          {/* Instagram + Portfolio */}
+          {/* Social + Portfolio */}
           <div className="grid grid-cols-2 gap-4">
-            <div><label className={lbl}>Instagram</label><input value={form.instagram_handle} onChange={e => set('instagram_handle', e.target.value.replace('@',''))} placeholder="yourhandle" className={inp} /></div>
-            <div><label className={lbl}>TikTok</label><input value={form.tiktok_handle} onChange={e => set('tiktok_handle', e.target.value.replace('@',''))} placeholder="yourhandle" className={inp} /></div>
-            <div><label className={lbl}>Portfolio URL</label><input value={form.portfolio_url} onChange={e => set('portfolio_url', e.target.value)} className={inp} /></div>
-            <div><label className={lbl}>Website URL</label><input value={form.website_url} onChange={e => set('website_url', e.target.value)} className={inp} /></div>
+            <div>
+              <label className={lbl}>Instagram</label>
+              <input value={form.instagram_handle} onChange={e => set('instagram_handle', e.target.value.replace('@', ''))}
+                placeholder="handle (no @)" className={inp} />
+            </div>
+            <div>
+              <label className={lbl}>TikTok</label>
+              <input value={form.tiktok_handle} onChange={e => set('tiktok_handle', e.target.value.replace('@', ''))}
+                placeholder="handle (no @)" className={inp} />
+            </div>
+            <div>
+              <label className={lbl}>Portfolio URL</label>
+              <input value={form.portfolio_url} onChange={e => set('portfolio_url', e.target.value)}
+                placeholder="model portfolio, etc." className={inp} />
+            </div>
+            <div>
+              <label className={lbl}>Website URL</label>
+              <input value={form.website_url} onChange={e => set('website_url', e.target.value)}
+                placeholder="yourwebsite.com" className={inp} />
+            </div>
           </div>
 
-          {/* Skills */}
+          {/* Skills — DB-powered suggestions so entries group canonically */}
           <div>
-            <p className="label mb-2">Skills</p>
-            <p className="text-xs text-neutral-400 mb-3">Type to add your own or click a suggestion.</p>
-            <ChipInput value={form.skills} onChange={v => set('skills', v)} placeholder="Type and press Enter..." />
+            <p className="label mb-1">Skills</p>
+            <p className="text-xs text-neutral-400 mb-3">Type to search or add your own. Similar skills will group automatically.</p>
+            <ChipInput
+              value={form.skills}
+              onChange={v => set('skills', v)}
+              placeholder="e.g. Tattoo Artist, Acting..."
+              suggestions={skillSuggestions}
+              onSearch={searchSkills}
+            />
             <div className="flex flex-wrap gap-2 mt-3">
               {SKILL_SUGGESTIONS.filter(s => !form.skills.includes(s)).map(s => (
                 <button key={s} type="button" onClick={() => set('skills', [...form.skills, s])}
@@ -428,7 +537,11 @@ export default function ScoutPage() {
           </div>
 
           {/* Date of Birth */}
-          <div><label className={lbl}>Date of Birth</label><input type="date" value={form.date_of_birth} onChange={e => set('date_of_birth', e.target.value)} className={inp} /></div>
+          <div>
+            <label className={lbl}>Date of Birth</label>
+            <p className="text-xs text-neutral-400 mb-1">Used to verify your identity when you sign in in the future.</p>
+            <input type="date" value={form.date_of_birth} onChange={e => set('date_of_birth', e.target.value)} className={inp} />
+          </div>
 
           {/* Photos */}
           <div>
@@ -449,7 +562,7 @@ export default function ScoutPage() {
             </div>
           </div>
 
-          {/* Notes - Task 4 */}
+          {/* Notes */}
           <div>
             <label className={lbl}>Anything else?</label>
             <textarea value={form.notes} onChange={e => set('notes', e.target.value)} rows={3}
