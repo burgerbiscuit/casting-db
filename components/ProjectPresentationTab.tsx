@@ -22,19 +22,23 @@ export function ProjectPresentationTab({ projectId, presentationId: initialPresI
   const [saved, setSaved] = useState(false)
   const [copied, setCopied] = useState(false)
   const [creating, setCreating] = useState(false)
+  const [modelSearch, setModelSearch] = useState('')
 
   const load = useCallback(async () => {
     if (!presId) return
-    const [{ data: pm }, { data: projectModels }, { data: cats }] = await Promise.all([
-      supabase.from('presentation_models').select('*, models(first_name, last_name, agency, model_media(url, display_order))').eq('presentation_id', presId).order('display_order'),
-      supabase.from('project_models').select('models(id, first_name, last_name, agency)').eq('project_id', projectId),
+    const [{ data: pm }, { data: cats }] = await Promise.all([
+      supabase.from('presentation_models').select('*, models(first_name, last_name, agency, model_media(public_url, display_order, is_visible))').eq('presentation_id', presId).order('display_order'),
       supabase.from('presentation_categories').select('*').eq('presentation_id', presId).order('display_order'),
     ])
     setPresentationModels(pm || [])
     setCategories(cats || [])
     const alreadyIn = new Set((pm || []).map((m: any) => m.model_id))
-    const available = (projectModels || []).map((pm: any) => pm.models).filter((m: any) => m && !alreadyIn.has(m.id))
-    setAvailableModels(available)
+    // Load ALL models for the add-model picker (search across full DB)
+    const { data: allModels } = await supabase
+      .from('models')
+      .select('id, first_name, last_name, agency, model_media(public_url, display_order, is_visible)')
+      .order('last_name')
+    setAvailableModels((allModels || []).filter((m: any) => !alreadyIn.has(m.id)))
   }, [presId, projectId])
 
   useEffect(() => { load() }, [load])
@@ -106,6 +110,24 @@ export function ProjectPresentationTab({ projectId, presentationId: initialPresI
   const deleteCategory = async (catId: string) => {
     await supabase.from('presentation_models').update({ category_id: null }).eq('category_id', catId)
     await supabase.from('presentation_categories').delete().eq('id', catId)
+    load()
+  }
+
+  const moveCategoryUp = async (index: number) => {
+    if (index === 0) return
+    const updated = [...categories]
+    const [a, b] = [updated[index - 1], updated[index]]
+    await supabase.from('presentation_categories').update({ display_order: b.display_order }).eq('id', a.id)
+    await supabase.from('presentation_categories').update({ display_order: a.display_order }).eq('id', b.id)
+    load()
+  }
+
+  const moveCategoryDown = async (index: number) => {
+    if (index === categories.length - 1) return
+    const updated = [...categories]
+    const [a, b] = [updated[index], updated[index + 1]]
+    await supabase.from('presentation_categories').update({ display_order: b.display_order }).eq('id', a.id)
+    await supabase.from('presentation_categories').update({ display_order: a.display_order }).eq('id', b.id)
     load()
   }
 
@@ -198,15 +220,35 @@ export function ProjectPresentationTab({ projectId, presentationId: initialPresI
         {/* Left: Add models + Sections */}
         <div className="space-y-8">
           <div>
-            <p className="label mb-3">Add Models</p>
-            {availableModels.length === 0 && <p className="text-xs text-neutral-400">All project models added.</p>}
-            <div className="space-y-1.5">
-              {availableModels.map(m => (
-                <div key={m.id} className="flex items-center justify-between border border-neutral-100 px-3 py-2">
-                  <div><p className="text-xs font-medium">{m.first_name} {m.last_name}</p>{m.agency && <p className="text-[10px] text-neutral-400">{m.agency}</p>}</div>
-                  <button onClick={() => addModel(m)} className="text-[10px] tracking-wider uppercase underline text-neutral-500 hover:text-black">Add</button>
-                </div>
-              ))}
+            <p className="label mb-2">Add Models</p>
+            <input
+              value={modelSearch}
+              onChange={e => setModelSearch(e.target.value)}
+              placeholder="Search name..."
+              className="w-full border-b border-neutral-200 bg-transparent py-1.5 text-xs focus:outline-none focus:border-black placeholder:text-neutral-300 mb-2"
+            />
+            {availableModels.length === 0 && !modelSearch && (
+              <p className="text-xs text-neutral-400">All models added.</p>
+            )}
+            <div className="space-y-1 max-h-80 overflow-y-auto">
+              {availableModels
+                .filter(m => !modelSearch || `${m.first_name} ${m.last_name} ${m.agency || ''}`.toLowerCase().includes(modelSearch.toLowerCase()))
+                .slice(0, 40)
+                .map(m => {
+                  const photo = [...(m.model_media || [])].filter((x: any) => x.is_visible !== false).sort((a: any, b: any) => a.display_order - b.display_order)[0]?.public_url
+                  return (
+                    <div key={m.id} className="flex items-center gap-2 border border-neutral-100 px-2 py-1.5 hover:border-neutral-300 transition-colors">
+                      {photo
+                        ? <img src={photo} className="w-7 h-9 object-cover object-top flex-shrink-0" alt="" />
+                        : <div className="w-7 h-9 bg-neutral-100 flex-shrink-0" />}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium truncate">{m.first_name} {m.last_name}</p>
+                        {m.agency && <p className="text-[10px] text-neutral-400 truncate">{m.agency}</p>}
+                      </div>
+                      <button onClick={() => addModel(m)} className="text-[10px] tracking-wider uppercase text-neutral-400 hover:text-black flex-shrink-0">+ Add</button>
+                    </div>
+                  )
+                })}
             </div>
           </div>
 
@@ -214,13 +256,19 @@ export function ProjectPresentationTab({ projectId, presentationId: initialPresI
           <div>
             <p className="label mb-3">Sections</p>
             <div className="space-y-1.5 mb-3">
-              {categories.map(cat => (
+              {categories.map((cat, idx) => (
                 <div key={cat.id} className="flex items-center justify-between border border-neutral-100 px-3 py-2 group">
-                  <div>
-                    <p className="text-xs font-medium">{cat.name}</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium truncate">{cat.name}</p>
                     <p className="text-[10px] text-neutral-400">{byCategory.find(b => b.id === cat.id)?.models.length || 0} models</p>
                   </div>
-                  <button onClick={() => deleteCategory(cat.id)} className="opacity-0 group-hover:opacity-100 text-neutral-300 hover:text-red-400 transition-all"><Trash2 size={12} /></button>
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <button onClick={() => moveCategoryUp(idx)} disabled={idx === 0}
+                      className="text-neutral-300 hover:text-black disabled:opacity-20 transition-colors text-xs px-1">▲</button>
+                    <button onClick={() => moveCategoryDown(idx)} disabled={idx === categories.length - 1}
+                      className="text-neutral-300 hover:text-black disabled:opacity-20 transition-colors text-xs px-1">▼</button>
+                    <button onClick={() => deleteCategory(cat.id)} className="opacity-0 group-hover:opacity-100 text-neutral-300 hover:text-red-400 transition-all ml-1"><Trash2 size={12} /></button>
+                  </div>
                 </div>
               ))}
             </div>

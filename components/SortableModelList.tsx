@@ -102,8 +102,8 @@ function SortableItem({ item, onRemove, onFieldChange, categories, onCategoryCha
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-3">
               {(() => {
-                const sorted = [...(item.models.model_media || [])].sort((a,b) => a.display_order - b.display_order)
-                const photo = sorted[0]?.url
+                const sorted = [...(item.models.model_media || [])].filter((m: any) => m.is_visible !== false).sort((a: any, b: any) => a.display_order - b.display_order)
+                const photo = sorted[0]?.public_url
                 return photo
                   ? <img src={photo} className="w-10 h-12 object-cover object-top flex-shrink-0" alt="" />
                   : <div className="w-10 h-12 bg-neutral-100 flex-shrink-0" />
