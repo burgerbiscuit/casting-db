@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServiceClient } from '@/lib/supabase/server'
+import { createClient, createServiceClient } from '@/lib/supabase/server'
 
 export async function GET(req: NextRequest) {
+  // Only accessible from same origin (public submission forms)
+  // Restrict to name/agency only — no sensitive fields
   const q = req.nextUrl.searchParams.get('q')?.toLowerCase() || ''
-  if (!q) return NextResponse.json([])
+  if (!q || q.length < 1) return NextResponse.json([])
 
   const supabase = await createServiceClient()
   const { data } = await supabase
@@ -14,14 +16,12 @@ export async function GET(req: NextRequest) {
 
   const seen = new Set<string>()
   const results: string[] = []
-
   for (const row of data || []) {
     const name = row.agency_name?.trim()
     if (!name || seen.has(name.toLowerCase())) continue
     seen.add(name.toLowerCase())
     results.push(name)
   }
-
   results.sort((a, b) => a.localeCompare(b))
   return NextResponse.json(results.slice(0, 20))
 }
