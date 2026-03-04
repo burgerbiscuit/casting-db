@@ -45,7 +45,7 @@ export default async function ConfirmationChartPage({ params }: { params: { id: 
   // Confirmed models
   const { data: projectModels } = await serviceSupabase
     .from('project_models')
-    .select('*, models(id, first_name, last_name, agency, height_ft, height_in, bust, waist, hips, shoe_size, dress_size)')
+    .select('*, models(id, first_name, last_name, agency, height_ft, height_in, bust, waist, hips, shoe_size, dress_size, instagram_handle, portfolio_url)')
     .eq('project_id', project.id)
     .eq('admin_confirmed', true)
     .eq('chart_hidden', false)
@@ -146,27 +146,39 @@ export default async function ConfirmationChartPage({ params }: { params: { id: 
                 const displayDate = pm.confirmed_date || shootDate
                 const displayRate = pm.pm_rate || project.model_rate
                 const displayUsage = pm.confirmed_usage || project.usage
+                const igHandle = (model?.instagram_handle || '').replace('@', '')
+                const profileUrl = model?.portfolio_url
+                  ? (model.portfolio_url.startsWith('http') ? model.portfolio_url : `https://${model.portfolio_url}`)
+                  : igHandle ? `https://www.instagram.com/${igHandle}/` : null
 
                 return (
                   <tr key={pm.id} className="border-b border-neutral-200 align-top">
-                    {/* Photo */}
-                    <td className="border border-neutral-200 p-1.5 w-16" style={{ width: 60 }}>
-                      <div className="w-14 h-[72px] bg-neutral-100 overflow-hidden">
-                        {photo ? (
-                          <img src={photo} alt={`${model?.first_name} ${model?.last_name}`}
-                            className="w-full h-full object-cover object-top" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-neutral-300 text-[8px]">—</div>
-                        )}
-                      </div>
+                    {/* Photo — full bleed */}
+                    <td className="border border-neutral-200 p-0" style={{ width: 64, height: 80 }}>
+                      {photo ? (
+                        <img src={photo} alt={`${model?.first_name} ${model?.last_name}`}
+                          className="block w-full h-full object-cover object-top"
+                          style={{ width: 64, height: 80, display: 'block' }} />
+                      ) : (
+                        <div className="w-full h-full bg-neutral-100 flex items-center justify-center text-neutral-300 text-[8px]"
+                          style={{ width: 64, height: 80 }}>—</div>
+                      )}
                     </td>
 
-                    {/* Name */}
-                    <td className="border border-neutral-200 px-3 py-2.5 text-center align-middle" style={{ width: 80 }}>
-                      <p className="text-[11px] tracking-wide text-neutral-800 underline font-medium">
-                        {model?.first_name?.toUpperCase()}
-                        {model?.last_name ? <><br />{model.last_name.toUpperCase()}</> : null}
-                      </p>
+                    {/* Name — linked to portfolio or instagram */}
+                    <td className="border border-neutral-200 px-3 py-2.5 text-center align-middle" style={{ width: 90 }}>
+                      {profileUrl ? (
+                        <a href={profileUrl} target="_blank" rel="noopener noreferrer"
+                          className="text-[11px] tracking-wide text-neutral-800 underline font-medium hover:text-black">
+                          {model?.first_name?.toUpperCase()}
+                          {model?.last_name ? <><br />{model.last_name.toUpperCase()}</> : null}
+                        </a>
+                      ) : (
+                        <p className="text-[11px] tracking-wide text-neutral-800 font-medium">
+                          {model?.first_name?.toUpperCase()}
+                          {model?.last_name ? <><br />{model.last_name.toUpperCase()}</> : null}
+                        </p>
+                      )}
                     </td>
 
                     {/* Contact */}
