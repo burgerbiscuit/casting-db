@@ -576,13 +576,12 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
                 confirmed,
                 'Officially Confirmed ✓',
                 'bg-green-600',
-                mainPres?.id ? (
+                projectId ? (
                   <Link
-                    href={`/client/presentations/${mainPres.id}/chart`}
-                    target="_blank"
+                    href={`/admin/projects/${projectId}/confirmation-chart`}
                     className="text-[9px] tracking-widest uppercase border border-white/60 text-white/90 px-2 py-0.5 hover:border-white hover:text-white transition-colors whitespace-nowrap"
                   >
-                    View Confirmation Chart ↗
+                    Edit Confirmation Chart ↗
                   </Link>
                 ) : undefined
               )}

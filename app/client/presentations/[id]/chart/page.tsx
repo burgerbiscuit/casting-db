@@ -40,6 +40,7 @@ export default async function ConfirmationChartPage({ params }: { params: { id: 
     .select('*, models(id, first_name, last_name, agency, height_ft, height_in, bust, waist, hips, shoe_size)')
     .eq('project_id', project.id)
     .eq('admin_confirmed', true)
+    .order('confirmed_date')
 
   const confirmed = projectModels || []
   const modelIds = confirmed.map((pm: any) => pm.models?.id).filter(Boolean)
@@ -168,16 +169,16 @@ export default async function ConfirmationChartPage({ params }: { params: { id: 
                   {sizing && (
                     <p className="text-[10px] text-neutral-400">{sizing}</p>
                   )}
-                  {pm.pm_option && (
-                    <p className="text-[10px] text-neutral-500 mt-1.5 pt-1.5 border-t border-neutral-100">
-                      {pm.pm_option}
-                    </p>
-                  )}
-                  {pm.pm_rate && (
-                    <p className="text-[10px] text-neutral-500">{pm.pm_rate}</p>
-                  )}
-                  {pm.pm_location && (
-                    <p className="text-[10px] text-neutral-400">{pm.pm_location}</p>
+                  {(pm.pm_option || pm.pm_rate || pm.confirmed_date || pm.confirmed_usage || pm.confirmed_notes) && (
+                    <div className="mt-1.5 pt-1.5 border-t border-neutral-100 space-y-0.5">
+                      {pm.pm_option && <p className="text-[10px] text-neutral-500">{pm.pm_option}</p>}
+                      {pm.pm_rate && <p className="text-[10px] text-neutral-500">{pm.pm_rate}</p>}
+                      {pm.confirmed_date && <p className="text-[10px] text-neutral-400">{pm.confirmed_date}</p>}
+                      {pm.confirmed_usage && <p className="text-[10px] text-neutral-400">{pm.confirmed_usage}</p>}
+                      {pm.confirmed_notes && (
+                        <p className="text-[10px] text-neutral-400 italic mt-1">{pm.confirmed_notes}</p>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>
