@@ -19,7 +19,7 @@ export default function ProductionContactsPage() {
     })
   }, [])
 
-  const NEEDS_REVIEW_AGENCIES = ['Art + Commerce', 'Streeters', 'The Wall Group', 'LGA Management']
+  // Needs Review = any contact flagged by AI import (needs_review=true in DB)
 
   const [contacts, setContacts] = useState<any[]>([])
   const [reviewContacts, setReviewContacts] = useState<any[]>([])
@@ -80,8 +80,8 @@ export default function ProductionContactsPage() {
     if (section !== 'ALL') filtered = filtered.filter(c => c.section === section)
     if (gender !== 'ALL') filtered = filtered.filter(c => c.gender === gender)
 
-    const review = filtered.filter(c => NEEDS_REVIEW_AGENCIES.includes(c.agency_name))
-    const rest = filtered.filter(c => !NEEDS_REVIEW_AGENCIES.includes(c.agency_name))
+    const review = filtered.filter(c => c.needs_review === true)
+    const rest = filtered.filter(c => !c.needs_review)
     
     setReviewContacts(review)
     setContacts(rest)
@@ -194,9 +194,24 @@ export default function ProductionContactsPage() {
                   </span>
                   <span className="text-[10px] text-neutral-400">{reviewContacts.length} contacts added by AI — verify before use</span>
                 </div>
-                <span className="text-[10px] text-neutral-400 ml-auto group-hover:text-black transition-colors">
-                  {reviewCollapsed ? '▼ Show' : '▲ Hide'}
-                </span>
+                <div className="ml-auto flex items-center gap-3">
+                  <button
+                    onClick={async (e) => {
+                      e.stopPropagation()
+                      const ids = selected.size > 0
+                        ? reviewContacts.filter(c => selected.has(c.id)).map(c => c.id)
+                        : reviewContacts.map(c => c.id)
+                      await Promise.all(ids.map(id => supabase.from('agency_contacts').update({ needs_review: false }).eq('id', id)))
+                      setSelected(new Set())
+                      load()
+                    }}
+                    className="text-[9px] tracking-widest uppercase px-2 py-1 border border-amber-300 text-amber-700 hover:bg-amber-100 transition-colors">
+                    {selected.size > 0 ? `✓ Mark ${selected.size} Reviewed` : '✓ Mark All Reviewed'}
+                  </button>
+                  <span className="text-[10px] text-neutral-400 group-hover:text-black transition-colors">
+                    {reviewCollapsed ? '▼ Show' : '▲ Hide'}
+                  </span>
+                </div>
               </button>
 
               {!reviewCollapsed && (
@@ -215,7 +230,7 @@ export default function ProductionContactsPage() {
                           }} className="cursor-pointer" /></th>
                         <th className="text-left label py-2 pr-6 text-amber-700">Agency</th>
                         <th className="text-left label py-2 pr-6 text-amber-700">Name</th>
-                        <th className="text-left label py-2 pr-6 text-amber-700">Role</th>
+                        <th className="text-left label py-2 pr-6 text-amber-700">Role / Focus</th>
                         <th className="text-left label py-2 pr-6 text-amber-700">City</th>
                         <th className="text-left label py-2 pr-6 text-amber-700">Email</th>
                         <th className="text-left label py-2 text-amber-700">Instagram</th>
@@ -230,7 +245,7 @@ export default function ProductionContactsPage() {
                             className="cursor-pointer" /></td>
                           <td className="py-2.5 pr-6 font-medium text-xs">{c.agency_name}</td>
                           <td className="py-2.5 pr-6 text-neutral-600 text-xs">{c.agent_name || '—'}</td>
-                          <td className="py-2.5 pr-6 text-neutral-400 text-xs max-w-[180px] truncate" title={c.board || ''}>{c.board || '—'}</td>
+                          <td className="py-2.5 pr-6 text-neutral-400 text-xs max-w-[200px] truncate" title={c.section || c.board || ''}>{c.section || c.board || '—'}</td>
                           <td className="py-2.5 pr-6 text-neutral-500 text-xs">{c.city || '—'}</td>
                           <td className="py-2.5 pr-6">
                             {c.email_invalid ? <span className="text-red-400 text-xs line-through">{c.email || 'invalid'}</span> : c.email ? <a href={`mailto:${c.email}`} className="underline underline-offset-2 hover:opacity-60 text-xs">{c.email}</a> : <span className="text-neutral-300 text-xs">—</span>}
