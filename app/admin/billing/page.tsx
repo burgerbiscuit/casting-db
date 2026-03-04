@@ -65,7 +65,7 @@ export default function BillingPage() {
                   <p className="font-medium">${(inv.total || 0).toFixed(2)}</p>
                   <p className="text-neutral-500 text-xs">{new Date(inv.due_date).toLocaleDateString()}</p>
                 </div>
-                <span className={`text-[10px] tracking-widest uppercase px-2 py-1 rounded ${statusBadge(inv.status)}`}>
+                <span className={`text-[10px] tracking-widest uppercase px-2 py-1 ${statusBadge(inv.status)}`}>
                   {inv.status}
                 </span>
                 <Download size={14} className="text-neutral-300" />

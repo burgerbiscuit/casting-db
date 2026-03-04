@@ -90,7 +90,7 @@ export default function ModelsPage() {
               className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-300" />
           ) : (
             <div className="w-full h-full flex flex-col items-center justify-center text-neutral-300">
-              <div className="w-12 h-12 rounded-full border-2 border-neutral-200 flex items-center justify-center text-lg font-light mb-2">
+              <div className="w-12 h-12 border border-neutral-200 flex items-center justify-center text-lg font-light mb-2">
                 {m.first_name?.[0]}{m.last_name?.[0]}
               </div>
             </div>

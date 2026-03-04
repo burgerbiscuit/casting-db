@@ -67,7 +67,7 @@ export default function ResourcesPage() {
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
-      <h1 className="text-xs tracking-widest uppercase font-medium mb-8">Resources</h1>
+      <h1 className="text-2xl font-light tracking-widest uppercase mb-8">Resources</h1>
 
       {/* Email Templates */}
       <section className="mb-12">
