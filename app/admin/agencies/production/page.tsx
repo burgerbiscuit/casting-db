@@ -66,7 +66,8 @@ export default function ProductionContactsPage() {
       filtered = filtered.filter(c => 
         c.agency_name.toLowerCase().includes(q) ||
         (c.agent_name && c.agent_name.toLowerCase().includes(q)) ||
-        (c.email && c.email.toLowerCase().includes(q))
+        (c.email && c.email.toLowerCase().includes(q)) ||
+        (c.board && c.board.toLowerCase().includes(q))
       )
     }
     
