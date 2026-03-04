@@ -131,9 +131,14 @@ export default function ResourcesPage() {
               </div>
             ) : activeTemplate ? (
               <div className="relative">
-                <pre className="bg-neutral-50 border border-neutral-200 p-4 text-xs leading-relaxed whitespace-pre-wrap font-sans text-neutral-700 min-h-48">
-                  {activeTemplate.body}
-                </pre>
+                <div className="bg-neutral-50 border border-neutral-200 p-4 text-xs leading-relaxed font-sans text-neutral-700 min-h-48 space-y-2">
+                  {activeTemplate.body.split('\n').map((line: string, i: number) => {
+                    const imgMatch = line.match(/!\[([^\]]*)\]\(([^)]+)\)/)
+                    if (imgMatch) return <img key={i} src={imgMatch[2]} alt={imgMatch[1]} className="max-w-full rounded my-2 border border-neutral-200" style={{maxHeight: 320}} />
+                    if (line.trim() === '---') return <hr key={i} className="border-neutral-200 my-2" />
+                    return <div key={i} className="whitespace-pre-wrap">{line}</div>
+                  })}
+                </div>
                 <div className="absolute top-3 right-3 flex gap-2">
                   <button onClick={() => startEdit(activeTemplate)}
                     className="text-[10px] tracking-widest uppercase px-3 py-1 border bg-white border-neutral-300 hover:border-black transition-colors">
