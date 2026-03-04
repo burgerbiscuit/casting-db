@@ -13,12 +13,15 @@ const baseNav = [
   { href: '/admin/models', label: 'Models', icon: Users },
   { href: '/admin/clients', label: 'Clients', icon: UserCheck },
   { href: '/admin/agencies/contacts', label: 'Model Agencies', icon: Building2 },
-  { href: '/admin/agencies/production', label: 'Production', icon: Clapperboard },
-  { href: '/admin/billing', label: 'Billing', icon: BarChart3 },
   { href: '/admin/calendar', label: 'Calendar', icon: CalendarDays },
   { href: '/admin/reviews', label: 'Reviews', icon: ClipboardList },
   { href: '/admin/resources', label: 'Resources', icon: BookOpen },
   { href: '/admin/team', label: 'Team', icon: Settings },
+]
+
+const tashaOnlyNav = [
+  { href: '/admin/agencies/production', label: 'Production', icon: Clapperboard },
+  { href: '/admin/billing', label: 'Billing', icon: BarChart3 },
 ]
 
 
@@ -43,7 +46,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     router.push('/admin/login')
   }
 
-  const nav = baseNav
+  const nav = isTasha ? [...baseNav, ...tashaOnlyNav] : baseNav
 
   const NavLinks = () => (
     <>

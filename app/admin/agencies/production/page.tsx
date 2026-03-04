@@ -1,5 +1,8 @@
 'use client'
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+
+const TASHA_USER_ID = '328944d5-bf72-424d-874b-8f21b363464a'
 import { createClient } from '@/lib/supabase/client'
 import { Search, Mail, X } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
@@ -7,6 +10,14 @@ import { ContactEditModal } from '@/components/ContactEditModal'
 
 export default function ProductionContactsPage() {
   const supabase = createClient()
+  const router = useRouter()
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user || user.id !== TASHA_USER_ID) router.replace('/admin')
+    })
+  }, [])
+
   const [contacts, setContacts] = useState<any[]>([])
   const [allContacts, setAllContacts] = useState<any[]>([])
   const [search, setSearch] = useState('')

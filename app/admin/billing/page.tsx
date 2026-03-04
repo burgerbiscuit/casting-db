@@ -1,11 +1,22 @@
 'use client'
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+
+const TASHA_USER_ID = '328944d5-bf72-424d-874b-8f21b363464a'
 import { createClient } from '@/lib/supabase/client'
 import { Plus, Download } from 'lucide-react'
 import Link from 'next/link'
 
 export default function BillingPage() {
   const supabase = createClient()
+  const router = useRouter()
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user || user.id !== TASHA_USER_ID) router.replace('/admin')
+    })
+  }, [])
+
   const [tab, setTab] = useState<'invoices' | 'estimates'>('invoices')
   const [invoices, setInvoices] = useState<any[]>([])
   const [estimates, setEstimates] = useState<any[]>([])
