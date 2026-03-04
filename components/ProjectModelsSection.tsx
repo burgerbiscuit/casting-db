@@ -178,13 +178,20 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
     }
   }
 
-  const officialConfirm = async (modelId: string) => {
+  const toggleConfirmed = async (modelId: string) => {
     const next = !adminConfirmed[modelId]
     setAdminConfirmed(r => ({ ...r, [modelId]: next }))
-    setShortlistStatus(r => ({ ...r, [modelId]: next ? 'confirmed' : 'pending_confirmation' }))
-    // Only update project_models — never touch client_shortlists from admin side
-    await supabase.from('project_models').update({ admin_confirmed: next, status: next ? 'confirmed' : 'pending' })
+    // Update project_models
+    await supabase.from('project_models')
+      .update({ admin_confirmed: next, status: next ? 'confirmed' : 'pending' })
       .eq('project_id', projectId).eq('model_id', modelId)
+    // Sync presentation visibility — IN = visible to client, OUT = hidden
+    if (mainPres?.id && presModels[modelId]) {
+      await supabase.from('presentation_models')
+        .update({ is_visible: next })
+        .eq('presentation_id', mainPres.id).eq('model_id', modelId)
+      setPresModels(prev => ({ ...prev, [modelId]: { ...prev[modelId], is_visible: next } }))
+    }
   }
 
   const setClientStatus = async (modelId: string, newStatus: string | null) => {
@@ -274,15 +281,18 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
     setPresModelIds(prev => { const s = new Set(prev); s.delete(modelId); return s })
   }
 
-  // Sort: confirmed → shortlisted → other
-  // ------ UI ------
-  const sorted = [...models].sort((a, b) => {
-    const as = STATUS_ORDER[shortlistStatus[a.models?.id] || 'none']
-    const bs = STATUS_ORDER[shortlistStatus[b.models?.id] || 'none']
-    return as - bs
-  })
+  // Sort: IN (admin_confirmed) first, then by shortlist status, OUT last — alphabetical within each group
+  const alphaSort = (a: any, b: any) => {
+    const aName = ((a.models?.last_name || '') + (a.models?.first_name || '')).toLowerCase()
+    const bName = ((b.models?.last_name || '') + (b.models?.first_name || '')).toLowerCase()
+    return aName.localeCompare(bName)
+  }
 
-  // Group for list view
+  const inModels = [...models].filter(pm => adminConfirmed[pm.models?.id]).sort(alphaSort)
+  const outModels = [...models].filter(pm => !adminConfirmed[pm.models?.id]).sort(alphaSort)
+  const sorted = [...inModels, ...outModels]
+
+  // Group for list view (legacy, kept for grid view)
   const confirmed = sorted.filter(pm => adminConfirmed[pm.models?.id])
   const pending = sorted.filter(pm => !adminConfirmed[pm.models?.id] && shortlistStatus[pm.models?.id] === 'pending_confirmation')
   const shortlisted = sorted.filter(pm => shortlistStatus[pm.models?.id] === 'shortlisted')
@@ -314,24 +324,34 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
             : <div className="w-8 h-10 bg-neutral-100 flex items-center justify-center text-neutral-300 text-[9px]">{getInitials(model)}</div>}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <p className="text-xs font-medium">{model?.first_name} {model?.last_name}</p>
-              {/* Admin action: only officially confirm */}
-              {adminConfirmed[mid] ? (
-                <span className="text-[8px] tracking-widest uppercase px-1.5 py-0.5 bg-green-600 text-white">✓ Confirmed</span>
-              ) : status === 'pending_confirmation' ? (
-                <>
-                  <span className={`text-[8px] tracking-widest uppercase px-1.5 py-0.5 ${STATUS_COLOR['pending_confirmation']}`}>Confirmation Requested</span>
-                  <button onClick={() => officialConfirm(mid)}
-                    className="text-[8px] tracking-widest uppercase px-2 py-0.5 border border-green-500 text-green-600 hover:bg-green-600 hover:text-white transition-colors">
-                    ✓ Officially Confirm
-                  </button>
-                </>
-              ) : status ? (
-                <span className={`text-[8px] tracking-widest uppercase px-1.5 py-0.5 ${STATUS_COLOR[status] || 'bg-neutral-100 text-neutral-500'}`}>{STATUS_LABEL[status]}</span>
-              ) : null}
+              <p className={`text-xs font-medium ${!adminConfirmed[mid] ? 'text-neutral-400' : ''}`}>
+                {model?.first_name} {model?.last_name}
+              </p>
+              {/* Client shortlist status badge (read-only) */}
+              {status === 'pending_confirmation' && (
+                <span className={`text-[8px] tracking-widest uppercase px-1.5 py-0.5 ${STATUS_COLOR['pending_confirmation']}`}>
+                  Confirmation Requested
+                </span>
+              )}
+              {status === 'shortlisted' && (
+                <span className={`text-[8px] tracking-widest uppercase px-1.5 py-0.5 ${STATUS_COLOR['shortlisted']}`}>
+                  Shortlisted
+                </span>
+              )}
             </div>
             {model?.agency && <p className="text-[10px] text-neutral-400">{model?.agency}</p>}
           </div>
+          {/* IN / OUT toggle */}
+          <button
+            onClick={() => toggleConfirmed(mid)}
+            title={adminConfirmed[mid] ? 'Mark as OUT (hide from client)' : 'Mark as IN (show to client)'}
+            className={`flex-shrink-0 text-[8px] tracking-widest uppercase px-2 py-1 border transition-colors ${
+              adminConfirmed[mid]
+                ? 'bg-green-600 text-white border-green-600 hover:bg-red-500 hover:border-red-500'
+                : 'border-neutral-300 text-neutral-400 hover:border-green-500 hover:text-green-600'
+            }`}>
+            {adminConfirmed[mid] ? 'IN ✓' : 'OUT'}
+          </button>
           <button onClick={() => setExpanded(!expanded)} className="text-[10px] text-neutral-300 hover:text-black transition-colors px-2">
             {expanded ? '▲' : '▼'}
           </button>
