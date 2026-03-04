@@ -170,6 +170,30 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
       .eq('model_id', modelId)
   }
 
+  const setClientStatus = async (modelId: string, newStatus: string | null) => {
+    setShortlistStatus(r => {
+      const next = { ...r }
+      if (newStatus) next[modelId] = newStatus
+      else delete next[modelId]
+      return next
+    })
+    // If clearing status, remove from client_shortlists
+    if (!newStatus) {
+      await supabase.from('client_shortlists').delete().eq('model_id', modelId)
+      return
+    }
+    // Upsert client_shortlists
+    const { data: existing } = await supabase.from('client_shortlists').select('id').eq('model_id', modelId).maybeSingle()
+    if (existing) {
+      await supabase.from('client_shortlists').update({ status: newStatus }).eq('model_id', modelId)
+    } else {
+      // Find presentation_model_id
+      const { data: pm } = await supabase.from('presentation_models')
+        .select('id').eq('model_id', modelId).maybeSingle()
+      await supabase.from('client_shortlists').insert({ model_id: modelId, status: newStatus, presentation_model_id: pm?.id || null })
+    }
+  }
+
   const [models, setModels] = useState(modelsWithPhotos)
   const [addSearch, setAddSearch] = useState('')
   const [showNewModel, setShowNewModel] = useState(false)
@@ -274,13 +298,29 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
               <p className="text-xs font-medium">{model?.first_name} {model?.last_name}</p>
-              {status && <span className={`text-[8px] tracking-widest uppercase px-1.5 py-0.5 ${STATUS_COLOR[status]}`}>{STATUS_LABEL[status]}</span>}
+              {/* Client-side status actions */}
               {adminConfirmed[mid] ? (
-                <span className="text-[8px] tracking-widest uppercase px-1.5 py-0.5 bg-green-600 text-white ml-1">✓ Confirmed</span>
-              ) : status === 'pending_confirmation' && (
-                <button onClick={() => officialConfirm(mid)}
-                  className="text-[8px] tracking-widest uppercase px-2 py-0.5 border border-green-500 text-green-600 hover:bg-green-600 hover:text-white transition-colors ml-1">
-                  ✓ Officially Confirm
+                <span className="text-[8px] tracking-widest uppercase px-1.5 py-0.5 bg-green-600 text-white">✓ Confirmed</span>
+              ) : status === 'pending_confirmation' ? (
+                <>
+                  <span className={`text-[8px] tracking-widest uppercase px-1.5 py-0.5 ${STATUS_COLOR['pending_confirmation']}`}>Confirmation Requested</span>
+                  <button onClick={() => officialConfirm(mid)}
+                    className="text-[8px] tracking-widest uppercase px-2 py-0.5 border border-green-500 text-green-600 hover:bg-green-600 hover:text-white transition-colors">
+                    ✓ Officially Confirm
+                  </button>
+                </>
+              ) : status === 'shortlisted' ? (
+                <>
+                  <span className={`text-[8px] tracking-widest uppercase px-1.5 py-0.5 ${STATUS_COLOR['shortlisted']}`}>Shortlisted</span>
+                  <button onClick={() => setClientStatus(mid, 'pending_confirmation')}
+                    className="text-[8px] tracking-widest uppercase px-2 py-0.5 border border-amber-400 text-amber-600 hover:bg-amber-400 hover:text-white transition-colors">
+                    Request Confirmation
+                  </button>
+                </>
+              ) : (
+                <button onClick={() => setClientStatus(mid, 'shortlisted')}
+                  className="text-[8px] tracking-widest uppercase px-2 py-0.5 border border-neutral-300 text-neutral-400 hover:border-black hover:text-black transition-colors">
+                  + Shortlist
                 </button>
               )}
             </div>
