@@ -78,13 +78,15 @@ export default async function AdminConfirmationChartPage({ params }: { params: {
       photo: photoMap[model?.id] || null,
       agentName: agent?.agent_name || '',
       agentEmail: agent?.email || '',
-      agentPhone: agent?.cell_phone || agent?.office_phone || '',
+      agentPhone: agent?.cell_phone || '',
+      agentOffice: agent?.office_phone || '',
       pmRate: pm.pm_rate || '',
       pmOption: pm.pm_option || '',
       confirmedDate: pm.confirmed_date || '',
       confirmedUsage: pm.confirmed_usage || '',
       confirmedDays: pm.confirmed_days || '',
       confirmedNotes: pm.confirmed_notes || '',
+      w9Status: pm.w9_status || '',
     }
   })
 
@@ -96,6 +98,7 @@ export default async function AdminConfirmationChartPage({ params }: { params: {
     usage: project.usage || '',
     photographer: project.photographer || '',
     stylist: project.stylist || '',
+    location: (project as any).location || '',
   }
 
   return (

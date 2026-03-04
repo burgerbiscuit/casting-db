@@ -7,14 +7,13 @@ export default async function ConfirmationChartPage({ params }: { params: { id: 
   const { id } = params
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-
   if (!user) redirect('/client/login')
 
   const serviceSupabase = await createServiceClient()
 
   const { data: presentation } = await serviceSupabase
     .from('presentations')
-    .select('*, projects(id, name, shoot_date, photographer, stylist, usage, model_rate)')
+    .select('*, projects(id, name, shoot_date, photographer, stylist, usage, model_rate, location)')
     .eq('id', id)
     .single()
 
@@ -22,181 +21,220 @@ export default async function ConfirmationChartPage({ params }: { params: { id: 
 
   const project = presentation.projects as any
 
-  // Access check: team member OR has client_projects access
+  // Access check
   const { data: member } = await serviceSupabase.from('team_members').select('id').eq('user_id', user.id).single()
   if (!member) {
     const { data: access } = await serviceSupabase
-      .from('client_projects')
-      .select('id')
-      .eq('client_id', user.id)
-      .eq('project_id', project.id)
-      .single()
+      .from('client_projects').select('id')
+      .eq('client_id', user.id).eq('project_id', project.id).single()
     if (!access) redirect('/client')
   }
 
-  // Fetch confirmed models (admin_confirmed = true) for this project
+  // Confirmed models
   const { data: projectModels } = await serviceSupabase
     .from('project_models')
-    .select('*, models(id, first_name, last_name, agency, height_ft, height_in, bust, waist, hips, shoe_size)')
+    .select('*, models(id, first_name, last_name, agency, height_ft, height_in, bust, waist, hips, shoe_size, dress_size)')
     .eq('project_id', project.id)
     .eq('admin_confirmed', true)
-    .order('confirmed_date')
 
   const confirmed = projectModels || []
   const modelIds = confirmed.map((pm: any) => pm.models?.id).filter(Boolean)
 
   const { data: photos } = modelIds.length > 0 ? await serviceSupabase
-    .from('model_media')
-    .select('model_id, public_url')
-    .in('model_id', modelIds)
-    .eq('is_visible', true)
-    .eq('type', 'photo')
-    .order('display_order') : { data: [] }
+    .from('model_media').select('model_id, public_url')
+    .in('model_id', modelIds).eq('is_visible', true).eq('type', 'photo').order('display_order') : { data: [] }
+  const photoMap: Record<string, string> = {}
+  ;(photos || []).forEach((p: any) => { if (!photoMap[p.model_id]) photoMap[p.model_id] = p.public_url })
 
-  const photoMap = new Map<string, string>()
-  ;(photos || []).forEach((p: any) => { if (!photoMap.has(p.model_id)) photoMap.set(p.model_id, p.public_url) })
+  // Agent contacts
+  const agencies = [...new Set(confirmed.map((pm: any) => pm.models?.agency).filter(Boolean))] as string[]
+  const { data: agentContacts } = agencies.length > 0 ? await serviceSupabase
+    .from('agency_contacts').select('agency_name, agent_name, email, cell_phone, office_phone, is_main_contact')
+    .in('agency_name', agencies).eq('contact_type', 'model')
+    .order('is_main_contact', { ascending: false }) : { data: [] }
+  const agentMap: Record<string, any> = {}
+  ;(agentContacts || []).forEach((ac: any) => {
+    const key = (ac.agency_name || '').toLowerCase()
+    if (!agentMap[key] || ac.is_main_contact) agentMap[key] = ac
+  })
 
   const shootDate = project.shoot_date
-    ? new Date(project.shoot_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+    ? new Date(project.shoot_date + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
     : null
 
+  const projectLabel = [project.name, shootDate, project.location].filter(Boolean).join(' / ').toUpperCase()
+
   return (
-    <div className="max-w-5xl mx-auto">
-      {/* Header */}
-      <div className="mb-10 print:mb-6">
-        <Link href="/client" className="text-[11px] tracking-widest uppercase text-neutral-400 hover:text-black print:hidden">
-          ← Projects
-        </Link>
-        <div className="mt-4 flex items-end justify-between gap-4">
-          <div>
-            <p className="text-[11px] tracking-widest uppercase text-neutral-400 mb-1">{project.name}</p>
-            <h1 className="text-2xl font-light tracking-widest uppercase">Confirmation Chart</h1>
-            {shootDate && <p className="text-sm text-neutral-400 mt-1">{shootDate}</p>}
-          </div>
-          <div className="flex items-center gap-3 print:hidden">
-            <Link href={`/client/presentations/${id}`}
-              className="text-[11px] tracking-widest uppercase text-neutral-400 hover:text-black">
-              ← Presentation
-            </Link>
-            <PrintButton />
+    <>
+      {/* Print styles */}
+      <style>{`
+        @media print {
+          @page { size: landscape; margin: 0.5in; }
+          .no-print { display: none !important; }
+          body { font-size: 10px; }
+          table { page-break-inside: auto; }
+          tr { page-break-inside: avoid; }
+        }
+      `}</style>
+
+      <div className="max-w-[1400px] mx-auto">
+        {/* Nav */}
+        <div className="no-print flex items-center justify-between mb-6">
+          <Link href="/client" className="text-[11px] tracking-widest uppercase text-neutral-400 hover:text-black">← Projects</Link>
+          <div className="flex items-center gap-3">
+            <Link href={`/client/presentations/${id}`} className="text-[11px] tracking-widest uppercase text-neutral-400 hover:text-black">← Presentation</Link>
+            <PrintButton label="Print / Save PDF" />
           </div>
         </div>
 
-        {/* Project specs row */}
-        {(project.photographer || project.stylist || project.usage || project.model_rate) && (
-          <div className="mt-5 pt-5 border-t border-neutral-100 flex flex-wrap gap-6">
-            {project.photographer && (
-              <div>
-                <p className="text-[9px] tracking-widest uppercase text-neutral-400">Photographer</p>
-                <p className="text-xs mt-0.5">{project.photographer}</p>
-              </div>
-            )}
-            {project.stylist && (
-              <div>
-                <p className="text-[9px] tracking-widest uppercase text-neutral-400">Stylist</p>
-                <p className="text-xs mt-0.5">{project.stylist}</p>
-              </div>
-            )}
-            {project.usage && (
-              <div>
-                <p className="text-[9px] tracking-widest uppercase text-neutral-400">Usage</p>
-                <p className="text-xs mt-0.5">{project.usage}</p>
-              </div>
-            )}
-            {project.model_rate && (
-              <div>
-                <p className="text-[9px] tracking-widest uppercase text-neutral-400">Rate</p>
-                <p className="text-xs mt-0.5">{project.model_rate}</p>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+        {/* Table */}
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse text-[11px]" style={{ minWidth: 900 }}>
+            {/* Project header */}
+            <thead>
+              <tr>
+                <td colSpan={9} className="border border-neutral-800 bg-neutral-900 text-white text-center py-2.5 px-4 tracking-widest uppercase text-[11px] font-semibold">
+                  {projectLabel}
+                </td>
+              </tr>
+              <tr className="bg-neutral-100">
+                {['PHOTO', 'NAME', 'CONTACT', 'USAGE', 'RATE', 'DATE', 'SIZE', 'ADDITIONAL USAGE', 'W-9'].map(col => (
+                  <th key={col} className="border border-neutral-300 px-2 py-2 text-[9px] tracking-widest uppercase font-semibold text-neutral-600 text-center whitespace-nowrap">
+                    {col}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {confirmed.length === 0 && (
+                <tr>
+                  <td colSpan={9} className="border border-neutral-200 text-center py-8 text-neutral-400 text-xs tracking-widest uppercase">
+                    No confirmed talent yet
+                  </td>
+                </tr>
+              )}
+              {confirmed.map((pm: any) => {
+                const model = pm.models
+                const photo = photoMap[model?.id]
+                const agent = agentMap[(model?.agency || '').toLowerCase()]
 
-      {/* Confirmed count */}
-      {confirmed.length > 0 && (
-        <p className="text-[11px] tracking-widest uppercase text-neutral-400 mb-5">
-          {confirmed.length} Confirmed Talent
-        </p>
-      )}
+                const heightFt = model?.height_ft
+                const heightIn = model?.height_in ?? 0
+                const height = heightFt ? `${heightFt}'${heightIn}"` : null
+                const sizing = [
+                  height ? `Height: ${height}` : null,
+                  model?.bust ? `Bust: ${model.bust}` : null,
+                  model?.waist ? `Waist: ${model.waist}` : null,
+                  model?.hips ? `Hips: ${model.hips}` : null,
+                  model?.shoe_size ? `Shoe: ${model.shoe_size}` : null,
+                  model?.dress_size ? `Dress: ${model.dress_size}` : null,
+                ].filter(Boolean)
 
-      {/* Model grid */}
-      {confirmed.length === 0 ? (
-        <div className="border border-dashed border-neutral-200 p-12 text-center">
-          <p className="text-xs tracking-widest uppercase text-neutral-300">No confirmed talent yet</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-          {confirmed.map((pm: any) => {
-            const model = pm.models
-            const photo = photoMap.get(model?.id)
-            const heightFt = model?.height_ft
-            const heightIn = model?.height_in ?? 0
-            const height = heightFt ? `${heightFt}'${heightIn}"` : null
-            const sizing = [model?.bust, model?.waist, model?.hips].filter(Boolean).join(' / ')
+                const displayDate = pm.confirmed_date || shootDate
+                const displayRate = pm.pm_rate || project.model_rate
+                const displayUsage = pm.confirmed_usage || project.usage
 
-            return (
-              <div key={pm.id} className="border border-neutral-100">
-                {/* Photo */}
-                <div className="aspect-[3/4] bg-neutral-50 relative overflow-hidden">
-                  {photo ? (
-                    <img
-                      src={photo}
-                      alt={`${model?.first_name} ${model?.last_name}`}
-                      className="w-full h-full object-cover object-top"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <span className="text-[10px] tracking-widest uppercase text-neutral-300">No Photo</span>
-                    </div>
-                  )}
-                  <div className="absolute top-2 left-2 bg-green-600 text-white text-[8px] tracking-widest uppercase px-1.5 py-0.5">
-                    ✓ Confirmed
-                  </div>
-                </div>
+                return (
+                  <tr key={pm.id} className="border-b border-neutral-200 align-top">
+                    {/* Photo */}
+                    <td className="border border-neutral-200 p-1.5 w-16" style={{ width: 60 }}>
+                      <div className="w-14 h-[72px] bg-neutral-100 overflow-hidden">
+                        {photo ? (
+                          <img src={photo} alt={`${model?.first_name} ${model?.last_name}`}
+                            className="w-full h-full object-cover object-top" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-neutral-300 text-[8px]">—</div>
+                        )}
+                      </div>
+                    </td>
 
-                {/* Details */}
-                <div className="p-3 space-y-0.5">
-                  <p className="text-xs font-medium tracking-wide">
-                    {model?.first_name} {model?.last_name}
-                  </p>
-                  {model?.agency && (
-                    <p className="text-[10px] text-neutral-500">{model.agency}</p>
-                  )}
-                  {height && (
-                    <p className="text-[10px] text-neutral-400 mt-1">{height}</p>
-                  )}
-                  {sizing && (
-                    <p className="text-[10px] text-neutral-400">{sizing}</p>
-                  )}
-                  {(pm.pm_option || pm.pm_rate || pm.confirmed_date || pm.confirmed_usage || pm.confirmed_notes) && (
-                    <div className="mt-1.5 pt-1.5 border-t border-neutral-100 space-y-0.5">
-                      {pm.pm_option && <p className="text-[10px] text-neutral-500">{pm.pm_option}</p>}
-                      {pm.pm_rate && <p className="text-[10px] text-neutral-500">{pm.pm_rate}</p>}
-                      {pm.confirmed_date && <p className="text-[10px] text-neutral-400">{pm.confirmed_date}</p>}
-                      {pm.confirmed_usage && <p className="text-[10px] text-neutral-400">{pm.confirmed_usage}</p>}
-                      {pm.confirmed_notes && (
-                        <p className="text-[10px] text-neutral-400 italic mt-1">{pm.confirmed_notes}</p>
+                    {/* Name */}
+                    <td className="border border-neutral-200 px-3 py-2.5 text-center align-middle" style={{ width: 80 }}>
+                      <p className="text-[11px] tracking-wide text-neutral-800 underline font-medium">
+                        {model?.first_name?.toUpperCase()}
+                        {model?.last_name ? <><br />{model.last_name.toUpperCase()}</> : null}
+                      </p>
+                    </td>
+
+                    {/* Contact */}
+                    <td className="border border-neutral-200 px-3 py-2.5" style={{ width: 160 }}>
+                      {model?.agency && (
+                        <p className="font-bold tracking-wide text-[11px] uppercase">{model.agency}</p>
                       )}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      )}
+                      {agent?.agent_name && (
+                        <p className="text-[11px] mt-0.5">{agent.agent_name}</p>
+                      )}
+                      {agent?.email && (
+                        <p className="text-[10px] text-neutral-600">{agent.email}</p>
+                      )}
+                      {agent?.cell_phone && (
+                        <p className="text-[10px] text-neutral-600">C: {agent.cell_phone}</p>
+                      )}
+                      {agent?.office_phone && (
+                        <p className="text-[10px] text-neutral-600">O: {agent.office_phone}</p>
+                      )}
+                      {!agent && !model?.agency && (
+                        <p className="text-neutral-300 text-[10px]">—</p>
+                      )}
+                    </td>
 
-      {/* Footer */}
-      <div className="mt-16 pt-8 border-t border-neutral-100 text-center">
-        <p className="text-xs text-neutral-300 tracking-wider">
-          Tasha Tongpreecha Casting &middot;{' '}
-          <a href="https://www.tashatongpreecha.com" target="_blank" rel="noopener noreferrer"
-            className="hover:text-neutral-400 transition-colors">
-            tashatongpreecha.com
-          </a>
-        </p>
+                    {/* Usage */}
+                    <td className="border border-neutral-200 px-3 py-2.5 text-center align-middle" style={{ width: 110 }}>
+                      <p className="text-[11px]">{displayUsage || '—'}</p>
+                    </td>
+
+                    {/* Rate */}
+                    <td className="border border-neutral-200 px-3 py-2.5 text-center align-middle font-medium" style={{ width: 110 }}>
+                      <p className="text-[11px]">{displayRate || '—'}</p>
+                    </td>
+
+                    {/* Date */}
+                    <td className="border border-neutral-200 px-3 py-2.5 text-center align-middle" style={{ width: 80 }}>
+                      <p className="text-[11px]">{displayDate || '—'}</p>
+                    </td>
+
+                    {/* Size */}
+                    <td className="border border-neutral-200 px-3 py-2.5 align-top" style={{ width: 110 }}>
+                      {sizing.length > 0 ? (
+                        <div className="space-y-0.5">
+                          {sizing.map((s, i) => (
+                            <p key={i} className="text-[10px] text-neutral-700">{s}</p>
+                          ))}
+                        </div>
+                      ) : <p className="text-neutral-300 text-[10px]">—</p>}
+                    </td>
+
+                    {/* Additional Usage / Notes */}
+                    <td className="border border-neutral-200 px-3 py-2.5 align-top" style={{ width: 200 }}>
+                      <p className="text-[10px] text-neutral-700 whitespace-pre-line">{pm.confirmed_notes || '—'}</p>
+                    </td>
+
+                    {/* W-9 */}
+                    <td className="border border-neutral-200 px-3 py-2.5 text-center align-middle" style={{ width: 70 }}>
+                      {pm.w9_status ? (
+                        <p className={`text-[10px] tracking-widest uppercase font-semibold ${pm.w9_status === 'RECEIVED' ? 'text-green-700' : 'text-neutral-500'}`}>
+                          {pm.w9_status}
+                        </p>
+                      ) : (
+                        <p className="text-neutral-300 text-[10px]">—</p>
+                      )}
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Footer */}
+        <div className="no-print mt-12 pt-6 border-t border-neutral-100 text-center">
+          <p className="text-xs text-neutral-300 tracking-wider">
+            Tasha Tongpreecha Casting &middot;{' '}
+            <a href="https://www.tashatongpreecha.com" target="_blank" rel="noopener noreferrer"
+              className="hover:text-neutral-400 transition-colors">tashatongpreecha.com</a>
+          </p>
+        </div>
       </div>
-    </div>
+    </>
   )
 }
