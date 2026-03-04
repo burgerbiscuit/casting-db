@@ -14,9 +14,11 @@ function escape(str: string): string {
   return (str || '').replace(/[\\;,]/g, c => '\\' + c).replace(/\n/g, '\\n')
 }
 
+const VALID_TOKEN = process.env.CALENDAR_SECRET || 'tasha-casting-cal-2024'
+
 export async function GET(req: NextRequest) {
   const token = req.nextUrl.searchParams.get('token')
-  if (token !== process.env.CALENDAR_SECRET) {
+  if (token !== VALID_TOKEN) {
     return new NextResponse('Unauthorized', { status: 401 })
   }
 
@@ -31,6 +33,10 @@ export async function GET(req: NextRequest) {
     .select('id, title, deadline, assigned_to_name')
     .eq('status', 'open')
     .not('deadline', 'is', null)
+
+  const { data: customEvents } = await supabase
+    .from('calendar_events')
+    .select('id, title, date, type, notes')
 
   const lines: string[] = [
     'BEGIN:VCALENDAR',
@@ -83,6 +89,22 @@ export async function GET(req: NextRequest) {
       `DTSTART:${start}`,
       `DTEND:${start}`,
       `SUMMARY:${summary}`,
+      'END:VEVENT',
+    )
+  }
+
+  const typeEmoji: Record<string, string> = { shoot: '📸', presentation: '📋', meeting: '🤝', deadline: '⚠️', callback: '📞', fitting: '👗', event: '📅' }
+  for (const e of customEvents || []) {
+    if (!e.date) continue
+    const emoji = typeEmoji[e.type] || '📅'
+    const start = formatICSDate(e.date + 'T09:00:00')
+    lines.push(
+      'BEGIN:VEVENT',
+      `UID:${makeUID('custom', e.id)}`,
+      `DTSTART;VALUE=DATE:${e.date.replace(/-/g, '')}`,
+      `DTEND;VALUE=DATE:${e.date.replace(/-/g, '')}`,
+      `SUMMARY:${escape(emoji + ' ' + e.title)}`,
+      e.notes ? `DESCRIPTION:${escape(e.notes)}` : '',
       'END:VEVENT',
     )
   }
