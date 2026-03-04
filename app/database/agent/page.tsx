@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 
 export default function AgentForm() {
@@ -11,6 +11,48 @@ export default function AgentForm() {
   const [loading, setLoading] = useState(false)
 
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }))
+
+  // Board autocomplete
+  const [boardSuggestions, setBoardSuggestions] = useState<string[]>([])
+  const [showBoardDropdown, setShowBoardDropdown] = useState(false)
+  const [boardInput, setBoardInput] = useState('')
+  const boardRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (boardRef.current && !boardRef.current.contains(e.target as Node)) {
+        setShowBoardDropdown(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
+
+  const fetchBoardSuggestions = async (q: string) => {
+    if (!q.trim()) { setBoardSuggestions([]); return }
+    const res = await fetch(`/api/board-suggestions?q=${encodeURIComponent(q)}`)
+    const data = await res.json()
+    setBoardSuggestions(data)
+    setShowBoardDropdown(data.length > 0)
+  }
+
+  const handleBoardChange = (val: string) => {
+    // Support comma-separated boards; autocomplete the last segment
+    setBoardInput(val)
+    set('boards', val)
+    const lastPart = val.split(',').pop()?.trim() || ''
+    fetchBoardSuggestions(lastPart)
+  }
+
+  const selectBoardSuggestion = (suggestion: string) => {
+    const parts = boardInput.split(',')
+    parts[parts.length - 1] = ' ' + suggestion
+    const newVal = parts.join(',').replace(/^\s*,\s*/, '').trim()
+    setBoardInput(newVal)
+    set('boards', newVal)
+    setBoardSuggestions([])
+    setShowBoardDropdown(false)
+  }
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -100,10 +142,33 @@ export default function AgentForm() {
               className="w-full border-b border-neutral-300 bg-transparent py-2 text-sm focus:outline-none focus:border-black" />
           </div>
 
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1" ref={boardRef}>
             <label className="label">Boards / Divisions</label>
-            <input value={form.boards} placeholder="e.g. Women, Men, New Faces" onChange={e => set('boards', e.target.value)}
-              className="w-full border-b border-neutral-300 bg-transparent py-2 text-sm focus:outline-none focus:border-black" />
+            <div className="relative">
+              <input
+                value={boardInput}
+                placeholder="e.g. Women, Men, New Faces"
+                onChange={e => handleBoardChange(e.target.value)}
+                onFocus={() => boardInput && setShowBoardDropdown(boardSuggestions.length > 0)}
+                autoComplete="off"
+                className="w-full border-b border-neutral-300 bg-transparent py-2 text-sm focus:outline-none focus:border-black"
+              />
+              {showBoardDropdown && boardSuggestions.length > 0 && (
+                <div className="absolute z-20 left-0 right-0 top-full bg-white border border-neutral-200 shadow-sm max-h-52 overflow-y-auto">
+                  {boardSuggestions.map(s => (
+                    <button
+                      key={s}
+                      type="button"
+                      onMouseDown={() => selectBoardSuggestion(s)}
+                      className="w-full text-left px-4 py-2.5 text-sm hover:bg-neutral-50 transition-colors border-b border-neutral-50 last:border-0"
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            <p className="text-[10px] text-neutral-400 mt-1">Separate multiple boards with commas</p>
           </div>
 
           <div className="flex flex-col gap-1">
