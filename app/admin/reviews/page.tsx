@@ -30,13 +30,12 @@ export default function ReviewsPage() {
       const submission = agents.find((a: any) => a.id === id)
       if (submission) {
         await supabase.from('agency_contacts').upsert({
-          first_name: submission.first_name,
-          last_name: submission.last_name,
+          agent_name: `${submission.first_name} ${submission.last_name}`.trim(),
+          agency_name: submission.agency_name,
           email: submission.email,
-          agency: submission.agency_name,
           city: submission.city,
           contact_type: 'model',
-          notes: [submission.boards, submission.notes].filter(Boolean).join(' | ') || null,
+          board: submission.boards || null,
         }, { onConflict: 'email' })
       }
     }
