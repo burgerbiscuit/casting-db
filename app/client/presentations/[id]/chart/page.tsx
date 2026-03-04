@@ -82,15 +82,16 @@ export default async function ConfirmationChartPage({ params }: { params: { id: 
       {/* Print styles */}
       <style>{`
         @media print {
-          @page { size: landscape; margin: 0.5in; }
+          @page { size: landscape; margin: 0; }
           .no-print { display: none !important; }
           body { font-size: 10px; }
           table { page-break-inside: auto; }
           tr { page-break-inside: avoid; }
+          .print-wrap { padding: 10mm 12mm; }
         }
       `}</style>
 
-      <div className="max-w-[1400px] mx-auto">
+      <div className="print-wrap max-w-[1400px] mx-auto">
         {/* Nav */}
         <div className="no-print flex items-center justify-between mb-6">
           <Link href="/client" className="text-[11px] tracking-widest uppercase text-neutral-400 hover:text-black">← Projects</Link>

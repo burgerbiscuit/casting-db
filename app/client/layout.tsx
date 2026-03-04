@@ -12,7 +12,7 @@ export default async function ClientLayout({ children }: { children: React.React
 
   return (
     <div className="min-h-screen bg-white">
-      <header className="border-b border-neutral-100 px-4 md:px-8 py-4 flex items-center justify-between">
+      <header className="print:hidden border-b border-neutral-100 px-4 md:px-8 py-4 flex items-center justify-between">
         <img src="/logo.jpg" alt="Tasha Tongpreecha Casting" className="h-5 w-auto" />
         {isMember && (
           <Link href="/admin" className="text-[10px] tracking-widest uppercase text-neutral-400 hover:text-black transition-colors">
