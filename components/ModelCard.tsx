@@ -94,7 +94,7 @@ export function ModelCard({ presentationModel, model, media, presentationId, cli
         )}
 
         <button
-          onClick={toggleShortlist}
+          onClick={e => { e.stopPropagation(); toggleShortlist() }}
           className={`absolute top-3 right-3 p-2 rounded-full transition-colors ${shortlisted ? 'bg-black text-white' : 'bg-white/80 text-neutral-400 hover:text-black'}`}
         >
           <Heart size={14} fill={shortlisted ? 'white' : 'none'} />
