@@ -17,7 +17,7 @@ interface PresentationModel {
   rate: string
   client_notes: string
   is_visible: boolean
-  models: { first_name: string; last_name: string; agency: string }
+  models: { first_name: string; last_name: string; agency: string; model_media?: { url: string; display_order: number }[] }
 }
 
 interface Props {
@@ -100,9 +100,18 @@ function SortableItem({ item, onRemove, onFieldChange, categories, onCategoryCha
         </button>
         <div className="flex-1">
           <div className="flex items-center justify-between mb-3">
-            <div>
-              <p className="text-sm font-medium">{item.models.first_name} {item.models.last_name}</p>
-              {item.models.agency && <p className="text-xs text-neutral-400">{item.models.agency}</p>}
+            <div className="flex items-center gap-3">
+              {(() => {
+                const sorted = [...(item.models.model_media || [])].sort((a,b) => a.display_order - b.display_order)
+                const photo = sorted[0]?.url
+                return photo
+                  ? <img src={photo} className="w-10 h-12 object-cover object-top flex-shrink-0" alt="" />
+                  : <div className="w-10 h-12 bg-neutral-100 flex-shrink-0" />
+              })()}
+              <div>
+                <p className="text-sm font-medium">{item.models.first_name} {item.models.last_name}</p>
+                {item.models.agency && <p className="text-xs text-neutral-400">{item.models.agency}</p>}
+              </div>
             </div>
             <div className="flex gap-2">
               <button onClick={() => onFieldChange(item.id, 'is_visible', !item.is_visible)} className={item.is_visible ? 'text-black' : 'text-neutral-300'}>

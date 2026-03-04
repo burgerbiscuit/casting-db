@@ -26,7 +26,7 @@ export function ProjectPresentationTab({ projectId, presentationId: initialPresI
   const load = useCallback(async () => {
     if (!presId) return
     const [{ data: pm }, { data: projectModels }, { data: cats }] = await Promise.all([
-      supabase.from('presentation_models').select('*, models(first_name, last_name, agency)').eq('presentation_id', presId).order('display_order'),
+      supabase.from('presentation_models').select('*, models(first_name, last_name, agency, model_media(url, display_order))').eq('presentation_id', presId).order('display_order'),
       supabase.from('project_models').select('models(id, first_name, last_name, agency)').eq('project_id', projectId),
       supabase.from('presentation_categories').select('*').eq('presentation_id', presId).order('display_order'),
     ])
