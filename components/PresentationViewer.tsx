@@ -318,7 +318,7 @@ export function PresentationViewer({
               <div className={`grid gap-3 ${isMobile ? 'grid-cols-2' : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6'}`}>
                 {sorted.filter(pm => shortlists[pm.model_id]).map(pm => (
                   <div key={pm.id} className="relative">
-                    {confirms[pm.model_id] && (
+                    {(confirms[pm.model_id] && pendings[pm.model_id]) && (
                       <div className="absolute top-2 left-2 z-10 bg-black text-white text-[9px] tracking-widest uppercase px-2 py-1">Officially Confirmed</div>
                     )}
                     <ModelCard presentationModel={pm} model={pm.models}
@@ -329,11 +329,11 @@ export function PresentationViewer({
                       onCardClick={() => { setSlideIndex(sorted.findIndex(s => s.model_id === pm.model_id)); setView('slides') }} />
                     <button
                       onClick={() => {
-                        if (confirms[pm.model_id]) { handleConfirm(pm.model_id) }
-                        else setConfirmModal({ modelId: pm.model_id, modelName: `${pm.models?.first_name} ${pm.models?.last_name}` })
+                        if (confirms[pm.model_id] && pendings[pm.model_id]) return // already confirmed + requested
+                        if (!pendings[pm.model_id]) setConfirmModal({ modelId: pm.model_id, modelName: `${pm.models?.first_name} ${pm.models?.last_name}` })
                       }}
-                      className={`w-full mt-1 py-1.5 text-[9px] tracking-widest uppercase transition-colors border ${confirms[pm.model_id] ? 'bg-green-600 text-white border-green-600' : pendings[pm.model_id] ? 'bg-amber-400 text-white border-amber-400 cursor-default' : 'border-neutral-200 hover:border-black text-neutral-400 hover:text-black'}`}>
-                      {confirms[pm.model_id] ? '✓ Officially Confirmed' : pendings[pm.model_id] ? 'Confirmation Pending' : 'Request Confirmation'}
+                      className={`w-full mt-1 py-1.5 text-[9px] tracking-widest uppercase transition-colors border ${(confirms[pm.model_id] && pendings[pm.model_id]) ? 'bg-green-600 text-white border-green-600' : pendings[pm.model_id] ? 'bg-amber-400 text-white border-amber-400 cursor-default' : 'border-neutral-200 hover:border-black text-neutral-400 hover:text-black'}`}>
+                      {(confirms[pm.model_id] && pendings[pm.model_id]) ? '✓ Officially Confirmed' : pendings[pm.model_id] ? 'Confirmation Pending' : 'Request Confirmation'}
                     </button>
                   </div>
                 ))}
@@ -356,8 +356,8 @@ export function PresentationViewer({
                   onCardClick={() => { setSlideIndex(sorted.findIndex(s => s.model_id === pm.model_id)); setView('slides') }} />
                 <button
                   onClick={() => {
-                    if (confirms[pm.model_id]) { handleConfirm(pm.model_id) }
-                    else setConfirmModal({ modelId: pm.model_id, modelName: `${pm.models?.first_name} ${pm.models?.last_name}` })
+                    if (confirms[pm.model_id] && pendings[pm.model_id]) return
+                    if (!pendings[pm.model_id]) setConfirmModal({ modelId: pm.model_id, modelName: `${pm.models?.first_name} ${pm.models?.last_name}` })
                   }}
                   className={`w-full mt-1 py-1.5 text-[9px] tracking-widest uppercase transition-colors border ${confirms[pm.model_id] ? 'bg-green-600 text-white border-green-600' : pendings[pm.model_id] ? 'bg-amber-400 text-white border-amber-400 cursor-default' : 'border-neutral-200 hover:border-black text-neutral-400 hover:text-black'}`}>
                   {confirms[pm.model_id] ? '✓ Officially Confirmed' : pendings[pm.model_id] ? 'Confirmation Pending' : 'Request Confirmation'}
