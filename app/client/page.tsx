@@ -1,159 +1,100 @@
 import { createClient, createServiceClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
 import Link from 'next/link'
 
-export default async function ClientDashboard() {
+export default async function ClientPortalLanding() {
   const supabase = await createClient()
   const serviceSupabase = await createServiceClient()
   const { data: { user } } = await supabase.auth.getUser()
-  const { data: isMember } = await serviceSupabase.from('team_members').select('id').eq('user_id', user?.id).single()
 
-  const { data: clientProfile } = await serviceSupabase.from('client_profiles').select('name').eq('user_id', user?.id).single()
-  const firstName = isMember ? '' : ((clientProfile?.name || '').split(' ')[0] || '')
+  let isMember = false
+  let clientProjectIds: string[] = []
 
-  type ProjectEntry = {
-    project: any
-    presentations: any[]
-    hasConfirmed: boolean
-    chartApproved: boolean
-    mainPresId: string | null
+  if (user) {
+    const { data: member } = await serviceSupabase
+      .from('team_members').select('id').eq('user_id', user.id).single()
+    isMember = !!member
+
+    if (!isMember) {
+      // Client: get their assigned projects
+      const { data: cp } = await serviceSupabase
+        .from('client_projects').select('project_id').eq('client_id', user.id)
+      clientProjectIds = (cp || []).map((r: any) => r.project_id)
+
+      // If client has exactly one project, go straight there
+      if (clientProjectIds.length === 1) {
+        redirect(`/client/${clientProjectIds[0]}`)
+      }
+    }
   }
 
-  let activeProjects: ProjectEntry[] = []
-  let archivedProjects: ProjectEntry[] = []
+  // Fetch active projects
+  const { data: projects } = await serviceSupabase
+    .from('projects')
+    .select('id, name, shoot_date, status')
+    .eq('status', 'active')
+    .order('created_at', { ascending: false })
 
-  const buildEntries = async (rawProjects: any[], isTeam: boolean): Promise<ProjectEntry[]> => {
-    const projectIds = rawProjects.map((p: any) => p.id)
-    // Fetch which projects have at least one admin_confirmed model
-    const { data: confirmedPms } = projectIds.length > 0
-      ? await serviceSupabase
-          .from('project_models')
-          .select('project_id')
-          .in('project_id', projectIds)
-          .eq('admin_confirmed', true)
-      : { data: [] }
-    const confirmedSet = new Set((confirmedPms || []).map((pm: any) => pm.project_id))
-
-    return rawProjects
-      .filter((p: any) => ((p as any).presentations || []).length > 0)
-      .map((p: any) => {
-        const pres = (p as any).presentations || []
-        const mainPres = pres[0]
-        // Chart is visible to clients only if approved (team can always see it)
-        const chartApproved = isTeam ? confirmedSet.has(p.id) : (mainPres?.chart_approved === true && confirmedSet.has(p.id))
-        return {
-          project: p,
-          presentations: pres,
-          hasConfirmed: confirmedSet.has(p.id),
-          chartApproved,
-          mainPresId: mainPres?.id || null,
-        }
-      })
-  }
-
-  if (isMember) {
-    const { data: allProjects } = await serviceSupabase
-      .from('projects')
-      .select('id, name, status, shoot_date, presentations(id, name, chart_approved)')
-      .order('created_at', { ascending: false })
-
-    const active = (allProjects || []).filter((p: any) => p.status === 'active')
-    const archived = (allProjects || []).filter((p: any) => p.status === 'archived')
-    activeProjects = await buildEntries(active, true)
-    archivedProjects = await buildEntries(archived, true)
-  } else {
-    const { data: clientProjects } = await serviceSupabase
-      .from('client_projects')
-      .select('*, projects(id, name, status, shoot_date, presentations(id, name, chart_approved))')
-      .eq('client_id', user?.id)
-
-    const active = (clientProjects || [])
-      .filter((cp: any) => cp.projects?.status === 'active')
-      .map((cp: any) => cp.projects)
-    const archived = (clientProjects || [])
-      .filter((cp: any) => cp.projects?.status === 'archived')
-      .map((cp: any) => cp.projects)
-
-    activeProjects = await buildEntries(active, false)
-    archivedProjects = await buildEntries(archived, false)
-  }
-
-  const ProjectCard = ({ entry }: { entry: ProjectEntry }) => {
-    const { project, presentations, chartApproved, mainPresId } = entry
-    return (
-      <div className="border border-neutral-200 hover:border-neutral-400 transition-colors">
-        <div className="px-6 py-4 border-b border-neutral-100 flex items-start justify-between gap-3">
-          <div>
-            <p className="text-xs tracking-widest uppercase font-medium">{project?.name}</p>
-            {project?.shoot_date && (
-              <p className="text-xs text-neutral-400 mt-0.5">
-                {new Date(project.shoot_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-              </p>
-            )}
-          </div>
-          {chartApproved && mainPresId && (
-            <Link
-              href={`/client/presentations/${mainPresId}/chart`}
-              className="shrink-0 text-[9px] tracking-widest uppercase border border-green-600 text-green-700 px-2 py-1 hover:bg-green-600 hover:text-white transition-colors"
-            >
-              ✓ Download Confirmation Chart
-            </Link>
-          )}
-        </div>
-        <div>
-          {presentations.map((pres: any) => (
-            <Link key={pres.id} href={`/client/presentations/${pres.id}`}
-              className="flex items-center justify-between px-6 py-4 hover:bg-neutral-50 transition-colors border-b border-neutral-50 last:border-0">
-              <span className="text-sm">{pres.name}</span>
-              <span className="text-xs tracking-widest uppercase text-neutral-400">View Presentation &rarr;</span>
-            </Link>
-          ))}
-        </div>
-      </div>
-    )
-  }
+  // For clients, filter to only their projects
+  const visibleProjects = isMember
+    ? (projects || [])
+    : (projects || []).filter((p: any) => clientProjectIds.includes(p.id))
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="max-w-2xl mx-auto">
       <div className="mb-12">
-        <h1 className="text-2xl font-light tracking-widest uppercase mb-2">
-          {firstName ? 'Welcome, ' + firstName : 'Your Castings'}
-        </h1>
-        <p className="text-sm text-neutral-400">
-          {activeProjects.length === 0 && archivedProjects.length === 0
-            ? "Your casting presentations will appear here once they're ready."
-            : `${activeProjects.length} active project${activeProjects.length !== 1 ? 's' : ''}${archivedProjects.length > 0 ? `, ${archivedProjects.length} archived` : ''}.`}
-        </p>
+        <h1 className="text-2xl font-light tracking-widest uppercase mb-2">Client Portal</h1>
+        <p className="text-sm text-neutral-400">Select your project to continue.</p>
       </div>
 
-      {activeProjects.length === 0 && archivedProjects.length === 0 && (
+      {visibleProjects.length === 0 && (
         <div className="border border-neutral-100 p-12 text-center">
-          <p className="text-xs tracking-widest uppercase text-neutral-300 mb-3">Nothing here yet</p>
-          <p className="text-sm text-neutral-400">Your casting director will share presentations with you here. Check back soon.</p>
+          <p className="text-xs tracking-widest uppercase text-neutral-300 mb-3">No active projects</p>
+          {!user && (
+            <p className="text-sm text-neutral-400">
+              <Link href="/client/login" className="underline underline-offset-2 hover:opacity-60">Sign in</Link> to view your assigned projects.
+            </p>
+          )}
         </div>
       )}
 
-      {/* Active projects */}
-      {activeProjects.length > 0 && (
-        <div className="space-y-4 mb-10">
-          {activeProjects.map(entry => (
-            <ProjectCard key={entry.project?.id} entry={entry} />
-          ))}
-        </div>
-      )}
+      <div className="space-y-3">
+        {visibleProjects.map((project: any) => {
+          const href = user
+            ? `/client/${project.id}`
+            : `/client/login?redirect=/client/${project.id}`
 
-      {/* Archived projects */}
-      {archivedProjects.length > 0 && (
-        <div>
-          <div className="flex items-center gap-3 mb-4">
-            <p className="text-[10px] tracking-widest uppercase text-neutral-400">Archived Projects</p>
-            <div className="flex-1 border-t border-neutral-100" />
-          </div>
-          <div className="space-y-4 opacity-70">
-            {archivedProjects.map(entry => (
-              <ProjectCard key={entry.project?.id} entry={entry} />
-            ))}
-          </div>
-        </div>
+          return (
+            <Link
+              key={project.id}
+              href={href}
+              className="flex items-center justify-between border border-neutral-200 px-6 py-5 hover:border-black transition-colors group"
+            >
+              <div>
+                <p className="text-sm tracking-widest uppercase font-medium">{project.name}</p>
+                {project.shoot_date && (
+                  <p className="text-xs text-neutral-400 mt-0.5">
+                    {new Date(project.shoot_date).toLocaleDateString('en-US', {
+                      month: 'long', day: 'numeric', year: 'numeric'
+                    })}
+                  </p>
+                )}
+              </div>
+              <span className="text-xs tracking-widest uppercase text-neutral-400 group-hover:text-black transition-colors">
+                Enter &rarr;
+              </span>
+            </Link>
+          )
+        })}
+      </div>
+
+      {!user && visibleProjects.length > 0 && (
+        <p className="mt-8 text-xs text-neutral-400 text-center">
+          Already have an account?{' '}
+          <Link href="/client/login" className="underline underline-offset-2 hover:text-black transition-colors">
+            Sign in
+          </Link>
+        </p>
       )}
 
       <div className="mt-16 pt-8 border-t border-neutral-100 text-center">
