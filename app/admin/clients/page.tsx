@@ -160,13 +160,20 @@ export default function ClientsPage() {
       <section>
         <p className="label mb-4">Client Accounts ({clients.length})</p>
         <div className="space-y-2">
-          {clients.map(c => {
+          {[...clients].sort((a, b) => {
+            const aHas = (a.client_projects || []).length > 0
+            const bHas = (b.client_projects || []).length > 0
+            if (!aHas && bHas) return -1
+            if (aHas && !bHas) return 1
+            return 0
+          }).map(c => {
             const clientProjectIds = new Set((c.client_projects || []).map((cp: any) => cp.project_id))
             const isExpanded = expanded === c.id
             const isEditing = editingClient?.id === c.id
+            const hasProjects = clientProjectIds.size > 0
 
             return (
-              <div key={c.id} className="border border-neutral-200">
+              <div key={c.id} className={`border ${!hasProjects ? 'border-amber-200' : 'border-neutral-200'}`}>
                 <button onClick={() => setExpanded(isExpanded ? null : c.id)}
                   className="w-full flex items-center justify-between px-6 py-4 hover:bg-neutral-50 transition-colors text-left">
                   <div>
@@ -174,7 +181,10 @@ export default function ClientsPage() {
                     <p className="text-xs text-neutral-400">{c.email}{c.company ? ` · ${c.company}` : ''}</p>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="text-xs text-neutral-400">{clientProjectIds.size} project{clientProjectIds.size !== 1 ? 's' : ''}</span>
+                    {!hasProjects
+                      ? <span className="text-[10px] tracking-widest uppercase bg-amber-100 text-amber-700 border border-amber-200 px-2 py-1">No Projects Assigned</span>
+                      : <span className="text-xs text-neutral-400">{clientProjectIds.size} project{clientProjectIds.size !== 1 ? 's' : ''}</span>
+                    }
                     {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                   </div>
                 </button>

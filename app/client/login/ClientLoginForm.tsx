@@ -96,7 +96,11 @@ export default function ClientLoginForm({ redirectTo }: { redirectTo: string }) 
           </form>
         )}
 
-        <Link href="/client" className="block mt-8 text-xs text-neutral-400 tracking-wider uppercase hover:text-black transition-colors">← Back</Link>
+        <p className="mt-6 text-xs text-neutral-400 text-center">
+          New client?{' '}
+          <Link href="/client/signup" className="underline underline-offset-2 hover:text-black transition-colors">Create an account</Link>
+        </p>
+        <Link href="/client" className="block mt-4 text-xs text-neutral-400 tracking-wider uppercase hover:text-black transition-colors">← Back</Link>
       </div>
     </main>
   )

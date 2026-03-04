@@ -47,7 +47,7 @@ export async function middleware(request: NextRequest) {
     if (!member) return NextResponse.redirect(new URL('/admin/login', request.url))
   }
 
-  if (path.startsWith('/client') && path !== '/client/login') {
+  if (path.startsWith('/client') && path !== '/client/login' && path !== '/client/signup') {
     if (!user) return NextResponse.redirect(new URL('/client/login', request.url))
     const { data: isMember } = await supabaseSvc
       .from('team_members')
