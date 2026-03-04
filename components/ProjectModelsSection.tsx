@@ -433,7 +433,7 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
     )
   }
 
-  const renderGroup = (group: any[], label?: string, color?: string) => {
+  const renderGroup = (group: any[], label?: string, color?: string, extra?: React.ReactNode) => {
     if (!group.length) return null
     const barColor = color || 'bg-neutral-200'
     const textColor = color ? 'text-white' : 'text-neutral-600'
@@ -443,6 +443,7 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
           <div className={`flex items-center gap-2 mb-2 px-2 py-1.5 ${barColor}`}>
             <p className={`text-[10px] tracking-widest uppercase font-semibold ${textColor}`}>{label}</p>
             <span className={`text-[10px] font-bold ${textColor} opacity-70`}>{group.length}</span>
+            {extra && <div className="ml-auto">{extra}</div>}
           </div>
         )}
         {view === 'list'
@@ -571,7 +572,20 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
         <>
           {hasGroups ? (
             <>
-              {renderGroup(confirmed, 'Officially Confirmed ✓', 'bg-green-600')}
+              {renderGroup(
+                confirmed,
+                'Officially Confirmed ✓',
+                'bg-green-600',
+                mainPres?.id ? (
+                  <Link
+                    href={`/client/presentations/${mainPres.id}/chart`}
+                    target="_blank"
+                    className="text-[9px] tracking-widest uppercase border border-white/60 text-white/90 px-2 py-0.5 hover:border-white hover:text-white transition-colors whitespace-nowrap"
+                  >
+                    View Confirmation Chart ↗
+                  </Link>
+                ) : undefined
+              )}
               {renderGroup(pending, 'Confirmation Requested', 'bg-amber-400')}
               {renderGroup(shortlisted, 'Shortlisted by Client', 'bg-neutral-700')}
               {renderGroup(others, others.length && hasGroups ? 'Signed In' : undefined)}
