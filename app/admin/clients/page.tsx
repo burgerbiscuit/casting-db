@@ -21,12 +21,12 @@ export default function ClientsPage() {
   const [editingClient, setEditingClient] = useState<any>(null)
 
   const load = useCallback(async () => {
-    const [{ data: clientProfiles }, { data: projs }, { data: reqs }] = await Promise.all([
-      supabase.from('client_profiles').select('*, client_projects(project_id)').order('created_at', { ascending: false }),
+    const [clientsRes, { data: projs }, { data: reqs }] = await Promise.all([
+      fetch('/api/admin/clients').then(r => r.json()),
       supabase.from('projects').select('id, name, status').order('created_at', { ascending: false }),
       supabase.from('client_requests').select('*').eq('status', 'pending').order('created_at', { ascending: false }),
     ])
-    setClients(clientProfiles || [])
+    setClients(Array.isArray(clientsRes) ? clientsRes : [])
     setProjects(projs || [])
     setRequests(reqs || [])
   }, [])
