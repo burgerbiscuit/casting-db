@@ -10,17 +10,17 @@ const TASHA_USER_ID = '328944d5-bf72-424d-874b-8f21b363464a'
 const baseNav = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/admin/projects', label: 'Projects', icon: FolderOpen },
+  { href: '/admin/models', label: 'Models', icon: Users },
+  { href: '/admin/clients', label: 'Clients', icon: UserCheck },
+  { href: '/admin/agencies/contacts', label: 'Model Agencies', icon: Building2 },
+  { href: '/admin/agencies/production', label: 'Production', icon: Clapperboard },
+  { href: '/admin/billing', label: 'Billing', icon: BarChart3 },
   { href: '/admin/calendar', label: 'Calendar', icon: CalendarDays },
   { href: '/admin/reviews', label: 'Reviews', icon: ClipboardList },
-  { href: '/admin/models', label: 'Models', icon: Users },
-  { href: '/admin/agencies/contacts', label: 'Model Agencies', icon: Building2 },
-  { href: '/admin/clients', label: 'Clients', icon: UserCheck },
-  { href: '/admin/billing', label: 'Billing', icon: BarChart3 },
   { href: '/admin/resources', label: 'Resources', icon: BookOpen },
   { href: '/admin/team', label: 'Team', icon: Settings },
 ]
 
-const productionNav = { href: '/admin/agencies/production', label: 'Production', icon: Clapperboard }
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const path = usePathname()
@@ -43,7 +43,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     router.push('/admin/login')
   }
 
-  const nav = isTasha ? [...baseNav, productionNav] : baseNav
+  const nav = baseNav
 
   const NavLinks = () => (
     <>
