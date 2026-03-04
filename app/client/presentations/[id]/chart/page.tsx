@@ -3,8 +3,10 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { PrintButton } from '@/components/PrintButton'
 
-export default async function ConfirmationChartPage({ params }: { params: { id: string } }) {
+export default async function ConfirmationChartPage({ params, searchParams }: { params: { id: string }; searchParams: { hidden?: string } }) {
   const { id } = params
+  const hiddenCols = new Set((searchParams.hidden || '').split(',').filter(Boolean))
+  const showCol = (col: string) => !hiddenCols.has(col)
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/client/login')
@@ -112,7 +114,17 @@ export default async function ConfirmationChartPage({ params }: { params: { id: 
                 </td>
               </tr>
               <tr className="bg-neutral-100">
-                {['PHOTO', 'NAME', 'CONTACT', 'RATE', 'DATE', 'SIZE', 'USAGE', 'ADDITIONAL USAGE', 'W-9'].map(col => (
+                {[
+                  { key: 'photo', label: 'PHOTO' },
+                  { key: '__name', label: 'NAME' },
+                  { key: 'contact', label: 'CONTACT' },
+                  { key: 'rate', label: 'RATE' },
+                  { key: 'date', label: 'DATE' },
+                  { key: 'size', label: 'SIZE' },
+                  { key: 'usage', label: 'USAGE' },
+                  { key: 'notes', label: "ADDITIONAL USAGE" },
+                  { key: 'w9', label: 'W-9' },
+                ].filter(c => c.key === '__name' || showCol(c.key)).map(({ label: col }) => (
                   <th key={col} className="border border-neutral-300 px-2 py-2 text-[9px] tracking-widest uppercase font-semibold text-neutral-600 text-center whitespace-nowrap">
                     {col}
                   </th>
@@ -155,7 +167,7 @@ export default async function ConfirmationChartPage({ params }: { params: { id: 
                 return (
                   <tr key={pm.id} className="border-b border-neutral-200 align-top">
                     {/* Photo — full bleed */}
-                    <td className="border border-neutral-200 p-0" style={{ width: 64, height: 80 }}>
+                    {showCol('photo') && <td className="border border-neutral-200 p-0" style={{ width: 64, height: 80 }}>
                       {photo ? (
                         <img src={photo} alt={`${model?.first_name} ${model?.last_name}`}
                           className="block w-full h-full object-cover object-top"
@@ -164,7 +176,7 @@ export default async function ConfirmationChartPage({ params }: { params: { id: 
                         <div className="w-full h-full bg-neutral-100 flex items-center justify-center text-neutral-300 text-[8px]"
                           style={{ width: 64, height: 80 }}>—</div>
                       )}
-                    </td>
+                    </td>}
 
                     {/* Name — linked to portfolio or instagram */}
                     <td className="border border-neutral-200 px-3 py-2.5 text-center align-middle" style={{ width: 90 }}>
@@ -183,7 +195,7 @@ export default async function ConfirmationChartPage({ params }: { params: { id: 
                     </td>
 
                     {/* Contact */}
-                    <td className="border border-neutral-200 px-3 py-2.5" style={{ width: 160 }}>
+                    {showCol('contact') && <td className="border border-neutral-200 px-3 py-2.5" style={{ width: 160 }}>
                       {model?.agency && (
                         <p className="font-bold tracking-wide text-[11px] uppercase">{model.agency}</p>
                       )}
@@ -202,20 +214,20 @@ export default async function ConfirmationChartPage({ params }: { params: { id: 
                       {!agent && !model?.agency && (
                         <p className="text-neutral-300 text-[10px]">—</p>
                       )}
-                    </td>
+                    </td>}
 
                     {/* Rate */}
-                    <td className="border border-neutral-200 px-3 py-2.5 text-center align-middle font-medium" style={{ width: 110 }}>
+                    {showCol('rate') && <td className="border border-neutral-200 px-3 py-2.5 text-center align-middle font-medium" style={{ width: 110 }}>
                       <p className="text-[11px]">{displayRate || '—'}</p>
-                    </td>
+                    </td>}
 
                     {/* Date */}
-                    <td className="border border-neutral-200 px-3 py-2.5 text-center align-middle" style={{ width: 80 }}>
+                    {showCol('date') && <td className="border border-neutral-200 px-3 py-2.5 text-center align-middle" style={{ width: 80 }}>
                       <p className="text-[11px]">{displayDate || '—'}</p>
-                    </td>
+                    </td>}
 
                     {/* Size */}
-                    <td className="border border-neutral-200 px-3 py-2.5 align-top" style={{ width: 110 }}>
+                    {showCol('size') && <td className="border border-neutral-200 px-3 py-2.5 align-top" style={{ width: 110 }}>
                       {sizing.length > 0 ? (
                         <div className="space-y-0.5">
                           {sizing.map((s, i) => (
@@ -223,20 +235,20 @@ export default async function ConfirmationChartPage({ params }: { params: { id: 
                           ))}
                         </div>
                       ) : <p className="text-neutral-300 text-[10px]">—</p>}
-                    </td>
+                    </td>}
 
                     {/* Usage (after Size) */}
-                    <td className="border border-neutral-200 px-3 py-2.5 text-center align-middle" style={{ width: 110 }}>
+                    {showCol('usage') && <td className="border border-neutral-200 px-3 py-2.5 text-center align-middle" style={{ width: 110 }}>
                       <p className="text-[11px]">{displayUsage || '—'}</p>
-                    </td>
+                    </td>}
 
                     {/* Additional Usage / Notes */}
-                    <td className="border border-neutral-200 px-3 py-2.5 align-top" style={{ width: 200 }}>
+                    {showCol('notes') && <td className="border border-neutral-200 px-3 py-2.5 align-top" style={{ width: 200 }}>
                       <p className="text-[10px] text-neutral-700 whitespace-pre-line">{pm.confirmed_notes || '—'}</p>
-                    </td>
+                    </td>}
 
                     {/* W-9 */}
-                    <td className="border border-neutral-200 px-3 py-2.5 text-center align-middle" style={{ width: 70 }}>
+                    {showCol('w9') && <td className="border border-neutral-200 px-3 py-2.5 text-center align-middle" style={{ width: 70 }}>
                       {pm.w9_status ? (
                         <p className={`text-[10px] tracking-widest uppercase font-semibold ${pm.w9_status === 'RECEIVED' ? 'text-green-700' : 'text-neutral-500'}`}>
                           {pm.w9_status}
@@ -244,7 +256,7 @@ export default async function ConfirmationChartPage({ params }: { params: { id: 
                       ) : (
                         <p className="text-neutral-300 text-[10px]">—</p>
                       )}
-                    </td>
+                    </td>}
                   </tr>
                 )
               })}

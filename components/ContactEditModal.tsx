@@ -74,13 +74,13 @@ export function ContactEditModal({ contact, onClose, onSaved, onDeleted }: Props
           </div>
           <div className="grid grid-cols-2 gap-x-6 gap-y-4 mb-8">
             <Field label="Agency" k="agency_name" />
-            <Field label="Agent Name" k="agent_name" />
+            <Field label="Agent / Contact Name" k="agent_name" />
             <Field label="Email" k="email" />
-            <Field label="Board / Role" k="board" />
+            <Field label="Instagram / Recent Work" k="board" />
             <Field label="City" k="city" />
             <Field label="Section" k="section" />
             <Field label="Office Phone" k="office_phone" />
-            <Field label="Cell Phone" k="cell_phone" />
+            <Field label="Instagram Handle" k="cell_phone" />
           </div>
           <div className="flex items-center justify-between">
             <button onClick={() => setShowDelete(true)}

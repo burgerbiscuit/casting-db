@@ -2,7 +2,6 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 
-const TASHA_USER_ID = '328944d5-bf72-424d-874b-8f21b363464a'
 import { createClient } from '@/lib/supabase/client'
 import { Search, Mail, X } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
@@ -13,8 +12,10 @@ export default function ProductionContactsPage() {
   const router = useRouter()
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user || user.id !== TASHA_USER_ID) router.replace('/admin')
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) { router.replace('/admin'); return }
+      const { data: member } = await supabase.from('team_members').select('id').eq('user_id', user.id).single()
+      if (!member) router.replace('/admin')
     })
   }, [])
 
@@ -182,10 +183,10 @@ export default function ProductionContactsPage() {
                   }} className="cursor-pointer" /></th>
                 <th className="text-left label py-2 pr-6">Agency</th>
                 <th className="text-left label py-2 pr-6">Agent</th>
-                <th className="text-left label py-2 pr-6">Board</th>
+                <th className="text-left label py-2 pr-6">Recent Work</th>
                 <th className="text-left label py-2 pr-6">City</th>
                 <th className="text-left label py-2 pr-6">Email</th>
-                <th className="text-left label py-2">Cell</th>
+                <th className="text-left label py-2">Instagram</th>
               </tr>
             </thead>
             <tbody>
@@ -197,12 +198,18 @@ export default function ProductionContactsPage() {
                     className="cursor-pointer" /></td>
                   <td className="py-2.5 pr-6 font-medium text-xs">{c.agency_name}</td>
                   <td className="py-2.5 pr-6 text-neutral-600 text-xs">{c.agent_name || '—'}</td>
-                  <td className="py-2.5 pr-6 text-neutral-500 text-xs">{c.board || '—'}</td>
+                  <td className="py-2.5 pr-6 text-neutral-400 text-xs max-w-[220px] truncate" title={c.board || ''}>{c.board || '—'}</td>
                   <td className="py-2.5 pr-6 text-neutral-500 text-xs">{c.city || '—'}</td>
                   <td className="py-2.5 pr-6">
                     {c.email_invalid ? <span className="text-red-400 text-xs line-through">{c.email || 'invalid'}</span> : c.email ? <a href={`mailto:${c.email}`} className="underline underline-offset-2 hover:opacity-60 text-xs">{c.email}</a> : <span className="text-neutral-300 text-xs">—</span>}
                   </td>
-                  <td className="py-2.5 text-neutral-500 text-xs">{c.cell_phone || '—'}</td>
+                  <td className="py-2.5 text-neutral-500 text-xs">
+                    {c.cell_phone ? (
+                      c.cell_phone.startsWith('@')
+                        ? <a href={`https://instagram.com/${c.cell_phone.replace('@','')}`} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:opacity-60">{c.cell_phone}</a>
+                        : c.cell_phone
+                    ) : '—'}
+                  </td>
                   <td className="py-2.5 text-right">
                     <button onClick={() => setEditTarget(c)} className="text-[10px] tracking-widest uppercase text-neutral-400 hover:text-black transition-colors">Edit</button>
                   </td>
