@@ -94,10 +94,39 @@ export function PresentationViewer({
   // pending = client requested confirm, waiting for admin
   const [pendings, setPendings] = useState<Record<string, boolean>>(() => {
     const m: Record<string, boolean> = {}
-    Object.entries(shortlistMap).forEach(([k, v]: any) => { if (v?.status === 'pending_confirmation') m[k] = true })
+    // true if client has requested (pending_confirmation) OR if already confirmed (went through the step)
+    Object.entries(shortlistMap).forEach(([k, v]: any) => {
+      if (v?.status === 'pending_confirmation' || v?.status === 'confirmed') m[k] = true
+    })
     return m
   })
   const [confirmModal, setConfirmModal] = useState<{ modelId: string; modelName: string } | null>(null)
+
+  // Realtime: update confirms when admin officially confirms on backend
+  useEffect(() => {
+    const fetchConfirms = async () => {
+      const supabase = (await import('@/lib/supabase/client')).createClient()
+      const { data } = await supabase
+        .from('project_models')
+        .select('model_id, admin_confirmed')
+      if (data) {
+        const map: Record<string, boolean> = {}
+        data.filter((pm: any) => pm.admin_confirmed).forEach((pm: any) => { map[pm.model_id] = true })
+        setConfirms(map)
+      }
+    }
+
+    let channel: any
+    const setup = async () => {
+      const supabase = (await import('@/lib/supabase/client')).createClient()
+      channel = supabase
+        .channel('client-confirms-watch')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'project_models' }, fetchConfirms)
+        .subscribe()
+    }
+    setup()
+    return () => { if (channel) channel.unsubscribe() }
+  }, [])
 
   const [search, setSearch] = useState('')
   const [filterHeight, setFilterHeight] = useState<string>('')
