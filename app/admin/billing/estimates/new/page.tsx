@@ -49,6 +49,7 @@ export default function NewEstimatePage() {
     const { data: { user } } = await supabase.auth.getUser()
     const { data, error: err } = await supabase.from('estimates').insert({
       ...form,
+      project_id: form.project_id || null,
       casting_fee: parseFloat(form.casting_fee) || 0,
       created_by: user?.id,
     }).select().single()
