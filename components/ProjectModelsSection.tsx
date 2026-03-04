@@ -175,16 +175,9 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
     const next = !adminConfirmed[modelId]
     setAdminConfirmed(r => ({ ...r, [modelId]: next }))
     setShortlistStatus(r => ({ ...r, [modelId]: next ? 'confirmed' : 'pending_confirmation' }))
-    // Update project_models
+    // Only update project_models — never touch client_shortlists from admin side
     await supabase.from('project_models').update({ admin_confirmed: next, status: next ? 'confirmed' : 'pending' })
       .eq('project_id', projectId).eq('model_id', modelId)
-    // Update client_shortlists — scope to this presentation only
-    if (mainPres?.id) {
-      await supabase.from('client_shortlists')
-        .update({ status: next ? 'confirmed' : 'pending_confirmation' })
-        .eq('model_id', modelId)
-        .eq('presentation_id', mainPres.id)
-    }
   }
 
   const setClientStatus = async (modelId: string, newStatus: string | null) => {

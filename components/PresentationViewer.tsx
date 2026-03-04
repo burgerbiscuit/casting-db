@@ -90,40 +90,36 @@ export function PresentationViewer({
     Object.entries(shortlistMap).forEach(([k, v]) => { if ((v as any)?.is_released) m[k] = true })
     return m
   })
-  // Single source of truth: client_shortlists.status
-  // 'shortlisted' | 'pending_confirmation' | 'confirmed' (only admin officialConfirm sets 'confirmed')
+  // clientStatus: what the client has done (shortlisted / pending_confirmation)
   const [clientStatus, setClientStatus] = useState<Record<string, string>>(() => {
     const m: Record<string, string> = {}
     Object.entries(shortlistMap).forEach(([k, v]: any) => { if (v?.status) m[k] = v.status })
     return m
   })
+  // adminConfirmed: only set by admin via project_models.admin_confirmed
+  const [adminConfirmed, setAdminConfirmed] = useState<Record<string, boolean>>(initialConfirmMap || {})
   const [confirmModal, setConfirmModal] = useState<{ modelId: string; modelName: string } | null>(null)
 
-  // Realtime: update when admin officially confirms (changes client_shortlists.status to 'confirmed')
+  // Realtime: watch project_models for admin confirming
   useEffect(() => {
-    if (!clientId) return
-    const refetch = async () => {
-      const supabase = (await import('@/lib/supabase/client')).createClient()
-      const { data } = await supabase.from('client_shortlists').select('model_id, status').eq('client_id', clientId)
-      if (data) {
-        const m: Record<string, string> = {}
-        data.forEach((s: any) => { if (s.status) m[s.model_id] = s.status })
-        setClientStatus(m)
-        const sl: Record<string, boolean> = {}
-        data.forEach((s: any) => { sl[s.model_id] = true })
-        setShortlists(sl)
-      }
-    }
     let channel: any
     const setup = async () => {
       const supabase = (await import('@/lib/supabase/client')).createClient()
-      channel = supabase.channel('client-status-watch-' + clientId)
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'client_shortlists' }, refetch)
+      channel = supabase.channel('admin-confirm-watch')
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'project_models' }, async () => {
+          // Refetch admin_confirmed state
+          const { data } = await supabase.from('project_models').select('model_id, admin_confirmed')
+          if (data) {
+            const m: Record<string, boolean> = {}
+            data.filter((pm: any) => pm.admin_confirmed).forEach((pm: any) => { m[pm.model_id] = true })
+            setAdminConfirmed(m)
+          }
+        })
         .subscribe()
     }
     setup()
     return () => { if (channel) channel.unsubscribe() }
-  }, [clientId])
+  }, [])
 
   const [search, setSearch] = useState('')
   const [filterHeight, setFilterHeight] = useState<string>('')
@@ -156,8 +152,8 @@ export function PresentationViewer({
   const sorted = [...filtered].sort((a, b) => {
     const aR = !!releases[a.model_id]
     const bR = !!releases[b.model_id]
-    const aC = clientStatus[a.model_id] === "confirmed"
-    const bC = clientStatus[b.model_id] === "confirmed"
+    const aC = (adminConfirmed[a.model_id] && clientStatus[a.model_id] === "pending_confirmation")
+    const bC = (adminConfirmed[b.model_id] && clientStatus[b.model_id] === "pending_confirmation")
     const aS = !!shortlists[a.model_id]
     const bS = !!shortlists[b.model_id]
     if (aR && !bR) return 1
@@ -242,7 +238,7 @@ export function PresentationViewer({
 
   const handleConfirm = async (modelId: string) => {
     const status = clientStatus[modelId]
-    if (status === 'pending_confirmation' || status === 'confirmed') return // already requested or confirmed
+    if (status === 'pending_confirmation') return // already requested
     const supabase = (await import('@/lib/supabase/client')).createClient()
     setClientStatus(prev => ({ ...prev, [modelId]: 'pending_confirmation' }))
     setShortlists(prev => ({ ...prev, [modelId]: true }))
@@ -261,7 +257,7 @@ export function PresentationViewer({
     }, { onConflict: 'presentation_id,model_id,client_id' })
   }
 
-  const confirmedCount = Object.values(clientStatus).filter(s => s === "confirmed").length
+  const confirmedCount = Object.keys(adminConfirmed).filter(k => adminConfirmed[k] && clientStatus[k] === "pending_confirmation").length
   const shortlistedCount = Object.values(shortlists).filter(Boolean).length
 
   // Group sorted (non-shortlisted) by category for section headers
@@ -356,7 +352,7 @@ export function PresentationViewer({
               <div className={`grid gap-3 ${isMobile ? 'grid-cols-2' : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6'}`}>
                 {sorted.filter(pm => shortlists[pm.model_id]).map(pm => (
                   <div key={pm.id} className="relative">
-                    {clientStatus[pm.model_id] === "confirmed" && (
+                    {(adminConfirmed[pm.model_id] && clientStatus[pm.model_id] === "pending_confirmation") && (
                       <div className="absolute top-2 left-2 z-10 bg-black text-white text-[9px] tracking-widest uppercase px-2 py-1">Officially Confirmed</div>
                     )}
                     <ModelCard presentationModel={pm} model={pm.models}
@@ -367,11 +363,11 @@ export function PresentationViewer({
                       onCardClick={() => { setSlideIndex(sorted.findIndex(s => s.model_id === pm.model_id)); setView('slides') }} />
                     <button
                       onClick={() => {
-                        if (clientStatus[pm.model_id] === "pending_confirmation" || clientStatus[pm.model_id] === "confirmed") return
+                        if (clientStatus[pm.model_id] === "pending_confirmation" || (adminConfirmed[pm.model_id] && clientStatus[pm.model_id] === "pending_confirmation")) return
                         setConfirmModal({ modelId: pm.model_id, modelName: `${pm.models?.first_name} ${pm.models?.last_name}` })
                       }}
-                      className={`w-full mt-1 py-1.5 text-[9px] tracking-widest uppercase transition-colors border ${clientStatus[pm.model_id] === "confirmed" ? 'bg-green-600 text-white border-green-600' : clientStatus[pm.model_id] === "pending_confirmation" ? 'bg-amber-400 text-white border-amber-400 cursor-default' : 'border-neutral-200 hover:border-black text-neutral-400 hover:text-black'}`}>
-                      {clientStatus[pm.model_id] === "confirmed" ? '✓ Officially Confirmed' : clientStatus[pm.model_id] === "pending_confirmation" ? 'Confirmation Pending' : 'Request Confirmation'}
+                      className={`w-full mt-1 py-1.5 text-[9px] tracking-widest uppercase transition-colors border ${(adminConfirmed[pm.model_id] && clientStatus[pm.model_id] === "pending_confirmation") ? 'bg-green-600 text-white border-green-600' : clientStatus[pm.model_id] === "pending_confirmation" ? 'bg-amber-400 text-white border-amber-400 cursor-default' : 'border-neutral-200 hover:border-black text-neutral-400 hover:text-black'}`}>
+                      {(adminConfirmed[pm.model_id] && clientStatus[pm.model_id] === "pending_confirmation") ? '✓ Officially Confirmed' : clientStatus[pm.model_id] === "pending_confirmation" ? 'Confirmation Pending' : 'Request Confirmation'}
                     </button>
                   </div>
                 ))}
@@ -383,7 +379,7 @@ export function PresentationViewer({
           {(() => {
             const renderCard = (pm: any) => (
               <div key={pm.id} className="relative">
-                {clientStatus[pm.model_id] === "confirmed" && (
+                {(adminConfirmed[pm.model_id] && clientStatus[pm.model_id] === "pending_confirmation") && (
                   <div className="absolute top-2 left-2 z-10 bg-black text-white text-[9px] tracking-widest uppercase px-2 py-1">Officially Confirmed</div>
                 )}
                 <ModelCard presentationModel={pm} model={pm.models}
@@ -394,11 +390,11 @@ export function PresentationViewer({
                   onCardClick={() => { setSlideIndex(sorted.findIndex(s => s.model_id === pm.model_id)); setView('slides') }} />
                 <button
                   onClick={() => {
-                    if (clientStatus[pm.model_id] === "pending_confirmation" || clientStatus[pm.model_id] === "confirmed") return
+                    if (clientStatus[pm.model_id] === "pending_confirmation" || (adminConfirmed[pm.model_id] && clientStatus[pm.model_id] === "pending_confirmation")) return
                     setConfirmModal({ modelId: pm.model_id, modelName: `${pm.models?.first_name} ${pm.models?.last_name}` })
                   }}
-                  className={`w-full mt-1 py-1.5 text-[9px] tracking-widest uppercase transition-colors border ${clientStatus[pm.model_id] === "confirmed" ? 'bg-green-600 text-white border-green-600' : (clientStatus[pm.model_id] === "pending_confirmation") ? 'bg-amber-400 text-white border-amber-400 cursor-default' : 'border-neutral-200 hover:border-black text-neutral-400 hover:text-black'}`}>
-                  {clientStatus[pm.model_id] === "confirmed" ? '✓ Officially Confirmed' : (clientStatus[pm.model_id] === "pending_confirmation") ? 'Confirmation Pending' : 'Request Confirmation'}
+                  className={`w-full mt-1 py-1.5 text-[9px] tracking-widest uppercase transition-colors border ${(adminConfirmed[pm.model_id] && clientStatus[pm.model_id] === "pending_confirmation") ? 'bg-green-600 text-white border-green-600' : (clientStatus[pm.model_id] === "pending_confirmation") ? 'bg-amber-400 text-white border-amber-400 cursor-default' : 'border-neutral-200 hover:border-black text-neutral-400 hover:text-black'}`}>
+                  {(adminConfirmed[pm.model_id] && clientStatus[pm.model_id] === "pending_confirmation") ? '✓ Officially Confirmed' : (clientStatus[pm.model_id] === "pending_confirmation") ? 'Confirmation Pending' : 'Request Confirmation'}
                 </button>
               </div>
             )
@@ -436,7 +432,7 @@ export function PresentationViewer({
         const photos = (mediaByModel[pm?.model_id] || []).filter((m: any) => m.type !== 'video')
         const photo = photos[0]
         const isShortlisted = shortlists[pm?.model_id]
-        const isConfirmed = clientStatus[pm?.model_id] === "confirmed"
+        const isConfirmed = (adminConfirmed[pm?.model_id] && clientStatus[pm?.model_id] === "pending_confirmation")
         const sizing = getSizingParts(pm, model)
         return (
           <div className="fixed inset-0 bg-white z-30 flex flex-col overflow-hidden">
@@ -498,11 +494,11 @@ export function PresentationViewer({
               <div className="flex gap-2">
                 <button
                   onClick={() => {
-                    if (clientStatus[pm.model_id] === "pending_confirmation" || clientStatus[pm.model_id] === "confirmed") return
+                    if (clientStatus[pm.model_id] === "pending_confirmation" || (adminConfirmed[pm.model_id] && clientStatus[pm.model_id] === "pending_confirmation")) return
                     setConfirmModal({ modelId: pm.model_id, modelName: `${model?.first_name} ${model?.last_name}` })
                   }}
-                  className={`flex-1 py-2.5 text-[10px] tracking-widest uppercase transition-colors border ${clientStatus[pm.model_id] === "confirmed" ? 'bg-green-600 text-white border-green-600' : (clientStatus[pm.model_id] === "pending_confirmation") ? 'bg-amber-400 text-white border-amber-400 cursor-default' : 'border-neutral-300 text-neutral-500 hover:border-black hover:text-black'}`}>
-                  {clientStatus[pm.model_id] === "confirmed" ? '✓ Officially Confirmed' : (clientStatus[pm.model_id] === "pending_confirmation") ? 'Confirmation Pending' : 'Request Confirmation'}
+                  className={`flex-1 py-2.5 text-[10px] tracking-widest uppercase transition-colors border ${(adminConfirmed[pm.model_id] && clientStatus[pm.model_id] === "pending_confirmation") ? 'bg-green-600 text-white border-green-600' : (clientStatus[pm.model_id] === "pending_confirmation") ? 'bg-amber-400 text-white border-amber-400 cursor-default' : 'border-neutral-300 text-neutral-500 hover:border-black hover:text-black'}`}>
+                  {(adminConfirmed[pm.model_id] && clientStatus[pm.model_id] === "pending_confirmation") ? '✓ Officially Confirmed' : (clientStatus[pm.model_id] === "pending_confirmation") ? 'Confirmation Pending' : 'Request Confirmation'}
                 </button>
                 <button
                   onClick={() => isShortlisted
@@ -546,11 +542,11 @@ export function PresentationViewer({
               {/* Action buttons — always in header, compact */}
               <button
                 onClick={() => {
-                  if (clientStatus[current.model_id] === "pending_confirmation" || clientStatus[current.model_id] === "confirmed") return
+                  if (clientStatus[current.model_id] === "pending_confirmation" || (adminConfirmed[current.model_id] && clientStatus[current.model_id] === "pending_confirmation")) return
                   setConfirmModal({ modelId: current.model_id, modelName: `${currentModel?.first_name} ${currentModel?.last_name}` })
                 }}
-                className={`flex-shrink-0 text-[8px] tracking-widest uppercase border px-2.5 py-1.5 transition-colors whitespace-nowrap ${clientStatus[current.model_id] === "confirmed" ? 'bg-green-600 text-white border-green-600' : (clientStatus[current.model_id] === "pending_confirmation") ? 'bg-amber-400 text-white border-amber-400' : 'border-neutral-300 text-neutral-500'}`}>
-                {clientStatus[current.model_id] === "confirmed" ? '✓ Officially Confirmed' : (clientStatus[current.model_id] === "pending_confirmation") ? '⏳ Pending' : 'Confirm'}
+                className={`flex-shrink-0 text-[8px] tracking-widest uppercase border px-2.5 py-1.5 transition-colors whitespace-nowrap ${(adminConfirmed[current.model_id] && clientStatus[current.model_id] === "pending_confirmation") ? 'bg-green-600 text-white border-green-600' : (clientStatus[current.model_id] === "pending_confirmation") ? 'bg-amber-400 text-white border-amber-400' : 'border-neutral-300 text-neutral-500'}`}>
+                {(adminConfirmed[current.model_id] && clientStatus[current.model_id] === "pending_confirmation") ? '✓ Officially Confirmed' : (clientStatus[current.model_id] === "pending_confirmation") ? '⏳ Pending' : 'Confirm'}
               </button>
               <SlideActions presentationId={presentationId} modelId={current.model_id} clientId={clientId}
                 initialShortlisted={!!shortlists[current.model_id]} initialNotes={shortlistMap[current.model_id]?.notes || ""} initialAuthor={shortlistMap[current.model_id]?.author_name || ''}
