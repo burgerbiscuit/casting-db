@@ -442,23 +442,27 @@ export default function ScoutPage() {
               <>
                 <label className="label block mb-2">More Specific</label>
                 <div className="flex flex-wrap gap-2">
-                  {form.ethnicity_broad.filter((b: string) => b !== 'Other').flatMap((b: string) => {
-                    const specifics = ETHNICITY_MAP[b] || []
-                    if (specifics.length === 0) return []
-                    return [...specifics, 'Other']
-                  }).map(s => (
-                    <button key={s} type="button"
-                      onClick={() => set('ethnicity_specific', form.ethnicity_specific.includes(s) ? form.ethnicity_specific.filter((x: string) => x !== s) : [...form.ethnicity_specific, s])}
-                      className={`text-xs px-3 py-2 border transition-colors ${form.ethnicity_specific.includes(s) ? 'bg-black text-white border-black' : 'border-neutral-300 hover:border-black'}`}>
-                      {s}
-                    </button>
-                  ))}
+                  {/* Deduplicate specifics across all selected broad categories, add single Other at end */}
+                  {(() => {
+                    const specifics = [...new Set(
+                      form.ethnicity_broad
+                        .filter((b: string) => b !== 'Other')
+                        .flatMap((b: string) => ETHNICITY_MAP[b] || [])
+                    )]
+                    return [...specifics, 'Other'].map(s => (
+                      <button key={s} type="button"
+                        onClick={() => set('ethnicity_specific', form.ethnicity_specific.includes(s) ? form.ethnicity_specific.filter((x: string) => x !== s) : [...form.ethnicity_specific, s])}
+                        className={`text-xs px-3 py-2 border transition-colors ${form.ethnicity_specific.includes(s) ? 'bg-black text-white border-black' : 'border-neutral-300 hover:border-black'}`}>
+                        {s}
+                      </button>
+                    ))
+                  })()}
                 </div>
-                {hasOtherSpecific && (
+                {form.ethnicity_specific.includes('Other') && (
                   <div className="mt-3">
-                    <label className={lbl}>Please specify (specific background)</label>
+                    <label className={lbl}>Please specify</label>
                     <input value={form.ethnicity_other} onChange={e => set('ethnicity_other', e.target.value)}
-                      placeholder="Please specify" className={inp} />
+                      placeholder="e.g. Trinidadian, Afro-Cuban..." className={inp} autoFocus />
                   </div>
                 )}
               </>
