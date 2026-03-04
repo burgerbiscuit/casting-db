@@ -37,12 +37,21 @@ export function ModelCard({ presentationModel, model, media, presentationId, cli
     const next = !shortlisted
     setShortlisted(next); onShortlistChange?.(next)
     if (next) {
-      await supabase.from('client_shortlists').upsert({
-        presentation_id: presentationId,
-        model_id: model.id,
-        client_id: clientId,
-        notes,
-      })
+      // Insert with status='shortlisted' only if new; never overwrite existing status (pending/confirmed)
+      const { data: existing } = await supabase.from('client_shortlists')
+        .select('id, status').eq('presentation_id', presentationId).eq('model_id', model.id).eq('client_id', clientId).maybeSingle()
+      if (existing) {
+        // Already exists — just update notes, preserve status
+        await supabase.from('client_shortlists').update({ notes }).eq('id', existing.id)
+      } else {
+        await supabase.from('client_shortlists').insert({
+          presentation_id: presentationId,
+          model_id: model.id,
+          client_id: clientId,
+          status: 'shortlisted',
+          notes,
+        })
+      }
     } else {
       await supabase.from('client_shortlists')
         .delete()
@@ -55,12 +64,12 @@ export function ModelCard({ presentationModel, model, media, presentationId, cli
   const saveNotes = async (val: string) => {
     setNotes(val)
     if (shortlisted || val) {
-      await supabase.from('client_shortlists').upsert({
-        presentation_id: presentationId,
-        model_id: model.id,
-        client_id: clientId,
-        notes: val,
-      })
+      // Update notes only — never overwrite status
+      const { data: existing } = await supabase.from('client_shortlists')
+        .select('id').eq('presentation_id', presentationId).eq('model_id', model.id).eq('client_id', clientId).maybeSingle()
+      if (existing) {
+        await supabase.from('client_shortlists').update({ notes: val }).eq('id', existing.id)
+      }
     }
   }
 

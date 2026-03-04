@@ -210,6 +210,19 @@ export function PresentationViewer({
 
   const handleShortlistChange = useCallback((modelId: string, val: boolean) => {
     setShortlists(prev => ({ ...prev, [modelId]: val }))
+    // Only set clientStatus if not already in a further-along state
+    if (val) {
+      setClientStatus(prev => {
+        if (!prev[modelId]) return { ...prev, [modelId]: 'shortlisted' }
+        return prev // preserve pending_confirmation or confirmed
+      })
+    } else {
+      setClientStatus(prev => {
+        const next = { ...prev }
+        delete next[modelId]
+        return next
+      })
+    }
   }, [])
 
   const saveClientNotes = async (modelId: string, notes: string) => {
