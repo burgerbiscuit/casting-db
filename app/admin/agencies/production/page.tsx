@@ -19,7 +19,10 @@ export default function ProductionContactsPage() {
     })
   }, [])
 
+  const NEEDS_REVIEW_AGENCIES = ['Art + Commerce', 'Streeters', 'The Wall Group', 'LGA Management']
+
   const [contacts, setContacts] = useState<any[]>([])
+  const [reviewContacts, setReviewContacts] = useState<any[]>([])
   const [allContacts, setAllContacts] = useState<any[]>([])
   const [search, setSearch] = useState('')
   const [city, setCity] = useState('ALL')
@@ -34,6 +37,7 @@ export default function ProductionContactsPage() {
   const [showComposer, setShowComposer] = useState(false)
   const [copied, setCopied] = useState(false)
   const [emailDraft, setEmailDraft] = useState({ subject: '', message: '' })
+  const [reviewCollapsed, setReviewCollapsed] = useState(false)
 
   useEffect(() => {
     load()
@@ -75,8 +79,12 @@ export default function ProductionContactsPage() {
     if (board !== 'ALL') filtered = filtered.filter(c => c.board === board)
     if (section !== 'ALL') filtered = filtered.filter(c => c.section === section)
     if (gender !== 'ALL') filtered = filtered.filter(c => c.gender === gender)
+
+    const review = filtered.filter(c => NEEDS_REVIEW_AGENCIES.includes(c.agency_name))
+    const rest = filtered.filter(c => !NEEDS_REVIEW_AGENCIES.includes(c.agency_name))
     
-    setContacts(filtered)
+    setReviewContacts(review)
+    setContacts(rest)
   }
 
   const toggleSelect = (id: string) => {
@@ -113,7 +121,7 @@ export default function ProductionContactsPage() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-light tracking-widest uppercase mb-1">Production Contacts</h1>
-          <p className="text-sm text-neutral-400">{contacts.length} agents</p>
+          <p className="text-sm text-neutral-400">{contacts.length + reviewContacts.length} agents</p>
         </div>
         {selected.size > 0 && (
           <button onClick={() => setShowComposer(true)}
@@ -172,53 +180,131 @@ export default function ProductionContactsPage() {
 
       {/* Contacts table */}
       {loading ? <p className="text-xs text-neutral-400">Loading...</p> : (
-        <div className="overflow-x-auto -mx-4 md:mx-0">
-          <table className="w-full text-sm min-w-[700px]">
-            <thead>
-              <tr className="border-b border-neutral-200">
-                <th className="text-left w-6 py-2"><input type="checkbox" 
-                  checked={selected.size === contacts.length && contacts.length > 0}
-                  onChange={() => {
-                    if (selected.size === contacts.length) setSelected(new Set())
-                    else setSelected(new Set(contacts.map(c => c.id)))
-                  }} className="cursor-pointer" /></th>
-                <th className="text-left label py-2 pr-6">Agency</th>
-                <th className="text-left label py-2 pr-6">Agent</th>
-                <th className="text-left label py-2 pr-6">Recent Work</th>
-                <th className="text-left label py-2 pr-6">City</th>
-                <th className="text-left label py-2 pr-6">Email</th>
-                <th className="text-left label py-2">Instagram</th>
-              </tr>
-            </thead>
-            <tbody>
-              {contacts.map(c => (
-                <tr key={c.id} className={`border-b border-neutral-100 hover:bg-neutral-50 ${selected.has(c.id) ? 'bg-blue-50' : ''}`}>
-                  <td className="py-2.5 px-2"><input type="checkbox" 
-                    checked={selected.has(c.id)}
-                    onChange={() => toggleSelect(c.id)}
-                    className="cursor-pointer" /></td>
-                  <td className="py-2.5 pr-6 font-medium text-xs">{c.agency_name}</td>
-                  <td className="py-2.5 pr-6 text-neutral-600 text-xs">{c.agent_name || '—'}</td>
-                  <td className="py-2.5 pr-6 text-neutral-400 text-xs max-w-[220px] truncate" title={c.board || ''}>{c.board || '—'}</td>
-                  <td className="py-2.5 pr-6 text-neutral-500 text-xs">{c.city || '—'}</td>
-                  <td className="py-2.5 pr-6">
-                    {c.email_invalid ? <span className="text-red-400 text-xs line-through">{c.email || 'invalid'}</span> : c.email ? <a href={`mailto:${c.email}`} className="underline underline-offset-2 hover:opacity-60 text-xs">{c.email}</a> : <span className="text-neutral-300 text-xs">—</span>}
-                  </td>
-                  <td className="py-2.5 text-neutral-500 text-xs">
-                    {c.cell_phone ? (
-                      c.cell_phone.startsWith('@')
-                        ? <a href={`https://instagram.com/${c.cell_phone.replace('@','')}`} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:opacity-60">{c.cell_phone}</a>
-                        : c.cell_phone
-                    ) : '—'}
-                  </td>
-                  <td className="py-2.5 text-right">
-                    <button onClick={() => setEditTarget(c)} className="text-[10px] tracking-widest uppercase text-neutral-400 hover:text-black transition-colors">Edit</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <>
+          {/* NEEDS REVIEW section */}
+          {reviewContacts.length > 0 && (
+            <div className="mb-8">
+              <button
+                onClick={() => setReviewCollapsed(v => !v)}
+                className="flex items-center gap-3 w-full mb-3 group"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] tracking-widest uppercase font-medium text-amber-700 bg-amber-50 border border-amber-200 px-2 py-1 rounded-sm">
+                    ⚠ Needs Review
+                  </span>
+                  <span className="text-[10px] text-neutral-400">{reviewContacts.length} contacts added by AI — verify before use</span>
+                </div>
+                <span className="text-[10px] text-neutral-400 ml-auto group-hover:text-black transition-colors">
+                  {reviewCollapsed ? '▼ Show' : '▲ Hide'}
+                </span>
+              </button>
+
+              {!reviewCollapsed && (
+                <div className="overflow-x-auto border border-amber-100 rounded-sm bg-amber-50/30 -mx-4 md:mx-0">
+                  <table className="w-full text-sm min-w-[700px]">
+                    <thead>
+                      <tr className="border-b border-amber-100">
+                        <th className="text-left w-6 py-2 pl-4"><input type="checkbox"
+                          checked={reviewContacts.every(c => selected.has(c.id)) && reviewContacts.length > 0}
+                          onChange={() => {
+                            const allIds = reviewContacts.map(c => c.id)
+                            const allSelected = allIds.every(id => selected.has(id))
+                            const newSet = new Set(selected)
+                            allIds.forEach(id => allSelected ? newSet.delete(id) : newSet.add(id))
+                            setSelected(newSet)
+                          }} className="cursor-pointer" /></th>
+                        <th className="text-left label py-2 pr-6 text-amber-700">Agency</th>
+                        <th className="text-left label py-2 pr-6 text-amber-700">Name</th>
+                        <th className="text-left label py-2 pr-6 text-amber-700">Role</th>
+                        <th className="text-left label py-2 pr-6 text-amber-700">City</th>
+                        <th className="text-left label py-2 pr-6 text-amber-700">Email</th>
+                        <th className="text-left label py-2 text-amber-700">Instagram</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {reviewContacts.map(c => (
+                        <tr key={c.id} className={`border-b border-amber-100 hover:bg-amber-50 ${selected.has(c.id) ? 'bg-blue-50' : ''}`}>
+                          <td className="py-2.5 pl-4 pr-2"><input type="checkbox"
+                            checked={selected.has(c.id)}
+                            onChange={() => toggleSelect(c.id)}
+                            className="cursor-pointer" /></td>
+                          <td className="py-2.5 pr-6 font-medium text-xs">{c.agency_name}</td>
+                          <td className="py-2.5 pr-6 text-neutral-600 text-xs">{c.agent_name || '—'}</td>
+                          <td className="py-2.5 pr-6 text-neutral-400 text-xs max-w-[180px] truncate" title={c.board || ''}>{c.board || '—'}</td>
+                          <td className="py-2.5 pr-6 text-neutral-500 text-xs">{c.city || '—'}</td>
+                          <td className="py-2.5 pr-6">
+                            {c.email_invalid ? <span className="text-red-400 text-xs line-through">{c.email || 'invalid'}</span> : c.email ? <a href={`mailto:${c.email}`} className="underline underline-offset-2 hover:opacity-60 text-xs">{c.email}</a> : <span className="text-neutral-300 text-xs">—</span>}
+                          </td>
+                          <td className="py-2.5 text-neutral-500 text-xs">
+                            {c.cell_phone ? (
+                              c.cell_phone.startsWith('@')
+                                ? <a href={`https://instagram.com/${c.cell_phone.replace('@','')}`} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:opacity-60">{c.cell_phone}</a>
+                                : c.cell_phone
+                            ) : '—'}
+                          </td>
+                          <td className="py-2.5 text-right pr-3">
+                            <button onClick={() => setEditTarget(c)} className="text-[10px] tracking-widest uppercase text-neutral-400 hover:text-black transition-colors">Edit</button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Main contacts table */}
+          {contacts.length > 0 && (
+            <div className="overflow-x-auto -mx-4 md:mx-0">
+              <table className="w-full text-sm min-w-[700px]">
+                <thead>
+                  <tr className="border-b border-neutral-200">
+                    <th className="text-left w-6 py-2"><input type="checkbox" 
+                      checked={selected.size === contacts.length && contacts.length > 0}
+                      onChange={() => {
+                        if (selected.size === contacts.length) setSelected(new Set())
+                        else setSelected(new Set(contacts.map(c => c.id)))
+                      }} className="cursor-pointer" /></th>
+                    <th className="text-left label py-2 pr-6">Agency</th>
+                    <th className="text-left label py-2 pr-6">Agent</th>
+                    <th className="text-left label py-2 pr-6">Recent Work</th>
+                    <th className="text-left label py-2 pr-6">City</th>
+                    <th className="text-left label py-2 pr-6">Email</th>
+                    <th className="text-left label py-2">Instagram</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {contacts.map(c => (
+                    <tr key={c.id} className={`border-b border-neutral-100 hover:bg-neutral-50 ${selected.has(c.id) ? 'bg-blue-50' : ''}`}>
+                      <td className="py-2.5 px-2"><input type="checkbox" 
+                        checked={selected.has(c.id)}
+                        onChange={() => toggleSelect(c.id)}
+                        className="cursor-pointer" /></td>
+                      <td className="py-2.5 pr-6 font-medium text-xs">{c.agency_name}</td>
+                      <td className="py-2.5 pr-6 text-neutral-600 text-xs">{c.agent_name || '—'}</td>
+                      <td className="py-2.5 pr-6 text-neutral-400 text-xs max-w-[220px] truncate" title={c.board || ''}>{c.board || '—'}</td>
+                      <td className="py-2.5 pr-6 text-neutral-500 text-xs">{c.city || '—'}</td>
+                      <td className="py-2.5 pr-6">
+                        {c.email_invalid ? <span className="text-red-400 text-xs line-through">{c.email || 'invalid'}</span> : c.email ? <a href={`mailto:${c.email}`} className="underline underline-offset-2 hover:opacity-60 text-xs">{c.email}</a> : <span className="text-neutral-300 text-xs">—</span>}
+                      </td>
+                      <td className="py-2.5 text-neutral-500 text-xs">
+                        {c.cell_phone ? (
+                          c.cell_phone.startsWith('@')
+                            ? <a href={`https://instagram.com/${c.cell_phone.replace('@','')}`} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:opacity-60">{c.cell_phone}</a>
+                            : c.cell_phone
+                        ) : '—'}
+                      </td>
+                      <td className="py-2.5 text-right">
+                        <button onClick={() => setEditTarget(c)} className="text-[10px] tracking-widest uppercase text-neutral-400 hover:text-black transition-colors">Edit</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </>
       )}
 
       {editTarget && (
