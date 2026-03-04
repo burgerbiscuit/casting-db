@@ -303,11 +303,18 @@ export function PresentationViewer({
   const confirmedCount = Object.keys(adminConfirmed).filter(k => adminConfirmed[k] && clientStatus[k] === "pending_confirmation").length
   const shortlistedCount = Object.values(shortlists).filter(Boolean).length
 
-  // Group sorted (non-shortlisted) by category for section headers
-  const uncategorized = sorted.filter(pm => !pm.category_id && !shortlists[pm.model_id])
+    // Sort alphabetically by last name within a section
+  const alphaSort = (a: any, b: any) => {
+    const aName = ((a.models?.last_name || '') + (a.models?.first_name || '')).toLowerCase()
+    const bName = ((b.models?.last_name || '') + (b.models?.first_name || '')).toLowerCase()
+    return aName.localeCompare(bName)
+  }
+
+  // Group sorted (non-shortlisted) by category for section headers — alphabetical within each section
+  const uncategorized = sorted.filter(pm => !pm.category_id && !shortlists[pm.model_id]).sort(alphaSort)
   const byCategory = categories.map(cat => ({
     ...cat,
-    models: sorted.filter(pm => pm.category_id === cat.id && !shortlists[pm.model_id])
+    models: sorted.filter(pm => pm.category_id === cat.id && !shortlists[pm.model_id]).sort(alphaSort)
   })).filter(cat => cat.models.length > 0)
 
   const getSizingParts = (pm: any, model: any): string[] => {
