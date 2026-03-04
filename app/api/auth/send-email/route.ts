@@ -5,6 +5,8 @@ const RESEND_API_KEY = process.env.RESEND_API_KEY!
 const HOOK_SECRET = process.env.AUTH_HOOK_SECRET!
 const FROM = 'Tasha Tongpreecha Casting <casting@tashatongpreecha.com>'
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://cast.tashatongpreecha.com'
+// Supabase verification endpoint — must use the Supabase project URL, NOT the app URL
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://yayrsksrgrsjxcewwwlg.supabase.co'
 
 // Verify Supabase hook signature
 function verifySignature(body: string, signature: string | null): boolean {
@@ -122,17 +124,17 @@ export async function POST(req: NextRequest) {
   const { user, email_data } = payload
   const email = user?.email
   const type = email_data?.email_action_type
+  // token_hash is the correct value for the verify URL; fall back to token
   const token = email_data?.token_hash || email_data?.token
   const redirectTo = email_data?.redirect_to || `${APP_URL}/client`
-  const siteUrl = email_data?.site_url || APP_URL
 
   if (!email || !token) {
     console.error('[send-email hook] Missing email or token', { email, token })
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
   }
 
-  // Build confirmation URL
-  const confirmationUrl = `${siteUrl}/auth/v1/verify?token=${token}&type=${type}&redirect_to=${encodeURIComponent(redirectTo)}`
+  // Confirmation URL MUST use the Supabase project URL for /auth/v1/verify — not the app URL
+  const confirmationUrl = `${SUPABASE_URL}/auth/v1/verify?token=${token}&type=${type}&redirect_to=${encodeURIComponent(redirectTo)}`
 
   const { subject, html } = buildEmailHtml(type, confirmationUrl, email)
 
