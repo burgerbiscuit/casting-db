@@ -134,8 +134,10 @@ export default function ResourcesPage() {
                 <div className="bg-neutral-50 border border-neutral-200 p-4 text-xs leading-relaxed font-sans text-neutral-700 min-h-48 space-y-2">
                   {activeTemplate.body.split('\n').map((line: string, i: number) => {
                     const imgMatch = line.match(/!\[([^\]]*)\]\(([^)]+)\)/)
-                    if (imgMatch) return <img key={i} src={imgMatch[2]} alt={imgMatch[1]} className="max-w-full rounded my-2 border border-neutral-200" style={{maxHeight: 320}} />
+                    if (imgMatch) return <img key={i} src={imgMatch[2]} alt={imgMatch[1]} className="max-w-full my-2 border border-neutral-200" style={{maxHeight: 320}} />
                     if (line.trim() === '---') return <hr key={i} className="border-neutral-200 my-2" />
+                    const urlMatch = line.match(/^(https?:\/\/\S+)$/)
+                    if (urlMatch) return <a key={i} href={urlMatch[1]} target="_blank" rel="noopener noreferrer" className="block text-xs underline text-neutral-600 hover:text-black tracking-wide">{urlMatch[1]}</a>
                     return <div key={i} className="whitespace-pre-wrap">{line}</div>
                   })}
                 </div>
