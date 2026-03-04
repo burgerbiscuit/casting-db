@@ -83,15 +83,12 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 
     const getSizing = (m: any) => {
       const p: string[] = []
-      if (m.height_ft) p.push(`${m.height_ft}'${m.height_in||0}"`)
-      if (m.bust) p.push(`Bust ${m.bust}`)
-      if (m.waist) p.push(`Waist ${m.waist}`)
-      if (m.hips) p.push(`Hips ${m.hips}`)
-      if (m.chest) p.push(`Chest ${m.chest}`)
-      if (m.inseam) p.push(`Inseam ${m.inseam}`)
-      if (m.dress_size) p.push(`Dress ${m.dress_size}`)
-      if (m.suit_size) p.push(`Suit ${m.suit_size}`)
-      if (m.shoe_size) p.push(`Shoe ${m.shoe_size}`)
+      if (m.height_ft) p.push(`Height: ${m.height_ft}'${m.height_in||0}"`)
+      if (m.bust || m.chest) p.push(`Chest: ${m.bust || m.chest}`)
+      if (m.waist) p.push(`Waist: ${m.waist}`)
+      if (m.hips) p.push(`Hips: ${m.hips}`)
+      if (m.shoe_size) p.push(`Shoes: ${m.shoe_size}`)
+      if (m.dress_size) p.push(`Dress: ${m.dress_size}`)
       return p
     }
 
@@ -105,51 +102,58 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       const igHandle = m.instagram_handle ? m.instagram_handle.replace('@','') : ''
       const igUrl = igHandle ? `https://www.instagram.com/${igHandle}/` : ''
       const portfolioRaw = pm.show_portfolio && m.portfolio_url ? toUrl(m.portfolio_url) : ''
-      const igFollowers = m.instagram_followers ? Number(m.instagram_followers).toLocaleString() : ''
+
+      const infoItems: string[] = []
+      if (pm.pm_option) infoItems.push(`<div class="info-option">${esc(pm.pm_option)}</div>`)
+      if (pm.pm_rate) infoItems.push(`<div class="info-rate">${esc(pm.pm_rate)}</div>`)
+
+      const linkItems: string[] = []
+      if (portfolioRaw) linkItems.push(`<a href="${esc(portfolioRaw)}" class="pdf-link">PORTFOLIO</a>`)
+      if (igUrl) linkItems.push(`<a href="${esc(igUrl)}" class="pdf-link">INSTAGRAM</a>`)
 
       return `
         <div class="slide model-slide">
-          <div class="photos-row">
-            <div class="photo-main">${photo1 ? `<img src="${esc(photo1.public_url)}" />` : '<div class="photo-empty"></div>'}</div>
-            <div class="photo-sec">${photo2 ? `<img src="${esc(photo2.public_url)}" />` : '<div class="photo-empty"></div>'}</div>
+          <div class="model-header">
+            <img src="${baseUrl}/logo.jpg" class="slide-logo" alt="Tasha Tongpreecha Casting" />
+            <div class="model-name">${esc(m.first_name?.toUpperCase())} ${esc(m.last_name?.toUpperCase())}</div>
+            ${m.agency ? `<div class="model-agency">${esc(m.agency)}</div>` : ''}
+            ${sizing.length ? `<div class="sizing-row">${sizing.join('<span class="sep"> &nbsp; </span>')}</div>` : ''}
           </div>
-          <div class="model-info">
-            <div class="info-left">
-              <div class="model-name">${esc(m.first_name)} ${esc(m.last_name)}</div>
-              ${m.agency ? `<div class="model-agency">${esc(m.agency)}</div>` : ''}
-              ${sizing.length ? `<div class="sizing-row">${sizing.map((s: string) => `<span>${esc(s)}</span>`).join('<span class="dot">·</span>')}</div>` : ''}
-              <div class="links-row">
-                ${igUrl ? `<a href="${esc(igUrl)}" class="pdf-link">Instagram${igFollowers ? ` (${igFollowers})` : ''} ↗</a>` : ''}
-                ${portfolioRaw ? `<a href="${esc(portfolioRaw)}" class="pdf-link">Portfolio ↗</a>` : ''}
-              </div>
+          <div class="model-body">
+            <div class="photos-area">
+              <div class="photo photo-1">${photo1 ? `<img src="${esc(photo1.public_url)}" />` : '<div class="photo-empty"></div>'}</div>
+              <div class="photo photo-2">${photo2 ? `<img src="${esc(photo2.public_url)}" />` : '<div class="photo-empty"></div>'}</div>
             </div>
-            <div class="info-right">
-              ${pm.rate ? `<div class="note-item"><span class="note-label">Rate</span><span class="note-val">${esc(pm.rate)}</span></div>` : ''}
-              ${pm.location ? `<div class="note-item"><span class="note-label">Location</span><span class="note-val">${esc(pm.location)}</span></div>` : ''}
-              ${pm.admin_notes ? `<div class="note-item"><span class="note-label">Notes</span><span class="note-val">${esc(pm.admin_notes)}</span></div>` : ''}
+            <div class="info-panel">
+              <div class="info-main">
+                ${infoItems.join('')}
+              </div>
+              <div class="info-links">
+                ${linkItems.join('')}
+              </div>
             </div>
           </div>
         </div>`
     }
 
-    // Divider: ONLY the section name, nothing else
+    // Divider: ONLY the section name — nothing else
     const sectionDivider = (name: string) => `
       <div class="slide divider-slide">
-        <div class="divider-name">${esc(name)}</div>
+        <div class="divider-name">${esc(name.toUpperCase())}</div>
       </div>`
 
-    // Title page: logo image + project name + shoot date + photographer + stylist
-    const titlePage = `
-      <div class="slide title-slide">
-        <div class="title-inner">
-          <img src="${baseUrl}/logo.jpg" class="title-logo-img" alt="Tasha Tongpreecha Casting" />
-          <div class="title-project">${esc(projectName)}</div>
-          <div class="title-meta">
-            ${shootDate ? `<div class="title-meta-row">${esc(shootDate)}</div>` : ''}
-            ${photographer ? `<div class="title-meta-row"><span class="meta-label">Photographer</span> ${esc(photographer)}</div>` : ''}
-            ${stylist ? `<div class="title-meta-row"><span class="meta-label">Stylist</span> ${esc(stylist)}</div>` : ''}
+    // Cover page
+    const coverPage = `
+      <div class="slide cover-slide">
+        <div class="cover-inner">
+          <img src="${baseUrl}/logo.jpg" class="cover-logo" alt="Tasha Tongpreecha Casting" />
+          <div class="cover-project">${esc(projectName.toUpperCase())}</div>
+          <div class="cover-meta">
+            ${shootDate ? `<div class="cover-meta-row">${esc(shootDate)}</div>` : ''}
+            ${photographer ? `<div class="cover-meta-row"><span class="meta-label">Photographer</span> ${esc(photographer)}</div>` : ''}
+            ${stylist ? `<div class="cover-meta-row"><span class="meta-label">Stylist</span> ${esc(stylist)}</div>` : ''}
           </div>
-          <div class="title-count">${presentationModels.length} ${presentationModels.length === 1 ? 'Model' : 'Models'}</div>
+          <div class="cover-count">${presentationModels.length} ${presentationModels.length === 1 ? 'MODEL' : 'MODELS'}</div>
         </div>
       </div>`
 
@@ -165,115 +169,146 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 <title>${esc(presName)}</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: #fff; color: #111; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    background: #fff; color: #111;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
 
-  @page { size: 210mm 297mm portrait; margin: 0; }
+  @page { size: 297mm 210mm landscape; margin: 0; }
 
   .slide {
-    width: 210mm;
-    height: 297mm;
+    width: 297mm; height: 210mm;
     page-break-after: always;
     page-break-inside: avoid;
     overflow: hidden;
     position: relative;
     background: white;
-    display: flex;
-    flex-direction: column;
   }
 
-  /* ── TITLE PAGE ─────────────────────── */
-  .title-slide {
-    align-items: center;
-    justify-content: center;
+  /* ── COVER ─────────────────────────────── */
+  .cover-slide {
+    display: flex; align-items: center; justify-content: center;
     background: #fff;
   }
-  .title-inner { text-align: center; padding: 0 40mm; width: 100%; }
-  .title-logo-img { height: 28px; width: auto; margin-bottom: 48px; object-fit: contain; }
-  .title-project {
-    font-size: 28px; font-weight: 200;
-    letter-spacing: 0.25em; text-transform: uppercase;
-    line-height: 1.2; margin-bottom: 28px;
+  .cover-inner { text-align: center; padding: 0 50mm; }
+  .cover-logo { height: 22px; width: auto; margin-bottom: 36px; object-fit: contain; }
+  .cover-project {
+    font-size: 32px; font-weight: 300;
+    letter-spacing: 0.22em; line-height: 1.2;
+    margin-bottom: 24px;
   }
-  .title-meta { display: flex; flex-direction: column; gap: 7px; margin-bottom: 32px; }
-  .title-meta-row { font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; color: #777; }
+  .cover-meta { display: flex; flex-direction: column; gap: 6px; margin-bottom: 24px; }
+  .cover-meta-row { font-size: 8.5px; letter-spacing: 0.22em; text-transform: uppercase; color: #888; }
   .meta-label { color: #bbb; margin-right: 6px; }
-  .title-count { font-size: 8px; letter-spacing: 0.3em; text-transform: uppercase; color: #ccc; }
+  .cover-count { font-size: 8px; letter-spacing: 0.3em; text-transform: uppercase; color: #ccc; }
 
-  /* ── DIVIDER ─────────────────────────── */
+  /* ── DIVIDER ────────────────────────────── */
   .divider-slide {
     background: #000;
-    align-items: center;
-    justify-content: center;
+    display: flex; align-items: center; justify-content: center;
   }
   .divider-name {
-    font-size: 36px; font-weight: 200;
-    letter-spacing: 0.3em; text-transform: uppercase;
+    font-size: 44px; font-weight: 200;
+    letter-spacing: 0.3em;
     color: #fff;
     text-align: center;
     padding: 0 20mm;
   }
 
-  /* ── MODEL SLIDE ─────────────────────── */
-  .model-slide { }
-  .photos-row {
+  /* ── MODEL SLIDE ────────────────────────── */
+  .model-slide {
     display: flex;
-    width: 100%;
-    height: 195mm;
-    flex-shrink: 0;
-    gap: 1.5px;
-    background: #e8e8e8;
+    flex-direction: column;
   }
-  .photo-main { flex: 1.15; overflow: hidden; }
-  .photo-sec  { flex: 0.85; overflow: hidden; }
-  .photo-main img,
-  .photo-sec img { width: 100%; height: 100%; object-fit: cover; object-position: top center; display: block; }
-  .photo-empty { width: 100%; height: 100%; background: #ebebeb; }
 
-  .model-info {
-    flex: 1;
+  /* Header: logo + name + sizing */
+  .model-header {
     display: flex;
-    align-items: flex-start;
-    padding: 12px 10mm 10px;
-    gap: 8mm;
-    border-top: 1px solid #e8e8e8;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px 20mm 8px;
+    border-bottom: 1px solid #ebebeb;
+    flex-shrink: 0;
+  }
+  .slide-logo { height: 14px; width: auto; object-fit: contain; margin-bottom: 6px; opacity: 0.5; }
+  .model-name {
+    font-size: 30px; font-weight: 300;
+    letter-spacing: 0.2em;
+    line-height: 1.1; text-align: center;
+  }
+  .model-agency {
+    font-size: 7px; letter-spacing: 0.25em; text-transform: uppercase;
+    color: #999; margin-top: 3px;
+  }
+  .sizing-row {
+    font-size: 9.5px; letter-spacing: 0.05em; color: #333;
+    margin-top: 4px; text-align: center;
+  }
+  .sep { color: #ccc; }
+
+  /* Body: photos + info panel */
+  .model-body {
+    display: flex;
+    flex: 1;
     min-height: 0;
     overflow: hidden;
   }
-  .info-left { flex: 1.4; display: flex; flex-direction: column; gap: 5px; min-width: 0; }
-  .info-right { flex: 1; display: flex; flex-direction: column; gap: 5px; min-width: 0; }
-
-  .model-name {
-    font-size: 14px; font-weight: 300;
-    letter-spacing: 0.15em; text-transform: uppercase;
-    line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  .photos-area {
+    display: flex;
+    flex: 1;
+    gap: 2px;
+    background: #e8e8e8;
+    overflow: hidden;
   }
-  .model-agency { font-size: 7px; letter-spacing: 0.2em; text-transform: uppercase; color: #999; }
-  .sizing-row { display: flex; flex-wrap: wrap; align-items: center; gap: 1px 0; }
-  .sizing-row span { font-size: 7px; letter-spacing: 0.1em; color: #555; }
-  .dot { font-size: 7px; color: #ccc; margin: 0 4px; }
-  .links-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 2px; }
+  .photo { overflow: hidden; flex: 1; }
+  .photo-1 { flex: 1.15; }
+  .photo-2 { flex: 0.85; }
+  .photo img {
+    width: 100%; height: 100%;
+    object-fit: cover; object-position: top center; display: block;
+  }
+  .photo-empty { width: 100%; height: 100%; background: #e8e8e8; }
+
+  /* Right panel */
+  .info-panel {
+    width: 52mm;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 18px 14px 18px 16px;
+    border-left: 1px solid #ebebeb;
+  }
+  .info-main { display: flex; flex-direction: column; gap: 10px; }
+  .info-option {
+    font-size: 12px; font-weight: 300;
+    letter-spacing: 0.12em; text-transform: uppercase; color: #222;
+  }
+  .info-rate {
+    font-size: 12px; font-weight: 300;
+    letter-spacing: 0.08em; color: #222;
+  }
+  .info-links { display: flex; flex-direction: column; gap: 6px; }
   .pdf-link {
-    font-size: 7px; letter-spacing: 0.2em; text-transform: uppercase;
-    color: #111; text-decoration: underline;
+    font-size: 9px; letter-spacing: 0.22em; text-transform: uppercase;
+    color: #0070c0; text-decoration: underline;
     -webkit-print-color-adjust: exact;
   }
-  .note-item { display: flex; gap: 5px; align-items: baseline; }
-  .note-label { font-size: 6.5px; letter-spacing: 0.18em; text-transform: uppercase; color: #bbb; min-width: 42px; flex-shrink: 0; }
-  .note-val { font-size: 7.5px; color: #444; line-height: 1.4; }
 </style>
 </head>
 <body>
-${titlePage}
+${coverPage}
 ${pages}
 <script>
-  // Give images time to load before print dialog
   window.addEventListener('load', function() {
     var imgs = document.querySelectorAll('img');
-    var loaded = 0;
-    if (imgs.length === 0) { setTimeout(window.print, 300); return; }
+    var total = imgs.length, loaded = 0;
+    function tryPrint() { if (++loaded >= total) setTimeout(window.print, 400); }
+    if (total === 0) { setTimeout(window.print, 300); return; }
     imgs.forEach(function(img) {
-      if (img.complete) { loaded++; if (loaded === imgs.length) setTimeout(window.print, 300); }
-      else { img.onload = img.onerror = function() { loaded++; if (loaded === imgs.length) setTimeout(window.print, 300); }; }
+      if (img.complete) tryPrint();
+      else { img.onload = tryPrint; img.onerror = tryPrint; }
     });
   });
 </script>
