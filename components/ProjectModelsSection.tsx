@@ -312,7 +312,7 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
               <p className="text-xs font-medium">{model?.first_name} {model?.last_name}</p>
-              {/* Client-side status actions */}
+              {/* Admin action: only officially confirm */}
               {adminConfirmed[mid] ? (
                 <span className="text-[8px] tracking-widest uppercase px-1.5 py-0.5 bg-green-600 text-white">✓ Confirmed</span>
               ) : status === 'pending_confirmation' ? (
@@ -323,20 +323,9 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
                     ✓ Officially Confirm
                   </button>
                 </>
-              ) : status === 'shortlisted' ? (
-                <>
-                  <span className={`text-[8px] tracking-widest uppercase px-1.5 py-0.5 ${STATUS_COLOR['shortlisted']}`}>Shortlisted</span>
-                  <button onClick={() => setClientStatus(mid, 'pending_confirmation')}
-                    className="text-[8px] tracking-widest uppercase px-2 py-0.5 border border-amber-400 text-amber-600 hover:bg-amber-400 hover:text-white transition-colors">
-                    Request Confirmation
-                  </button>
-                </>
-              ) : (
-                <button onClick={() => setClientStatus(mid, 'shortlisted')}
-                  className="text-[8px] tracking-widest uppercase px-2 py-0.5 border border-neutral-300 text-neutral-400 hover:border-black hover:text-black transition-colors">
-                  + Shortlist
-                </button>
-              )}
+              ) : status ? (
+                <span className={`text-[8px] tracking-widest uppercase px-1.5 py-0.5 ${STATUS_COLOR[status] || 'bg-neutral-100 text-neutral-500'}`}>{STATUS_LABEL[status]}</span>
+              ) : null}
             </div>
             {model?.agency && <p className="text-[10px] text-neutral-400">{model?.agency}</p>}
           </div>
