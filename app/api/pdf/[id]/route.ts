@@ -106,6 +106,8 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       const infoItems: string[] = []
       if (pm.pm_option) infoItems.push(`<div class="info-option">${esc(pm.pm_option)}</div>`)
       if (pm.pm_rate) infoItems.push(`<div class="info-rate">${esc(pm.pm_rate)}</div>`)
+      if (pm.location) infoItems.push(`<div class="info-note"><span class="note-lbl">Location</span>${esc(pm.location)}</div>`)
+      if (pm.admin_notes) infoItems.push(`<div class="info-note"><span class="note-lbl">Notes</span>${esc(pm.admin_notes)}</div>`)
 
       const linkItems: string[] = []
       if (portfolioRaw) linkItems.push(`<a href="${esc(portfolioRaw)}" class="pdf-link">PORTFOLIO</a>`)
@@ -175,7 +177,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     -webkit-print-color-adjust: exact; print-color-adjust: exact;
   }
 
-  @page { size: 297mm 210mm landscape; margin: 0; }
+  @page { size: A4 landscape; margin: 0; }
 
   .slide {
     width: 297mm; height: 210mm;
@@ -288,6 +290,13 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   .info-rate {
     font-size: 12px; font-weight: 300;
     letter-spacing: 0.08em; color: #222;
+  }
+  .info-note {
+    font-size: 8.5px; color: #444; line-height: 1.5;
+    display: flex; flex-direction: column; gap: 1px;
+  }
+  .note-lbl {
+    font-size: 7px; letter-spacing: 0.2em; text-transform: uppercase; color: #bbb;
   }
   .info-links { display: flex; flex-direction: column; gap: 6px; }
   .pdf-link {
