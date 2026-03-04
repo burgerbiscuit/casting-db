@@ -2,7 +2,7 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { KeyRound, LayoutDashboard, FolderOpen, Users, UserCheck, Settings, LogOut, Building2, Clapperboard, CalendarDays, ClipboardList, Menu, X, BarChart3, BookOpen } from 'lucide-react'
+import { KeyRound, LayoutDashboard, FolderOpen, Users, UserCheck, Settings, LogOut, Building2, Clapperboard, CalendarDays, ClipboardList, Menu, X, BarChart3, BookOpen, Monitor } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 const TASHA_USER_ID = '328944d5-bf72-424d-874b-8f21b363464a'
@@ -12,6 +12,7 @@ const baseNav = [
   { href: '/admin/projects', label: 'Projects', icon: FolderOpen },
   { href: '/admin/models', label: 'Models', icon: Users },
   { href: '/admin/clients', label: 'Clients', icon: UserCheck },
+  { href: '/client', label: 'Client Portal', icon: Monitor, external: true },
   { href: '/admin/agencies/contacts', label: 'Model Agencies', icon: Building2 },
   { href: '/admin/calendar', label: 'Calendar', icon: CalendarDays },
   { href: '/admin/reviews', label: 'Reviews', icon: ClipboardList },
@@ -50,8 +51,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const NavLinks = () => (
     <>
-      {nav.map(({ href, label, icon: Icon }) => {
-        const active = path === href || (href !== '/admin' && path.startsWith(href))
+      {nav.map(({ href, label, icon: Icon, external }: any) => {
+        const active = !external && (path === href || (href !== '/admin' && path.startsWith(href)))
+        if (external) {
+          return (
+            <a key={href} href={href} target="_blank" rel="noopener noreferrer"
+              className="flex items-center gap-3 px-3 py-2.5 text-xs tracking-wider uppercase transition-colors text-neutral-500 hover:text-black hover:bg-neutral-50">
+              <Icon size={14} />
+              {label}
+              <span className="ml-auto text-[9px] opacity-40">↗</span>
+            </a>
+          )
+        }
         return (
           <Link key={href} href={href}
             className={`flex items-center gap-3 px-3 py-2.5 text-xs tracking-wider uppercase transition-colors ${active ? 'bg-black text-white' : 'text-neutral-500 hover:text-black hover:bg-neutral-50'}`}>
