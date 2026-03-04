@@ -24,10 +24,10 @@ export async function POST(req: NextRequest, { params }: { params: { token: stri
   if (estimate.status === 'signed') return NextResponse.json({ error: 'Already signed' }, { status: 400 })
 
   const body = await req.json()
-  const { signature_data } = body
+  const { signature_data, signer_name, signer_title, signer_company } = body
 
   const { error } = await supabase.from('estimates').update({
-    signature_data,
+    signature_data, signer_name, signer_title, signer_company,
     signed_at: new Date().toISOString(),
     status: 'signed',
     updated_at: new Date().toISOString(),

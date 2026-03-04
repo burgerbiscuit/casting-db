@@ -9,229 +9,180 @@ export default function SignPage() {
   const [loading, setLoading] = useState(true)
   const [signing, setSigning] = useState(false)
   const [done, setDone] = useState(false)
+  const [alreadySigned, setAlreadySigned] = useState(false)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [drawing, setDrawing] = useState(false)
   const [hasStrokes, setHasStrokes] = useState(false)
+  const [signerName, setSignerName] = useState('')
+  const [signerTitle, setSignerTitle] = useState('')
+  const [signerCompany, setSignerCompany] = useState('')
+  const [error, setError] = useState('')
 
   useEffect(() => {
     fetch(`/api/sign/${token}`)
       .then(r => r.json())
-      .then(data => { setEstimate(data); setLoading(false) })
+      .then(data => {
+        if (data.status === 'signed') setAlreadySigned(true)
+        setEstimate(data)
+        setLoading(false)
+      })
       .catch(() => setLoading(false))
   }, [token])
 
-  // Canvas drawing
   const getPos = (e: React.MouseEvent | React.TouchEvent, canvas: HTMLCanvasElement) => {
     const rect = canvas.getBoundingClientRect()
     const scaleX = canvas.width / rect.width
     const scaleY = canvas.height / rect.height
     if ('touches' in e) {
-      return {
-        x: (e.touches[0].clientX - rect.left) * scaleX,
-        y: (e.touches[0].clientY - rect.top) * scaleY,
-      }
+      return { x: (e.touches[0].clientX - rect.left) * scaleX, y: (e.touches[0].clientY - rect.top) * scaleY }
     }
-    return {
-      x: (e.clientX - rect.left) * scaleX,
-      y: (e.clientY - rect.top) * scaleY,
-    }
+    return { x: (e.clientX - rect.left) * scaleX, y: (e.clientY - rect.top) * scaleY }
   }
 
   const startDraw = (e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault()
-    const canvas = canvasRef.current
-    if (!canvas) return
+    const canvas = canvasRef.current; if (!canvas) return
     const ctx = canvas.getContext('2d')!
     const pos = getPos(e, canvas)
-    ctx.beginPath()
-    ctx.moveTo(pos.x, pos.y)
-    setDrawing(true)
-    setHasStrokes(true)
+    ctx.beginPath(); ctx.moveTo(pos.x, pos.y)
+    setDrawing(true); setHasStrokes(true)
   }
-
   const draw = (e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault()
     if (!drawing) return
-    const canvas = canvasRef.current
-    if (!canvas) return
+    const canvas = canvasRef.current; if (!canvas) return
     const ctx = canvas.getContext('2d')!
+    ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.strokeStyle = '#000'
     const pos = getPos(e, canvas)
-    ctx.lineWidth = 2
-    ctx.lineCap = 'round'
-    ctx.strokeStyle = '#111'
-    ctx.lineTo(pos.x, pos.y)
-    ctx.stroke()
+    ctx.lineTo(pos.x, pos.y); ctx.stroke()
   }
-
-  const endDraw = () => setDrawing(false)
-
-  const clearCanvas = () => {
-    const canvas = canvasRef.current
-    if (!canvas) return
+  const stopDraw = () => setDrawing(false)
+  const clearSig = () => {
+    const canvas = canvasRef.current; if (!canvas) return
     canvas.getContext('2d')!.clearRect(0, 0, canvas.width, canvas.height)
     setHasStrokes(false)
   }
 
   const submit = async () => {
-    if (!hasStrokes) return alert('Please sign before submitting.')
-    const canvas = canvasRef.current
-    if (!canvas) return
+    if (!hasStrokes) { setError('Please sign above before submitting.'); return }
+    if (!signerName) { setError('Please enter your name.'); return }
+    setSigning(true); setError('')
+    const canvas = canvasRef.current!
     const signature_data = canvas.toDataURL('image/png')
-    setSigning(true)
     const res = await fetch(`/api/sign/${token}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ signature_data }),
+      body: JSON.stringify({ signature_data, signer_name: signerName, signer_title: signerTitle, signer_company: signerCompany })
     })
     setSigning(false)
     if (res.ok) setDone(true)
-    else {
-      const data = await res.json()
-      alert(data.error || 'Failed to sign')
-    }
+    else setError('Something went wrong. Please try again.')
   }
 
-  const fmt = (n: number) => '$' + Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })
-  const label = 'text-[9px] tracking-widest uppercase text-neutral-400 block mb-1'
+  const fmt = (n: number) => '$' + Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2 }) + ' USD'
+  const inputClass = "w-full border border-neutral-200 px-3 py-2 text-sm focus:outline-none focus:border-black"
+  const labelClass = "block text-[10px] tracking-widest uppercase text-neutral-500 mb-1"
 
-  if (loading) return (
-    <div className="min-h-screen bg-white flex items-center justify-center">
-      <p className="text-neutral-400 text-sm tracking-widest">Loading...</p>
-    </div>
-  )
-
-  if (!estimate || estimate.error) return (
-    <div className="min-h-screen bg-white flex items-center justify-center">
-      <p className="text-neutral-400">Estimate not found.</p>
-    </div>
-  )
+  if (loading) return <main className="min-h-screen flex items-center justify-center"><p className="text-sm text-neutral-400">Loading...</p></main>
+  if (!estimate || estimate.error) return <main className="min-h-screen flex items-center justify-center"><p className="text-sm text-neutral-500">Estimate not found.</p></main>
 
   if (done) return (
-    <div className="min-h-screen bg-white flex items-center justify-center">
-      <div className="text-center">
-        <p className="text-[9px] tracking-widest uppercase text-neutral-400 mb-6">Tasha Tongpreecha Casting</p>
-        <p className="text-xl font-light tracking-widest uppercase mb-3">Estimate Signed</p>
-        <p className="text-sm text-neutral-500">Thank you. Your signature has been recorded.</p>
+    <main className="min-h-screen flex items-center justify-center bg-white">
+      <div className="text-center max-w-sm px-6">
+        <img src="/logo.jpg" alt="Tasha Tongpreecha Casting" className="h-6 w-auto mx-auto mb-4" />
+        <p className="text-sm text-neutral-600 mb-2">Estimate signed. Thank you.</p>
+        <p className="text-xs text-neutral-400">You'll receive a copy by email shortly.</p>
       </div>
-    </div>
+    </main>
   )
 
-  if (estimate.status === 'signed') return (
-    <div className="min-h-screen bg-white flex items-center justify-center">
-      <div className="text-center">
-        <p className="text-[9px] tracking-widest uppercase text-neutral-400 mb-6">Tasha Tongpreecha Casting</p>
-        <p className="text-xl font-light tracking-widest uppercase mb-3">Already Signed</p>
-        <p className="text-sm text-neutral-500">
-          This estimate was signed on{' '}
-          {estimate.signed_at
-            ? new Date(estimate.signed_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
-            : 'a prior date'}.
+  if (alreadySigned) return (
+    <main className="min-h-screen flex items-center justify-center bg-white">
+      <div className="text-center max-w-sm px-6">
+        <img src="/logo.jpg" alt="Tasha Tongpreecha Casting" className="h-6 w-auto mx-auto mb-4" />
+        <p className="text-sm text-neutral-600">This estimate has already been signed{estimate.signed_at ? ` on ${new Date(estimate.signed_at).toLocaleDateString('en-US', {year:'numeric',month:'long',day:'numeric'})}` : ''}.
         </p>
       </div>
-    </div>
+    </main>
   )
 
-  const items = estimate.estimate_items || []
-  const projectName = estimate.projects?.name || ''
-
   return (
-    <div className="min-h-screen bg-white">
-      <div className="max-w-xl mx-auto px-6 py-12">
-        {/* Header */}
-        <p className="text-[9px] tracking-widest uppercase text-neutral-400 mb-8">Tasha Tongpreecha Casting</p>
-        <h1 className="text-2xl font-light tracking-widest uppercase mb-2">Casting Estimate</h1>
-        <p className="text-sm text-neutral-500 mb-8">{estimate.estimate_number}{projectName ? ` — ${projectName}` : ''}</p>
+    <main className="min-h-screen bg-white py-12 px-4">
+      <div className="max-w-2xl mx-auto">
+        <div className="text-center mb-8 pb-4 border-b border-neutral-200">
+          <img src="/logo.jpg" alt="Tasha Tongpreecha Casting" className="h-6 w-auto mx-auto mb-2" />
+          <p className="text-[10px] tracking-widest uppercase text-neutral-400">Casting Estimate — Please Review & Sign</p>
+        </div>
 
-        {/* Bill to */}
+        {/* Summary */}
         <div className="mb-8">
-          <p className={label}>Prepared For</p>
-          <p className="text-sm font-medium">{estimate.client_name}</p>
-          {estimate.client_email && <p className="text-xs text-neutral-500">{estimate.client_email}</p>}
+          {estimate.projects?.name && <p className="text-xs tracking-wider uppercase text-neutral-500 mb-1">{estimate.projects.name}</p>}
+          <p className="text-xs text-neutral-500 mb-4">{estimate.estimate_number} · Issued {new Date(estimate.issue_date).toLocaleDateString('en-US', {year:'numeric',month:'long',day:'numeric'})}</p>
+
+          <table className="w-full border-collapse mb-4">
+            <thead>
+              <tr className="bg-neutral-100">
+                <th className="text-left text-[10px] tracking-widest uppercase px-3 py-2 border border-neutral-200 font-medium">Casting Director</th>
+                <th className="text-right text-[10px] tracking-widest uppercase px-3 py-2 border border-neutral-200 font-medium">Fee</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td className="px-3 py-3 border border-neutral-200 text-sm whitespace-pre-wrap">{estimate.scope_description}</td>
+                <td className="px-3 py-3 border border-neutral-200 text-sm text-right whitespace-nowrap">{fmt(estimate.casting_fee)}</td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr>
+                <td className="px-3 py-2 border border-neutral-200 text-sm font-medium">Total</td>
+                <td className="px-3 py-2 border border-neutral-200 text-sm font-medium text-right">{fmt(estimate.casting_fee)}</td>
+              </tr>
+            </tfoot>
+          </table>
         </div>
 
-        {/* Line items */}
-        <div className="border border-neutral-100 mb-8">
-          <div className="grid grid-cols-8 text-[9px] tracking-widest uppercase text-neutral-400 px-4 py-2 bg-neutral-50 border-b border-neutral-100">
-            <div className="col-span-5">Description</div>
-            <div className="col-span-1 text-center">Qty</div>
-            <div className="col-span-2 text-right">Amount</div>
+        {/* Signer info */}
+        <div className="space-y-4 mb-8">
+          <p className="text-[10px] tracking-widest uppercase font-medium">Your Information</p>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className={labelClass}>Name *</label>
+              <input value={signerName} onChange={e => setSignerName(e.target.value)} className={inputClass} placeholder="Full name" required />
+            </div>
+            <div>
+              <label className={labelClass}>Title</label>
+              <input value={signerTitle} onChange={e => setSignerTitle(e.target.value)} className={inputClass} placeholder="Job title" />
+            </div>
           </div>
-          {Number(estimate.casting_fee) > 0 && (
-            <div className="grid grid-cols-8 px-4 py-3 border-b border-neutral-50 text-sm">
-              <div className="col-span-5">Casting Fee</div>
-              <div className="col-span-1 text-center">1</div>
-              <div className="col-span-2 text-right">{fmt(estimate.casting_fee)}</div>
-            </div>
-          )}
-          {Number(estimate.talent_budget) > 0 && (
-            <div className="grid grid-cols-8 px-4 py-3 border-b border-neutral-50 text-sm">
-              <div className="col-span-5">Talent Budget</div>
-              <div className="col-span-1 text-center">1</div>
-              <div className="col-span-2 text-right">{fmt(estimate.talent_budget)}</div>
-            </div>
-          )}
-          {Number(estimate.expenses) > 0 && (
-            <div className="grid grid-cols-8 px-4 py-3 border-b border-neutral-50 text-sm">
-              <div className="col-span-5">Expenses</div>
-              <div className="col-span-1 text-center">1</div>
-              <div className="col-span-2 text-right">{fmt(estimate.expenses)}</div>
-            </div>
-          )}
-          {items.map((item: any) => (
-            <div key={item.id} className="grid grid-cols-8 px-4 py-3 border-b border-neutral-50 text-sm">
-              <div className="col-span-5">{item.description}</div>
-              <div className="col-span-1 text-center">{item.quantity}</div>
-              <div className="col-span-2 text-right">{fmt(item.amount)}</div>
-            </div>
-          ))}
-          <div className="flex justify-end px-4 py-4 border-t border-black">
-            <div className="text-right">
-              <p className={label}>Total</p>
-              <p className="text-xl font-light">{fmt(estimate.subtotal)}</p>
-            </div>
+          <div>
+            <label className={labelClass}>Company</label>
+            <input value={signerCompany} onChange={e => setSignerCompany(e.target.value)} className={inputClass} placeholder="Company name" />
           </div>
         </div>
-
-        {/* Notes */}
-        {estimate.notes && (
-          <div className="mb-8">
-            <p className={label}>Notes</p>
-            <p className="text-sm text-neutral-600 whitespace-pre-wrap">{estimate.notes}</p>
-          </div>
-        )}
 
         {/* Signature pad */}
-        <div className="mb-8">
+        <div className="mb-6">
           <div className="flex items-center justify-between mb-2">
-            <p className={label}>Signature</p>
-            <button onClick={clearCanvas} className="text-[9px] tracking-widest uppercase text-neutral-400 hover:text-black">Clear</button>
+            <p className="text-[10px] tracking-widest uppercase font-medium">Signature</p>
+            {hasStrokes && <button onClick={clearSig} className="text-[10px] tracking-widest uppercase text-neutral-400 hover:text-black">Clear</button>}
           </div>
           <canvas
             ref={canvasRef}
-            width={560}
-            height={160}
-            className="w-full border border-neutral-200 touch-none cursor-crosshair bg-white"
-            style={{ touchAction: 'none' }}
-            onMouseDown={startDraw}
-            onMouseMove={draw}
-            onMouseUp={endDraw}
-            onMouseLeave={endDraw}
-            onTouchStart={startDraw}
-            onTouchMove={draw}
-            onTouchEnd={endDraw}
+            width={600} height={150}
+            className="w-full border border-neutral-300 touch-none bg-white cursor-crosshair"
+            style={{height: 150}}
+            onMouseDown={startDraw} onMouseMove={draw} onMouseUp={stopDraw} onMouseLeave={stopDraw}
+            onTouchStart={startDraw} onTouchMove={draw} onTouchEnd={stopDraw}
           />
-          <p className="text-[9px] text-neutral-400 mt-1">Draw your signature above</p>
+          <p className="text-[10px] text-neutral-400 mt-1">Draw your signature above</p>
         </div>
 
-        <button onClick={submit} disabled={signing}
-          className="w-full bg-black text-white text-xs tracking-widest uppercase py-4 hover:bg-neutral-800 disabled:opacity-50 transition-colors">
-          {signing ? 'Submitting...' : 'Sign & Submit'}
-        </button>
+        {error && <p className="text-xs text-red-500 mb-4">{error}</p>}
 
-        <p className="text-[9px] text-neutral-400 text-center mt-6 tracking-wider">
-          tasha@tashatongpreecha.com
-        </p>
+        <button onClick={submit} disabled={signing} className="w-full py-3 bg-black text-white text-xs tracking-widest uppercase hover:bg-neutral-800 disabled:opacity-50">
+          {signing ? 'Submitting...' : 'Sign & Submit Estimate'}
+        </button>
       </div>
-    </div>
+    </main>
   )
 }

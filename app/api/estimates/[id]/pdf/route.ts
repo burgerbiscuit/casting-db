@@ -1,147 +1,132 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
 
-const esc = (s = '') => (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-const fmt = (n: number) => '$' + Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })
+const esc = (s?: string | null) => (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+const fmt = (n?: number | null) => '$' + Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2 }) + ' USD'
+const fmtDate = (d?: string | null) => {
+  if (!d) return ''
+  const dt = new Date(d)
+  return dt.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+}
 
-async function requireTeam(authSupabase: any) {
-  const { data: { user } } = await authSupabase.auth.getUser()
+async function requireTeam(authSupabase: ReturnType<typeof createClient> extends Promise<infer T> ? T : never) {
+  const { data: { user } } = await (authSupabase as any).auth.getUser()
   if (!user) return null
-  const { data: tm } = await authSupabase.from('team_members').select('id').eq('user_id', user.id).single()
-  if (!tm) return null
-  return user
+  const { data: tm } = await (authSupabase as any).from('team_members').select('id').eq('user_id', user.id).single()
+  return tm ? user : null
 }
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   const authSupabase = await createClient()
-  const user = await requireTeam(authSupabase)
+  const user = await requireTeam(authSupabase as any)
   if (!user) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const supabase = await createServiceClient()
-  const { data: estimate, error } = await supabase
-    .from('estimates')
-    .select('*, projects(name), estimate_items(*)')
-    .eq('id', params.id)
-    .single()
+  const { data: est } = await supabase.from('estimates').select('*, projects(name, shoot_date)').eq('id', params.id).single()
+  if (!est) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-  if (error || !estimate) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  const projectName = (est.projects as any)?.name || ''
+  const shootDate = (est.projects as any)?.shoot_date || ''
+  const titleParts = [projectName ? projectName.toUpperCase() : '', fmtDate(shootDate).toUpperCase()].filter(Boolean)
+  const titleLine = titleParts.length ? ' - ' + titleParts.join(' ') : ''
 
-  const items = (estimate.estimate_items || []) as any[]
-  const projectName = (estimate.projects as any)?.name || ''
+  const billingHtml = [
+    est.billing_contact_name ? 'Billing contact name: ' + esc(est.billing_contact_name) : '',
+    est.billing_contact_phone ? 'Phone number: ' + esc(est.billing_contact_phone) : '',
+    est.billing_contact_email ? 'Email: <a href="mailto:' + esc(est.billing_contact_email) + '">' + esc(est.billing_contact_email) + '</a>' : '',
+    est.billing_contact_address ? 'Address: ' + esc(est.billing_contact_address) : '',
+  ].filter(Boolean).map(l => '<p>' + l + '</p>').join('\n')
 
-  const formatDate = (d: string) => d ? new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : ''
+  const sigBlock = est.signature_data
+    ? '<img src="' + esc(est.signature_data as string) + '" style="max-height:60px;max-width:220px;display:block;" />'
+      + '<p style="font-size:9px;color:#555;margin-top:4px;">Signed'
+      + (est.signer_name ? ' by ' + esc(est.signer_name as string) : '') + ' on '
+      + new Date(est.signed_at as string).toLocaleDateString('en-US', {year:'numeric',month:'long',day:'numeric'}) + '</p>'
+    : `<table style="width:100%;border-collapse:collapse;">
+        <tr><td style="padding:8px 0;border-bottom:1px solid #111;font-size:11px;color:#555;width:80px;">Name</td><td style="padding:8px 0;border-bottom:1px solid #111;"></td></tr>
+        <tr><td style="padding:16px 0 8px;border-bottom:1px solid #111;font-size:11px;color:#555;">Title</td><td style="border-bottom:1px solid #111;"></td></tr>
+        <tr><td style="padding:16px 0 8px;border-bottom:1px solid #111;font-size:11px;color:#555;">Company</td><td style="border-bottom:1px solid #111;"></td></tr>
+        <tr><td style="padding:16px 0 8px;border-bottom:1px solid #111;font-size:11px;color:#555;">Signature</td><td style="border-bottom:1px solid #111;"></td></tr>
+        <tr><td style="padding:16px 0 8px;border-bottom:1px solid #111;font-size:11px;color:#555;">Date</td><td style="border-bottom:1px solid #111;"></td></tr>
+       </table>`
 
-  const lineItems: string[] = []
-  if (Number(estimate.casting_fee) > 0) {
-    lineItems.push(`<tr><td>Casting Fee</td><td style="text-align:center">1</td><td style="text-align:right">${fmt(estimate.casting_fee)}</td><td style="text-align:right">${fmt(estimate.casting_fee)}</td></tr>`)
-  }
-  if (Number(estimate.talent_budget) > 0) {
-    lineItems.push(`<tr><td>Talent Budget</td><td style="text-align:center">1</td><td style="text-align:right">${fmt(estimate.talent_budget)}</td><td style="text-align:right">${fmt(estimate.talent_budget)}</td></tr>`)
-  }
-  if (Number(estimate.expenses) > 0) {
-    lineItems.push(`<tr><td>Expenses</td><td style="text-align:center">1</td><td style="text-align:right">${fmt(estimate.expenses)}</td><td style="text-align:right">${fmt(estimate.expenses)}</td></tr>`)
-  }
-  items.forEach((item: any) => {
-    lineItems.push(`<tr><td>${esc(item.description)}</td><td style="text-align:center">${esc(String(item.quantity))}</td><td style="text-align:right">${fmt(item.rate)}</td><td style="text-align:right">${fmt(item.amount)}</td></tr>`)
-  })
-
-  const signatureBlock = estimate.signature_data
-    ? `<div class="sig-block"><p class="sig-label">SIGNED</p><img src="${esc(estimate.signature_data)}" style="max-height:80px;max-width:300px;border-bottom:1px solid #111;padding-bottom:8px;" /><p class="sig-date">${formatDate(estimate.signed_at)}</p></div>`
-    : `<div class="sig-block"><p class="sig-label">AUTHORIZED SIGNATURE</p><div style="border-bottom:1px solid #111;height:60px;margin-bottom:8px;"></div><div style="display:flex;gap:40px"><div style="flex:1;border-top:1px solid #ddd;padding-top:8px;font-size:8px;letter-spacing:0.2em;text-transform:uppercase;color:#999;">Signature</div><div style="width:140px;border-top:1px solid #ddd;padding-top:8px;font-size:8px;letter-spacing:0.2em;text-transform:uppercase;color:#999;">Date</div></div></div>`
+  const notesHtml = est.notes ? '<p style="margin-top:16px;font-size:10px;color:#555;line-height:1.6;">' + esc(est.notes as string) + '</p>' : ''
 
   const html = `<!DOCTYPE html>
 <html>
 <head>
 <meta charset="utf-8">
-<title>${esc(estimate.estimate_number || 'Estimate')}</title>
+<title>Casting Estimate</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: white; color: #111; padding: 60px; max-width: 800px; margin: 0 auto; }
-  @media print { body { padding: 40px; } }
-  .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 48px; border-bottom: 2px solid #111; padding-bottom: 24px; }
-  .logo { font-size: 9px; letter-spacing: 0.4em; text-transform: uppercase; color: #111; font-weight: 600; }
-  .doc-title { font-size: 9px; letter-spacing: 0.4em; text-transform: uppercase; color: #999; margin-top: 6px; }
-  .meta { text-align: right; }
-  .meta-row { font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase; color: #555; margin-bottom: 4px; }
-  .meta-val { color: #111; font-weight: 500; }
-  .bill-to { margin-bottom: 40px; }
-  .section-label { font-size: 8px; letter-spacing: 0.3em; text-transform: uppercase; color: #999; margin-bottom: 10px; }
-  .bill-name { font-size: 16px; font-weight: 300; letter-spacing: 0.1em; margin-bottom: 4px; }
-  .bill-email { font-size: 11px; color: #555; letter-spacing: 0.05em; }
-  .project-name { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: #555; margin-top: 4px; }
-  table { width: 100%; border-collapse: collapse; margin-bottom: 32px; }
-  thead th { font-size: 8px; letter-spacing: 0.25em; text-transform: uppercase; color: #999; border-bottom: 1px solid #111; padding: 0 8px 10px; }
-  thead th:last-child { text-align: right; }
-  thead th:nth-child(2), thead th:nth-child(3) { text-align: center; }
-  tbody td { font-size: 12px; padding: 12px 8px; border-bottom: 1px solid #f0f0f0; vertical-align: top; }
-  .total-row { display: flex; justify-content: flex-end; margin-bottom: 40px; }
-  .total-box { border-top: 2px solid #111; padding-top: 12px; min-width: 200px; }
-  .total-label { font-size: 8px; letter-spacing: 0.3em; text-transform: uppercase; color: #999; margin-bottom: 6px; }
-  .total-amount { font-size: 24px; font-weight: 300; letter-spacing: 0.05em; }
-  .notes-section { margin-bottom: 40px; }
-  .notes-text { font-size: 12px; line-height: 1.7; color: #555; white-space: pre-wrap; }
-  .sig-block { margin-top: 48px; border-top: 1px solid #e0e0e0; padding-top: 32px; }
-  .sig-label { font-size: 8px; letter-spacing: 0.3em; text-transform: uppercase; color: #999; margin-bottom: 16px; }
-  .sig-date { font-size: 9px; color: #555; letter-spacing: 0.1em; margin-top: 8px; }
-  .footer { margin-top: 48px; font-size: 8px; letter-spacing: 0.2em; text-transform: uppercase; color: #bbb; border-top: 1px solid #f0f0f0; padding-top: 20px; }
+  body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: white; color: #111; padding: 56px 64px; max-width: 850px; margin: 0 auto; font-size: 11px; }
+  @media print { body { padding: 40px 48px; } }
+  .header-brand { text-align: center; font-size: 13px; letter-spacing: 0.35em; text-transform: uppercase; padding-bottom: 10px; border-bottom: 2px solid #111; margin-bottom: 20px; }
+  .header-brand span { font-weight: 700; }
+  .doc-title { text-align: center; font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; font-weight: 600; margin-bottom: 28px; }
+  .billing-contact { margin-bottom: 36px; }
+  .billing-contact .label { font-size: 10px; font-weight: 700; margin-bottom: 4px; }
+  .billing-contact p { font-size: 11px; line-height: 1.7; }
+  .billing-contact a { color: #1a56db; }
+  .main-layout { display: flex; gap: 48px; align-items: flex-start; margin-bottom: 48px; }
+  .main-left { flex: 1; }
+  .main-right { flex: 0 0 260px; }
+  .fee-table { width: 100%; border-collapse: collapse; }
+  .fee-table thead th { background: #d0d0d0; font-size: 11px; font-weight: 700; text-transform: uppercase; padding: 8px 12px; border: 1px solid #999; }
+  .fee-table thead th:last-child { text-align: right; }
+  .fee-table tbody td { padding: 12px; border: 1px solid #ccc; font-size: 11px; line-height: 1.6; vertical-align: top; white-space: pre-wrap; }
+  .fee-table tfoot td { padding: 8px 12px; border: 1px solid #ccc; font-size: 11px; font-weight: 600; }
+  .fee-table tfoot td:last-child { text-align: right; }
+  .terms { margin-top: 48px; border-top: 1px solid #ccc; padding-top: 24px; }
+  .terms-title { font-size: 11px; font-weight: 700; margin-bottom: 16px; }
+  .term-head { font-size: 10px; font-weight: 700; margin-top: 14px; margin-bottom: 4px; }
+  .term-body { font-size: 9.5px; line-height: 1.6; color: #333; }
 </style>
 </head>
 <body>
-<div class="header">
-  <div>
-    <div class="logo">Tasha Tongpreecha Casting</div>
-    <div class="doc-title">Casting Estimate</div>
-  </div>
-  <div class="meta">
-    <div class="meta-row">Estimate <span class="meta-val">${esc(estimate.estimate_number || '')}</span></div>
-    <div class="meta-row">Date <span class="meta-val">${formatDate(estimate.issue_date)}</span></div>
-    ${estimate.valid_until ? `<div class="meta-row">Valid Until <span class="meta-val">${formatDate(estimate.valid_until)}</span></div>` : ''}
-    <div class="meta-row" style="margin-top:8px;">Status <span class="meta-val" style="text-transform:uppercase;">${esc(estimate.status || 'draft')}</span></div>
-  </div>
+
+<div class="header-brand">TASHA TONGPREECHA <span>CASTING</span></div>
+<div class="doc-title">TASHA TONGPREECHA CASTING ESTIMATE` + titleLine + `</div>
+
+<div class="billing-contact">
+  <p class="label">BILLING CONTACT</p>
+  ` + billingHtml + `
 </div>
 
-<div class="bill-to">
-  <p class="section-label">Bill To</p>
-  <p class="bill-name">${esc(estimate.client_name || '')}</p>
-  ${estimate.client_email ? `<p class="bill-email">${esc(estimate.client_email)}</p>` : ''}
-  ${projectName ? `<p class="project-name">${esc(projectName)}</p>` : ''}
-</div>
-
-<table>
-  <thead>
-    <tr>
-      <th style="text-align:left">Description</th>
-      <th>Qty</th>
-      <th>Rate</th>
-      <th style="text-align:right">Amount</th>
-    </tr>
-  </thead>
-  <tbody>
-    ${lineItems.join('\n    ')}
-  </tbody>
-</table>
-
-<div class="total-row">
-  <div class="total-box">
-    <div class="total-label">Total</div>
-    <div class="total-amount">${fmt(estimate.subtotal)}</div>
+<div class="main-layout">
+  <div class="main-left">
+    <table class="fee-table">
+      <thead><tr><th style="text-align:left;width:70%">CASTING DIRECTOR</th><th>FEE</th></tr></thead>
+      <tbody><tr>
+        <td>` + esc(est.scope_description as string || 'Casting Director fee') + `</td>
+        <td style="text-align:right;white-space:nowrap;">` + fmt(est.casting_fee as number) + `</td>
+      </tr></tbody>
+      <tfoot><tr><td>Total</td><td>` + fmt(est.casting_fee as number) + `</td></tr></tfoot>
+    </table>
+    ` + notesHtml + `
   </div>
+  <div class="main-right">` + sigBlock + `</div>
 </div>
 
-${estimate.notes ? `<div class="notes-section"><p class="section-label">Notes</p><p class="notes-text">${esc(estimate.notes)}</p></div>` : ''}
-
-${signatureBlock}
-
-<div class="footer">tasha@tashatongpreecha.com</div>
+<div class="terms">
+  <p class="terms-title">TERMS &amp; CONDITIONS</p>
+  <p class="term-head">Scope &amp; Overages</p>
+  <p class="term-body">This estimate is based on the specs shared. Any change in scope, including added shoot days, deliverables, usage, or altered casting criteria — may result in additional fees ("Overages"). Overages will be communicated in writing and require written approval before proceeding.</p>
+  <p class="term-head">Payment Terms</p>
+  <p class="term-body">• Final balance due within 30 days of final invoice.<br>• Late payments incur a 2% monthly finance charge.</p>
+  <p class="term-head">Cancellations / Postponements</p>
+  <p class="term-body">If casting has begun, 50% of the casting fee is due even if the project is canceled.<br>If cancellation occurs within 48 hours of the scheduled casting, 100% of fees and confirmed vendor costs apply.<br>If project is delayed or paused by client beyond the original timeline, additional hold fees may apply.</p>
+  <p class="term-head">Usage &amp; Talent Liability</p>
+  <p class="term-body">Casting Director provides talent options and recommendations in good faith but is not responsible for talent performance or final usage rights negotiated directly with talent agents or production.</p>
+  <p class="term-head">Portfolio Rights</p>
+  <p class="term-body">Casting Director may use non-confidential imagery or footage from the casting session for archival and portfolio purposes unless otherwise agreed in writing.</p>
+</div>
 
 <script>window.onload = () => window.print()</script>
 </body>
 </html>`
 
   return new NextResponse(html, {
-    headers: {
-      'Content-Type': 'text/html',
-      'Content-Disposition': `inline; filename="${esc(estimate.estimate_number || 'estimate')}.pdf"`,
-    }
+    headers: { 'Content-Type': 'text/html' }
   })
 }

@@ -1,19 +1,14 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Trash2 } from 'lucide-react'
-
-interface LineItem {
-  description: string
-  quantity: number
-  rate: number
-  amount: number
-}
+import { createClient } from '@/lib/supabase/client'
 
 export default function NewEstimatePage() {
   const router = useRouter()
+  const supabase = createClient()
   const [projects, setProjects] = useState<any[]>([])
   const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
 
   const year = new Date().getFullYear()
   const [form, setForm] = useState({
@@ -21,188 +16,140 @@ export default function NewEstimatePage() {
     estimate_number: `EST-${year}-001`,
     client_name: '',
     client_email: '',
+    billing_contact_name: '',
+    billing_contact_phone: '',
+    billing_contact_email: '',
+    billing_contact_address: '',
     issue_date: new Date().toISOString().split('T')[0],
     valid_until: '',
+    scope_description: 'Casting Director fee for booking up to 1 models\nScope of work - Full-service casting: breakdown advisement, talent sourcing, talent review and shortlisting, casting sessions as needed (in person casting not included), callbacks, booking management, client communication. 3 rounds max. Does not include payment of models or any negotiations outside of the specs agreed to upon signing',
     casting_fee: '',
-    talent_budget: '',
-    expenses: '',
     notes: '',
   })
-  const [items, setItems] = useState<LineItem[]>([])
+
+  const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }))
 
   useEffect(() => {
-    fetch('/api/estimates').then(r => r.json()).then(data => {
-      // Get count to auto-number
-      if (Array.isArray(data)) {
-        const num = String(data.length + 1).padStart(3, '0')
-        setForm(f => ({ ...f, estimate_number: `EST-${year}-${num}` }))
-      }
-    })
-    // Load projects
-    fetch('/api/invoices').then(() => {}).catch(() => {})
-    import('@/lib/supabase/client').then(({ createClient }) => {
-      const supabase = createClient()
-      supabase.from('projects').select('id, name, client_emails').order('name').then(({ data }) => {
-        setProjects(data || [])
-      })
-    })
+    supabase.from('projects').select('id, name, client_emails, billing_contact, shoot_date').eq('status', 'active').order('created_at', { ascending: false })
+      .then(({ data }) => setProjects(data || []))
   }, [])
 
-  const handleProjectChange = (projectId: string) => {
-    const project = projects.find(p => p.id === projectId)
-    setForm(f => ({
-      ...f,
-      project_id: projectId,
-      client_email: project?.client_emails?.[0] || f.client_email,
-    }))
+  const onProjectChange = (projectId: string) => {
+    set('project_id', projectId)
+    const proj = projects.find(p => p.id === projectId)
+    if (proj) {
+      if (proj.client_emails?.[0]) set('client_email', proj.client_emails[0])
+      if (proj.billing_contact) set('billing_contact_name', proj.billing_contact)
+    }
   }
 
-  const subtotal =
-    Number(form.casting_fee || 0) +
-    Number(form.talent_budget || 0) +
-    Number(form.expenses || 0) +
-    items.reduce((s, i) => s + i.amount, 0)
-
-  const addItem = () => setItems(prev => [...prev, { description: '', quantity: 1, rate: 0, amount: 0 }])
-
-  const updateItem = (idx: number, field: keyof LineItem, value: string | number) => {
-    setItems(prev => {
-      const next = [...prev]
-      const item = { ...next[idx], [field]: field === 'description' ? value : Number(value) }
-      item.amount = item.quantity * item.rate
-      next[idx] = item
-      return next
-    })
-  }
-
-  const removeItem = (idx: number) => setItems(prev => prev.filter((_, i) => i !== idx))
-
-  const save = async () => {
-    setSaving(true)
-    const res = await fetch('/api/estimates', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...form, items }),
-    })
-    const data = await res.json()
+  const save = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSaving(true); setError('')
+    const { data: { user } } = await supabase.auth.getUser()
+    const { data, error: err } = await supabase.from('estimates').insert({
+      ...form,
+      casting_fee: parseFloat(form.casting_fee) || 0,
+      created_by: user?.id,
+    }).select().single()
     setSaving(false)
-    if (data.id) router.push(`/admin/billing/estimates/${data.id}`)
+    if (err) { setError(err.message); return }
+    router.push(`/admin/billing/estimates/${data.id}`)
   }
 
-  const label = 'text-[9px] tracking-widest uppercase text-neutral-400 block mb-1'
-  const input = 'w-full border border-neutral-200 px-3 py-2 text-sm focus:outline-none focus:border-black'
+  const labelClass = "block text-[10px] tracking-widest uppercase text-neutral-500 mb-1"
+  const inputClass = "w-full border border-neutral-200 px-3 py-2 text-sm focus:outline-none focus:border-black"
 
   return (
-    <div className="max-w-2xl">
-      <h1 className="text-2xl font-light tracking-widest uppercase mb-8">New Estimate</h1>
+    <div className="max-w-3xl mx-auto px-4 py-8">
+      <div className="mb-8">
+        <a href="/admin/billing" className="text-[10px] tracking-widest uppercase text-neutral-400 hover:text-black">← Billing</a>
+        <h1 className="text-2xl font-light tracking-widest uppercase mt-2">New Estimate</h1>
+      </div>
 
-      <div className="space-y-6">
-        {/* Project */}
-        <div>
-          <label className={label}>Project</label>
-          <select value={form.project_id} onChange={e => handleProjectChange(e.target.value)} className={input}>
-            <option value="">— Select project —</option>
-            {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-          </select>
-        </div>
-
-        {/* Estimate # + Dates */}
-        <div className="grid grid-cols-3 gap-4">
-          <div>
-            <label className={label}>Estimate #</label>
-            <input value={form.estimate_number} onChange={e => setForm(f => ({ ...f, estimate_number: e.target.value }))} className={input} />
-          </div>
-          <div>
-            <label className={label}>Issue Date</label>
-            <input type="date" value={form.issue_date} onChange={e => setForm(f => ({ ...f, issue_date: e.target.value }))} className={input} />
-          </div>
-          <div>
-            <label className={label}>Valid Until</label>
-            <input type="date" value={form.valid_until} onChange={e => setForm(f => ({ ...f, valid_until: e.target.value }))} className={input} />
-          </div>
-        </div>
-
-        {/* Client */}
+      <form onSubmit={save} className="space-y-8">
+        {/* Project & Estimate # */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className={label}>Client Name</label>
-            <input value={form.client_name} onChange={e => setForm(f => ({ ...f, client_name: e.target.value }))} className={input} />
+            <label className={labelClass}>Project</label>
+            <select value={form.project_id} onChange={e => onProjectChange(e.target.value)} className={inputClass}>
+              <option value="">Select project...</option>
+              {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
           </div>
           <div>
-            <label className={label}>Client Email</label>
-            <input type="email" value={form.client_email} onChange={e => setForm(f => ({ ...f, client_email: e.target.value }))} className={input} />
+            <label className={labelClass}>Estimate #</label>
+            <input value={form.estimate_number} onChange={e => set('estimate_number', e.target.value)} className={inputClass} />
           </div>
         </div>
 
-        {/* Core fees */}
+        {/* Billing Contact */}
         <div>
-          <p className={label + ' mb-3'}>Fees</p>
-          <div className="grid grid-cols-3 gap-4">
-            {[['casting_fee', 'Casting Fee'], ['talent_budget', 'Talent Budget'], ['expenses', 'Expenses']].map(([key, lbl]) => (
-              <div key={key}>
-                <label className={label}>{lbl}</label>
-                <input type="number" min="0" step="0.01"
-                  value={(form as any)[key]} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
-                  className={input} placeholder="0.00" />
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Line items */}
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <p className={label}>Additional Line Items</p>
-            <button onClick={addItem} className="flex items-center gap-1 text-[10px] tracking-widest uppercase text-neutral-500 hover:text-black">
-              <Plus size={12} /> Add
-            </button>
-          </div>
-          {items.length > 0 && (
-            <div className="space-y-2">
-              <div className="grid grid-cols-12 gap-2 text-[9px] tracking-widest uppercase text-neutral-400 px-1">
-                <div className="col-span-6">Description</div>
-                <div className="col-span-2 text-center">Qty</div>
-                <div className="col-span-2 text-right">Rate</div>
-                <div className="col-span-2 text-right">Amount</div>
-              </div>
-              {items.map((item, idx) => (
-                <div key={idx} className="grid grid-cols-12 gap-2 items-center">
-                  <input className={input + ' col-span-6'} placeholder="Description"
-                    value={item.description} onChange={e => updateItem(idx, 'description', e.target.value)} />
-                  <input type="number" className={input + ' col-span-2 text-center'} min="1"
-                    value={item.quantity} onChange={e => updateItem(idx, 'quantity', e.target.value)} />
-                  <input type="number" className={input + ' col-span-2 text-right'} min="0" step="0.01"
-                    value={item.rate} onChange={e => updateItem(idx, 'rate', e.target.value)} />
-                  <div className="col-span-1 text-right text-sm">${item.amount.toFixed(2)}</div>
-                  <button onClick={() => removeItem(idx)} className="col-span-1 flex justify-center text-neutral-300 hover:text-red-500">
-                    <Trash2 size={14} />
-                  </button>
-                </div>
-              ))}
+          <p className="text-[10px] tracking-widest uppercase font-medium mb-3">Billing Contact</p>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className={labelClass}>Contact Name</label>
+              <input value={form.billing_contact_name} onChange={e => set('billing_contact_name', e.target.value)} className={inputClass} placeholder="Briana Lemmo" />
             </div>
-          )}
+            <div>
+              <label className={labelClass}>Phone</label>
+              <input value={form.billing_contact_phone} onChange={e => set('billing_contact_phone', e.target.value)} className={inputClass} placeholder="914-299-8834" />
+            </div>
+            <div>
+              <label className={labelClass}>Email</label>
+              <input value={form.billing_contact_email} onChange={e => set('billing_contact_email', e.target.value)} className={inputClass} type="email" placeholder="finance@client.com" />
+            </div>
+            <div>
+              <label className={labelClass}>Address</label>
+              <input value={form.billing_contact_address} onChange={e => set('billing_contact_address', e.target.value)} className={inputClass} placeholder="648 Kissam Road, Peekskill, NY 10566" />
+            </div>
+          </div>
         </div>
 
-        {/* Subtotal */}
-        <div className="border-t border-black pt-4 flex justify-end">
+        {/* Dates */}
+        <div className="grid grid-cols-2 gap-4">
           <div>
-            <p className={label}>Total</p>
-            <p className="text-2xl font-light">${subtotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
+            <label className={labelClass}>Issue Date</label>
+            <input type="date" value={form.issue_date} onChange={e => set('issue_date', e.target.value)} className={inputClass} />
+          </div>
+          <div>
+            <label className={labelClass}>Valid Until</label>
+            <input type="date" value={form.valid_until} onChange={e => set('valid_until', e.target.value)} className={inputClass} />
+          </div>
+        </div>
+
+        {/* Scope & Fee */}
+        <div>
+          <p className="text-[10px] tracking-widest uppercase font-medium mb-3">Casting Director Fee</p>
+          <div className="space-y-4">
+            <div>
+              <label className={labelClass}>Scope of Work</label>
+              <textarea value={form.scope_description} onChange={e => set('scope_description', e.target.value)} rows={6} className={inputClass + " resize-none"} />
+            </div>
+            <div>
+              <label className={labelClass}>Fee Amount (USD)</label>
+              <input type="number" value={form.casting_fee} onChange={e => set('casting_fee', e.target.value)} className={inputClass} placeholder="500" min="0" step="0.01" />
+            </div>
           </div>
         </div>
 
         {/* Notes */}
         <div>
-          <label className={label}>Notes</label>
-          <textarea rows={3} value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
-            className={input + ' resize-none'} />
+          <label className={labelClass}>Additional Notes</label>
+          <textarea value={form.notes} onChange={e => set('notes', e.target.value)} rows={3} className={inputClass + " resize-none"} />
         </div>
 
-        <button onClick={save} disabled={saving}
-          className="w-full bg-black text-white text-xs tracking-widest uppercase py-3 hover:bg-neutral-800 disabled:opacity-50 transition-colors">
-          {saving ? 'Saving...' : 'Save as Draft'}
-        </button>
-      </div>
+        {error && <p className="text-xs text-red-500">{error}</p>}
+
+        <div className="flex gap-4">
+          <button type="submit" disabled={saving} className="px-6 py-2.5 bg-black text-white text-xs tracking-widest uppercase hover:bg-neutral-800 disabled:opacity-50">
+            {saving ? 'Saving...' : 'Create Estimate'}
+          </button>
+          <a href="/admin/billing" className="px-6 py-2.5 border border-neutral-200 text-xs tracking-widest uppercase hover:bg-neutral-50">
+            Cancel
+          </a>
+        </div>
+      </form>
     </div>
   )
 }

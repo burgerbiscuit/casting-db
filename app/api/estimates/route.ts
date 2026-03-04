@@ -31,13 +31,14 @@ export async function POST(req: NextRequest) {
   const body = await req.json()
   const supabase = await createServiceClient()
 
-  const subtotal =
-    Number(body.casting_fee || 0) +
-    Number(body.talent_budget || 0) +
-    Number(body.expenses || 0) +
-    (body.items || []).reduce((s: number, i: any) => s + Number(i.amount || 0), 0)
+  const subtotal = Number(body.casting_fee || 0)
 
   const { data, error } = await supabase.from('estimates').insert({
+    billing_contact_name: body.billing_contact_name,
+    billing_contact_phone: body.billing_contact_phone,
+    billing_contact_email: body.billing_contact_email,
+    billing_contact_address: body.billing_contact_address,
+    scope_description: body.scope_description,
     project_id: body.project_id || null,
     estimate_number: body.estimate_number,
     client_name: body.client_name,
