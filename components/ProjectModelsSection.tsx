@@ -108,6 +108,20 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
 
   useEffect(() => { load() }, [load])
 
+  // Realtime: re-load when client_shortlists changes (client shortlists/requests confirmation)
+  useEffect(() => {
+    const channel = supabase
+      .channel('admin-shortlist-watch-' + projectId)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'client_shortlists',
+      }, () => { load() })
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [projectId])
+
+
   const savePresNotes = async (modelId: string, notes: string) => {
     const pm = presModels[modelId]
     if (!pm) return
