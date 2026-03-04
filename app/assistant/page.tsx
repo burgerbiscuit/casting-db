@@ -26,6 +26,8 @@ export default function AssistantPage() {
   const [form, setForm] = useState({
     first_name: '', last_name: '', email: '', phone: '',
     city: '', country: '',
+    opportunity_type: '', // 'Job' | 'Internship'
+    school_credit: null as boolean | null,
     experience_level: '',
     years_experience: '',
     languages: [] as string[],
@@ -77,6 +79,8 @@ export default function AssistantPage() {
         resume_url,
         resume_storage_path,
         notes: form.notes || null,
+        opportunity_type: form.opportunity_type || null,
+        school_credit: form.school_credit,
         status: 'new',
       })
       if (dbErr) throw new Error(dbErr.message)
@@ -133,6 +137,36 @@ export default function AssistantPage() {
             <div><label className={lbl}>City</label><input value={form.city} onChange={e => set('city', e.target.value)} placeholder="e.g. New York" className={inp} /></div>
             <div><label className={lbl}>Country</label><input value={form.country} onChange={e => set('country', e.target.value)} placeholder="e.g. USA" className={inp} /></div>
           </div>
+
+          {/* Job or Internship */}
+          <div>
+            <p className="label mb-3">I am looking for a</p>
+            <div className="flex gap-3">
+              {['Job', 'Internship'].map(opt => (
+                <button key={opt} type="button"
+                  onClick={() => setForm(f => ({ ...f, opportunity_type: opt, school_credit: opt === 'Job' ? null : f.school_credit }))}
+                  className={`px-6 py-3 text-left border transition-colors ${form.opportunity_type === opt ? 'bg-black text-white border-black' : 'border-neutral-200 hover:border-black'}`}>
+                  <p className="text-xs font-medium tracking-wider uppercase">{opt}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* School credit — only if internship */}
+          {form.opportunity_type === 'Internship' && (
+            <div>
+              <p className="label mb-3">Can you receive school credit for this internship?</p>
+              <div className="flex gap-3">
+                {[{ label: 'Yes', value: true }, { label: 'No', value: false }].map(opt => (
+                  <button key={opt.label} type="button"
+                    onClick={() => setForm(f => ({ ...f, school_credit: opt.value }))}
+                    className={`px-6 py-2.5 text-xs border tracking-wider uppercase transition-colors ${form.school_credit === opt.value ? 'bg-black text-white border-black' : 'border-neutral-200 hover:border-black'}`}>
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Experience Level */}
           <div>

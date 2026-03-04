@@ -127,8 +127,10 @@ export default function AssistantsPage() {
                   <p className="text-sm font-medium">{s.first_name} {s.last_name}</p>
                   <p className="text-xs text-neutral-400">
                     {[s.city, s.country].filter(Boolean).join(', ')}
+                    {s.opportunity_type && ` · ${s.opportunity_type}`}
+                    {s.opportunity_type === 'Internship' && s.school_credit !== null && ` (school credit: ${s.school_credit ? 'yes' : 'no'})`}
                     {s.experience_level && ` · ${EXP_LABEL[s.experience_level] || s.experience_level}`}
-                    {s.years_experience && ` · ${s.years_experience}yr exp`}
+                    {s.years_experience && ` · ${s.years_experience}yr`}
                   </p>
                 </div>
               </button>

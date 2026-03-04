@@ -5,18 +5,20 @@ import Link from 'next/link'
 const ROLES = [
   'Photographer', 'Videographer / Director', 'Stylist', 'Hair & Makeup',
   'Art Director', 'Creative Director', 'Production Company', 'PR Agency',
-  'Brand / Client', 'Set Designer', 'Casting Director', 'Other'
+  'Brand / Client', 'Set Designer', 'Casting Director', 'Casting Assistant', 'Other'
 ]
 
 export default function OtherForm() {
   const [form, setForm] = useState({
     first_name: '', last_name: '', role: '', company: '',
-    email: '', phone: '', city: '', instagram: '', website: '', notes: ''
+    email: '', phone: '', city: '', instagram: '', website: '', notes: '',
+    opportunity_type: '', school_credit: ''
   })
   const [submitted, setSubmitted] = useState(false)
   const [loading, setLoading] = useState(false)
 
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }))
+  const isCastingAssistant = form.role === 'Casting Assistant'
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -24,7 +26,10 @@ export default function OtherForm() {
     await fetch('/api/other-submission', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
+      body: JSON.stringify({
+        ...form,
+        school_credit: form.school_credit === 'Yes' ? true : form.school_credit === 'No' ? false : null,
+      }),
     })
     setLoading(false)
     setSubmitted(true)
@@ -63,6 +68,44 @@ export default function OtherForm() {
               {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
             </select>
           </div>
+
+          {/* Casting Assistant extras */}
+          {isCastingAssistant && (
+            <div className="space-y-5 border border-neutral-100 p-5 bg-neutral-50/50">
+              <div>
+                <p className="label mb-3">I am looking for a</p>
+                <div className="flex gap-3">
+                  {['Job', 'Internship'].map(opt => (
+                    <button key={opt} type="button" onClick={() => { set('opportunity_type', opt); if (opt === 'Job') set('school_credit', '') }}
+                      className={`px-5 py-2.5 text-xs border tracking-wider uppercase transition-colors ${form.opportunity_type === opt ? 'bg-black text-white border-black' : 'border-neutral-300 hover:border-black'}`}>
+                      {opt}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {form.opportunity_type === 'Internship' && (
+                <div>
+                  <p className="label mb-3">Can you receive school credit for this internship?</p>
+                  <div className="flex gap-3">
+                    {['Yes', 'No'].map(opt => (
+                      <button key={opt} type="button" onClick={() => set('school_credit', opt)}
+                        className={`px-5 py-2.5 text-xs border tracking-wider uppercase transition-colors ${form.school_credit === opt ? 'bg-black text-white border-black' : 'border-neutral-300 hover:border-black'}`}>
+                        {opt}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <p className="text-xs text-neutral-400">
+                Want to include your resume?{' '}
+                <a href="/assistant" className="underline underline-offset-2 hover:text-black transition-colors">
+                  Use our full casting assistant form →
+                </a>
+              </p>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-6">
             <div className="flex flex-col gap-1">
