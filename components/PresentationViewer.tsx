@@ -108,7 +108,6 @@ export function PresentationViewer({
       const supabase = (await import('@/lib/supabase/client')).createClient()
       channel = supabase.channel('admin-confirm-watch')
         .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'project_models' }, async () => {
-          // Refetch admin_confirmed state
           const { data } = await supabase.from('project_models').select('model_id, admin_confirmed')
           if (data) {
             const m: Record<string, boolean> = {}
@@ -121,6 +120,42 @@ export function PresentationViewer({
     setup()
     return () => { if (channel) channel.unsubscribe() }
   }, [])
+
+  // Realtime: watch client_shortlists so count is always accurate
+  useEffect(() => {
+    let channel: any
+    const setup = async () => {
+      const supabase = (await import('@/lib/supabase/client')).createClient()
+      channel = supabase.channel('shortlist-live-' + presentationId)
+        .on('postgres_changes', {
+          event: '*',
+          schema: 'public',
+          table: 'client_shortlists',
+          filter: `presentation_id=eq.${presentationId}`,
+        }, async () => {
+          // Refetch shortlists for this user + presentation
+          const { data } = await supabase
+            .from('client_shortlists')
+            .select('model_id, status, is_released, notes, author_name')
+            .eq('presentation_id', presentationId)
+            .eq('client_id', clientId)
+          const sl: Record<string, boolean> = {}
+          const rl: Record<string, boolean> = {}
+          const cs: Record<string, string> = {}
+          ;(data || []).forEach((s: any) => {
+            sl[s.model_id] = true
+            if (s.is_released) rl[s.model_id] = true
+            if (s.status) cs[s.model_id] = s.status
+          })
+          setShortlists(sl)
+          setReleases(rl)
+          setClientStatus(prev => ({ ...prev, ...cs }))
+        })
+        .subscribe()
+    }
+    setup()
+    return () => { if (channel) channel.unsubscribe() }
+  }, [presentationId, clientId])
 
   const [search, setSearch] = useState('')
   const [filterHeight, setFilterHeight] = useState<string>('')
