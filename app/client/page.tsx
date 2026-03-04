@@ -14,12 +14,14 @@ export default async function ClientDashboard() {
     project: any
     presentations: any[]
     hasConfirmed: boolean
+    chartApproved: boolean
+    mainPresId: string | null
   }
 
   let activeProjects: ProjectEntry[] = []
   let archivedProjects: ProjectEntry[] = []
 
-  const buildEntries = async (rawProjects: any[]): Promise<ProjectEntry[]> => {
+  const buildEntries = async (rawProjects: any[], isTeam: boolean): Promise<ProjectEntry[]> => {
     const projectIds = rawProjects.map((p: any) => p.id)
     // Fetch which projects have at least one admin_confirmed model
     const { data: confirmedPms } = projectIds.length > 0
@@ -33,27 +35,35 @@ export default async function ClientDashboard() {
 
     return rawProjects
       .filter((p: any) => ((p as any).presentations || []).length > 0)
-      .map((p: any) => ({
-        project: p,
-        presentations: (p as any).presentations || [],
-        hasConfirmed: confirmedSet.has(p.id),
-      }))
+      .map((p: any) => {
+        const pres = (p as any).presentations || []
+        const mainPres = pres[0]
+        // Chart is visible to clients only if approved (team can always see it)
+        const chartApproved = isTeam ? confirmedSet.has(p.id) : (mainPres?.chart_approved === true && confirmedSet.has(p.id))
+        return {
+          project: p,
+          presentations: pres,
+          hasConfirmed: confirmedSet.has(p.id),
+          chartApproved,
+          mainPresId: mainPres?.id || null,
+        }
+      })
   }
 
   if (isMember) {
     const { data: allProjects } = await serviceSupabase
       .from('projects')
-      .select('id, name, status, shoot_date, presentations(id, name)')
+      .select('id, name, status, shoot_date, presentations(id, name, chart_approved)')
       .order('created_at', { ascending: false })
 
     const active = (allProjects || []).filter((p: any) => p.status === 'active')
     const archived = (allProjects || []).filter((p: any) => p.status === 'archived')
-    activeProjects = await buildEntries(active)
-    archivedProjects = await buildEntries(archived)
+    activeProjects = await buildEntries(active, true)
+    archivedProjects = await buildEntries(archived, true)
   } else {
     const { data: clientProjects } = await serviceSupabase
       .from('client_projects')
-      .select('*, projects(id, name, status, shoot_date, presentations(id, name))')
+      .select('*, projects(id, name, status, shoot_date, presentations(id, name, chart_approved))')
       .eq('client_id', user?.id)
 
     const active = (clientProjects || [])
@@ -63,12 +73,12 @@ export default async function ClientDashboard() {
       .filter((cp: any) => cp.projects?.status === 'archived')
       .map((cp: any) => cp.projects)
 
-    activeProjects = await buildEntries(active)
-    archivedProjects = await buildEntries(archived)
+    activeProjects = await buildEntries(active, false)
+    archivedProjects = await buildEntries(archived, false)
   }
 
   const ProjectCard = ({ entry }: { entry: ProjectEntry }) => {
-    const { project, presentations, hasConfirmed } = entry
+    const { project, presentations, chartApproved, mainPresId } = entry
     return (
       <div className="border border-neutral-200 hover:border-neutral-400 transition-colors">
         <div className="px-6 py-4 border-b border-neutral-100 flex items-start justify-between gap-3">
@@ -80,12 +90,12 @@ export default async function ClientDashboard() {
               </p>
             )}
           </div>
-          {hasConfirmed && presentations[0] && (
+          {chartApproved && mainPresId && (
             <Link
-              href={`/client/presentations/${presentations[0].id}/chart`}
+              href={`/client/presentations/${mainPresId}/chart`}
               className="shrink-0 text-[9px] tracking-widest uppercase border border-green-600 text-green-700 px-2 py-1 hover:bg-green-600 hover:text-white transition-colors"
             >
-              ✓ Confirmation Chart
+              ✓ Download Confirmation Chart
             </Link>
           )}
         </div>

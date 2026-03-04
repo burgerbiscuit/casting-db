@@ -17,17 +17,29 @@ export default async function ConfirmationChartPage({ params }: { params: { id: 
     .eq('id', id)
     .single()
 
+
   if (!presentation) return <div className="p-8 text-sm text-neutral-400">Presentation not found.</div>
 
   const project = presentation.projects as any
 
   // Access check
   const { data: member } = await serviceSupabase.from('team_members').select('id').eq('user_id', user.id).single()
-  if (!member) {
+  const isMember = !!member
+  if (!isMember) {
     const { data: access } = await serviceSupabase
       .from('client_projects').select('id')
       .eq('client_id', user.id).eq('project_id', project.id).single()
     if (!access) redirect('/client')
+    // Non-team members: only show if chart is approved
+    if (!(presentation as any).chart_approved) {
+      return (
+        <div className="max-w-3xl mx-auto text-center py-20">
+          <p className="text-xs tracking-widest uppercase text-neutral-300 mb-3">Not yet available</p>
+          <p className="text-sm text-neutral-400">The confirmation chart for this project isn&apos;t ready yet. Check back soon.</p>
+          <a href="/client" className="mt-6 inline-block text-[11px] tracking-widest uppercase text-neutral-400 hover:text-black">← Back to Projects</a>
+        </div>
+      )
+    }
   }
 
   // Confirmed models

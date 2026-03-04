@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import { ConfirmationChartEditor } from '@/components/ConfirmationChartEditor'
+import { ChartApprovalToggle } from '@/components/ChartApprovalToggle'
 
 export default async function AdminConfirmationChartPage({ params }: { params: { id: string } }) {
   const { id: projectId } = params
@@ -20,10 +21,11 @@ export default async function AdminConfirmationChartPage({ params }: { params: {
 
   if (!project) return <div className="p-8 text-sm">Project not found.</div>
 
-  // Get the main presentation for client chart link
+  // Get the main presentation (with chart_approved status)
   const { data: presentations } = await serviceSupabase
-    .from('presentations').select('id').eq('project_id', projectId).order('created_at', { ascending: false }).limit(1)
+    .from('presentations').select('id, chart_approved').eq('project_id', projectId).order('created_at', { ascending: false }).limit(1)
   const presId = presentations?.[0]?.id
+  const chartApproved = presentations?.[0]?.chart_approved ?? false
 
   // Confirmed models with full model data
   const { data: projectModels } = await serviceSupabase
@@ -113,11 +115,31 @@ export default async function AdminConfirmationChartPage({ params }: { params: {
           {presId && (
             <Link href={`/client/presentations/${presId}/chart`} target="_blank"
               className="text-[11px] tracking-widest uppercase border border-neutral-300 px-4 py-2 hover:border-black transition-colors">
-              Client View ↗
+              Preview Client View ↗
             </Link>
+          )}
+          {presId && (
+            <ChartApprovalToggle presId={presId} initialApproved={chartApproved} />
           )}
         </div>
       </div>
+
+      {!chartApproved && (
+        <div className="mb-6 border border-amber-200 bg-amber-50 px-4 py-3 flex items-center gap-3">
+          <span className="text-amber-600 text-sm">⚠</span>
+          <p className="text-xs text-amber-700 tracking-wide">
+            This chart is <strong>not yet approved</strong> — clients cannot see it. Approve it using the button above when it&apos;s ready.
+          </p>
+        </div>
+      )}
+      {chartApproved && (
+        <div className="mb-6 border border-green-200 bg-green-50 px-4 py-3 flex items-center gap-3">
+          <span className="text-green-600 text-sm">✓</span>
+          <p className="text-xs text-green-700 tracking-wide">
+            Chart is <strong>approved and live</strong> for clients. Revoke approval to make edits without clients seeing changes.
+          </p>
+        </div>
+      )}
 
       {confirmed.length === 0 ? (
         <div className="border border-dashed border-neutral-200 p-12 text-center">
