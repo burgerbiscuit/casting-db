@@ -71,7 +71,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
           <NavLinks />
         </nav>
-        <div className="px-3 py-4 border-t border-neutral-100">
+        <div className="px-3 py-4 border-t border-neutral-100 space-y-0.5">
+          <a href="/admin/reset-password"
+            className="flex items-center gap-3 px-3 py-2.5 w-full text-xs tracking-wider uppercase text-neutral-400 hover:text-black transition-colors">
+            <KeyRound size={14} />
+            Change Password
+          </a>
           <button onClick={logout}
             className="flex items-center gap-3 px-3 py-2.5 w-full text-xs tracking-wider uppercase text-neutral-400 hover:text-black transition-colors">
             <LogOut size={14} />
@@ -96,7 +101,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
               <NavLinks />
             </nav>
-            <div className="px-3 py-4 border-t border-neutral-100">
+            <div className="px-3 py-4 border-t border-neutral-100 space-y-0.5">
+              <a href="/admin/reset-password"
+                className="flex items-center gap-3 px-3 py-2.5 w-full text-xs tracking-wider uppercase text-neutral-400 hover:text-black transition-colors">
+                <KeyRound size={14} /> Change Password
+              </a>
               <button onClick={logout}
                 className="flex items-center gap-3 px-3 py-2.5 w-full text-xs tracking-wider uppercase text-neutral-400 hover:text-black transition-colors">
                 <LogOut size={14} /> Sign Out
