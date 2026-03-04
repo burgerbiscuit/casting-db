@@ -98,8 +98,15 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
     const catMap: Record<string,string|null> = {}
     ;(pm || []).forEach((m: any) => { catMap[m.model_id] = m.category_id || null })
     setPresModelCategories(catMap)
+    const STATUS_PRIORITY: Record<string, number> = { pending_confirmation: 2, shortlisted: 1 }
     const statusMap: Record<string, string> = {}
-    ;(sl || []).forEach((s: any) => { statusMap[s.model_id] = s.status || 'shortlisted' })
+    ;(sl || []).forEach((s: any) => {
+      const newStatus = s.status || 'shortlisted'
+      const current = statusMap[s.model_id]
+      if (!current || (STATUS_PRIORITY[newStatus] ?? 0) > (STATUS_PRIORITY[current] ?? 0)) {
+        statusMap[s.model_id] = newStatus
+      }
+    })
     setShortlistStatus(statusMap)
     const adminMap: Record<string, boolean> = {}
     ;(pmData || []).forEach((pm: any) => { if (pm.admin_confirmed) adminMap[pm.model_id] = true })
