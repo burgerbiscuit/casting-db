@@ -99,6 +99,7 @@ export function PresentationViewer({
   // adminConfirmed: only set by admin via project_models.admin_confirmed
   const [adminConfirmed, setAdminConfirmed] = useState<Record<string, boolean>>(initialConfirmMap || {})
   const [confirmModal, setConfirmModal] = useState<{ modelId: string; modelName: string } | null>(null)
+  const [undoConfirmModal, setUndoConfirmModal] = useState<{ modelId: string; modelName: string } | null>(null)
 
   // Realtime: watch project_models for admin confirming
   useEffect(() => {
@@ -237,13 +238,20 @@ export function PresentationViewer({
   }
 
   const handleConfirm = async (modelId: string) => {
-    const status = clientStatus[modelId]
-    if (status === 'pending_confirmation') return // already requested
     const supabase = (await import('@/lib/supabase/client')).createClient()
     setClientStatus(prev => ({ ...prev, [modelId]: 'pending_confirmation' }))
     setShortlists(prev => ({ ...prev, [modelId]: true }))
     await supabase.from('client_shortlists').upsert(
       { presentation_id: presentationId, model_id: modelId, client_id: clientId, status: 'pending_confirmation' },
+      { onConflict: 'presentation_id,model_id,client_id' }
+    )
+  }
+
+  const handleUndoConfirm = async (modelId: string) => {
+    const supabase = (await import('@/lib/supabase/client')).createClient()
+    setClientStatus(prev => ({ ...prev, [modelId]: 'shortlisted' }))
+    await supabase.from('client_shortlists').upsert(
+      { presentation_id: presentationId, model_id: modelId, client_id: clientId, status: 'shortlisted' },
       { onConflict: 'presentation_id,model_id,client_id' }
     )
   }
@@ -542,11 +550,15 @@ export function PresentationViewer({
               {/* Action buttons — always in header, compact */}
               <button
                 onClick={() => {
-                  if (clientStatus[current.model_id] === "pending_confirmation" || (adminConfirmed[current.model_id] && clientStatus[current.model_id] === "pending_confirmation")) return
-                  setConfirmModal({ modelId: current.model_id, modelName: `${currentModel?.first_name} ${currentModel?.last_name}` })
+                  const modelName = `${currentModel?.first_name} ${currentModel?.last_name}`
+                  const isOfficiallyConfirmed = adminConfirmed[current.model_id] && clientStatus[current.model_id] === "pending_confirmation"
+                  const isPending = clientStatus[current.model_id] === "pending_confirmation"
+                  if (isOfficiallyConfirmed) return
+                  if (isPending) { setUndoConfirmModal({ modelId: current.model_id, modelName }); return }
+                  setConfirmModal({ modelId: current.model_id, modelName })
                 }}
-                className={`flex-shrink-0 text-[8px] tracking-widest uppercase border px-2.5 py-1.5 transition-colors whitespace-nowrap ${(adminConfirmed[current.model_id] && clientStatus[current.model_id] === "pending_confirmation") ? 'bg-green-600 text-white border-green-600' : (clientStatus[current.model_id] === "pending_confirmation") ? 'bg-amber-400 text-white border-amber-400' : 'border-neutral-300 text-neutral-500'}`}>
-                {(adminConfirmed[current.model_id] && clientStatus[current.model_id] === "pending_confirmation") ? '✓ Officially Confirmed' : (clientStatus[current.model_id] === "pending_confirmation") ? '⏳ Pending' : 'Confirm'}
+                className={`flex-shrink-0 text-xs tracking-widest uppercase border px-3 py-2 transition-colors whitespace-nowrap ${(adminConfirmed[current.model_id] && clientStatus[current.model_id] === "pending_confirmation") ? 'bg-green-600 text-white border-green-600 cursor-default' : (clientStatus[current.model_id] === "pending_confirmation") ? 'bg-amber-400 text-white border-amber-400 hover:bg-amber-500' : 'border-neutral-300 text-neutral-500 hover:border-black hover:text-black'}`}>
+                {(adminConfirmed[current.model_id] && clientStatus[current.model_id] === "pending_confirmation") ? '✓ Confirmed' : (clientStatus[current.model_id] === "pending_confirmation") ? '⏳ Pending ✕' : 'Confirm'}
               </button>
               <SlideActions presentationId={presentationId} modelId={current.model_id} clientId={clientId}
                 initialShortlisted={!!shortlists[current.model_id]} initialNotes={shortlistMap[current.model_id]?.notes || ""} initialAuthor={shortlistMap[current.model_id]?.author_name || ''}
@@ -665,6 +677,30 @@ export function PresentationViewer({
                 onClick={() => setConfirmModal(null)}
                 className="flex-1 py-3 text-xs tracking-widest uppercase border border-neutral-300 hover:border-black transition-colors">
                 Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Undo confirmation modal */}
+      {undoConfirmModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-6">
+          <div className="bg-white max-w-sm w-full p-8">
+            <h3 className="text-sm tracking-widest uppercase font-medium mb-2">Undo Confirmation</h3>
+            <p className="text-sm text-neutral-600 mb-6">
+              Cancel the confirmation request for <strong>{undoConfirmModal.modelName}</strong>?
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => { handleUndoConfirm(undoConfirmModal.modelId); setUndoConfirmModal(null) }}
+                className="flex-1 py-3 text-xs tracking-widest uppercase bg-black text-white hover:bg-neutral-800 transition-colors">
+                Yes, Undo
+              </button>
+              <button
+                onClick={() => setUndoConfirmModal(null)}
+                className="flex-1 py-3 text-xs tracking-widest uppercase border border-neutral-300 hover:border-black transition-colors">
+                Keep
               </button>
             </div>
           </div>
