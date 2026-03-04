@@ -1,174 +1,220 @@
 'use client'
-import { useState } from 'react'
-import { createBrowserClient } from '@supabase/ssr'
+import { useState, useEffect } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import { ProjectFormFields, ProjectFormData, fromProject, toDbPayload } from '@/components/ProjectFormFields'
+import { ImagePlus, X, ExternalLink } from 'lucide-react'
 
-type Project = {
-  id: string
-  name: string
-  description?: string
-  client_name?: string
-  location?: string
-  shoot_date?: string
-  specs?: string
-  photographer?: string
-  stylist?: string
-  model_rate?: string
-  hours?: string
-  pages?: string
-  usage?: string
-  billing_contact?: string
-  client_emails?: string[]
-  presentation_rounds?: any[]
-}
-
-export default function ProjectSpecsPanel({ project }: { project: Project }) {
+export default function ProjectSpecsPanel({ project }: { project: any }) {
+  const supabase = createClient()
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [form, setForm] = useState({
-    client_name: project.client_name || '',
-    location: project.location || '',
-    shoot_date: project.shoot_date || '',
-    photographer: project.photographer || '',
-    stylist: project.stylist || '',
-    model_rate: project.model_rate || '',
-    hours: project.hours || '',
-    pages: project.pages || '',
-    usage: project.usage || '',
-    billing_contact: project.billing_contact || '',
-    client_emails: (project.client_emails || []).join(', '),
-    specs: project.specs || '',
-    description: project.description || '',
-  })
-  const [data, setData] = useState(project)
+  const [form, setForm] = useState<ProjectFormData>(fromProject(project))
+  const [display, setDisplay] = useState(project)
+  const [hasNewCols, setHasNewCols] = useState(false)
+  const [moodboards, setMoodboards] = useState<any[]>([])
+  const [uploading, setUploading] = useState(false)
 
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
+  useEffect(() => {
+    supabase.from('projects').select('photographer_url').limit(1).then(({ error }) => setHasNewCols(!error))
+    loadMoodboards()
+  }, [])
+
+  const loadMoodboards = async () => {
+    const { data } = await supabase.from('project_files').select('*').eq('project_id', project.id).eq('file_type', 'moodboard').order('created_at')
+    setMoodboards(data || [])
+  }
 
   const save = async () => {
     setSaving(true)
-    const emails = form.client_emails.split(',').map(e => e.trim()).filter(Boolean)
-    const { data: updated, error } = await supabase.from('projects').update({
-      client_name: form.client_name || null,
-      location: form.location || null,
-      shoot_date: form.shoot_date || null,
-      photographer: form.photographer || null,
-      stylist: form.stylist || null,
-      model_rate: form.model_rate || null,
-      hours: form.hours || null,
-      pages: form.pages || null,
-      usage: form.usage || null,
-      billing_contact: form.billing_contact || null,
-      client_emails: emails.length ? emails : null,
-      specs: form.specs || null,
-      description: form.description || null,
-    }).eq('id', project.id).select().single()
+    const payload = toDbPayload(form, hasNewCols)
+    const { data: updated } = await supabase.from('projects').update(payload).eq('id', project.id).select().single()
     setSaving(false)
-    if (updated) { setData(updated); setEditing(false) }
+    if (updated) { setDisplay(updated); setForm(fromProject(updated)); setEditing(false) }
   }
 
-  const fields = [
-    { key: 'client_name', label: 'Client' },
-    { key: 'location', label: 'Location' },
-    { key: 'shoot_date', label: 'Shoot Date', type: 'date' },
-    { key: 'photographer', label: 'Photographer' },
-    { key: 'stylist', label: 'Stylist' },
-    { key: 'model_rate', label: 'Model Rate' },
-    { key: 'hours', label: 'Hours' },
-    { key: 'pages', label: 'Pages' },
-    { key: 'usage', label: 'Usage' },
-    { key: 'billing_contact', label: 'Billing Contact' },
-  ]
+  const uploadMoodboard = async (files: FileList | null) => {
+    if (!files) return
+    setUploading(true)
+    for (const file of Array.from(files)) {
+      const ext = file.name.split('.').pop() || 'jpg'
+      const path = `projects/${project.id}/moodboard/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+      const { error: upErr } = await supabase.storage.from('project-files').upload(path, file)
+      if (!upErr) {
+        const { data: { publicUrl } } = supabase.storage.from('project-files').getPublicUrl(path)
+        await supabase.from('project_files').insert({ project_id: project.id, name: file.name, file_type: 'moodboard', public_url: publicUrl, storage_path: path })
+      }
+    }
+    setUploading(false)
+    loadMoodboards()
+  }
 
-  const hasData = fields.some(f => (data as any)[f.key]) || data.client_emails?.length || data.specs
+  const deleteMoodboard = async (id: string, storagePath: string) => {
+    await supabase.storage.from('project-files').remove([storagePath])
+    await supabase.from('project_files').delete().eq('id', id)
+    loadMoodboards()
+  }
 
-  if (!editing) return (
-    <div className="border border-neutral-100 p-6 mb-4">
-      <div className="flex items-center justify-between mb-4">
-        <p className="text-xs tracking-widest uppercase text-neutral-400">Project Details</p>
-        <button onClick={() => setEditing(true)} className="text-[10px] tracking-widest uppercase text-neutral-400 hover:text-black border border-neutral-200 px-3 py-1 hover:border-black transition-colors">Edit</button>
-      </div>
-      {!hasData ? (
-        <button onClick={() => setEditing(true)} className="text-xs text-neutral-400 hover:text-black underline">+ Add project details</button>
-      ) : (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-3">
-          {fields.map(f => (data as any)[f.key] ? (
-            <div key={f.key}>
-              <p className="text-[10px] tracking-widest uppercase text-neutral-400 mb-0.5">{f.label}</p>
-              <p className="text-sm">
-                {f.key === 'shoot_date' ? new Date((data as any)[f.key]).toLocaleDateString('en-US', {month:'long',day:'numeric',year:'numeric'}) : (data as any)[f.key]}
-              </p>
-            </div>
-          ) : null)}
-          {data.client_emails?.length ? (
-            <div className="col-span-2">
-              <p className="text-[10px] tracking-widest uppercase text-neutral-400 mb-0.5">Client Emails</p>
-              <p className="text-sm">{data.client_emails.join(', ')}</p>
-            </div>
-          ) : null}
-          {data.specs ? (
-            <div className="col-span-2 md:col-span-4">
-              <p className="text-[10px] tracking-widest uppercase text-neutral-400 mb-0.5">Notes / Specs</p>
-              <p className="text-sm text-neutral-600 whitespace-pre-wrap">{data.specs}</p>
-            </div>
-          ) : null}
+  const onChange = (updates: Partial<ProjectFormData>) => setForm(f => ({ ...f, ...updates }))
+
+  const creditLink = (name: string, url: string | undefined) =>
+    url ? <a href={url} target="_blank" rel="noopener noreferrer" className="hover:opacity-60 transition-opacity underline underline-offset-2 flex items-center gap-1">{name} <ExternalLink size={10} /></a> : <span>{name}</span>
+
+  // Read-only view
+  if (!editing) {
+    const credits = [
+      { label: 'Client', value: display.client_name, url: display.client_url },
+      { label: 'Photographer', value: display.photographer, url: display.photographer_url },
+      { label: 'Stylist', value: display.stylist, url: display.stylist_url },
+    ].filter(f => f.value)
+
+    const shoot = [
+      { label: 'Location', value: display.location },
+      { label: 'Shoot Date', value: display.shoot_date ? new Date(display.shoot_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : null },
+      { label: 'Rate', value: display.model_rate },
+      { label: 'Hours', value: display.hours },
+      { label: 'Pages', value: display.pages },
+      { label: 'Usage', value: display.usage },
+    ].filter(f => f.value)
+
+    const billing = [
+      { label: 'Billing Contact', value: display.billing_contact },
+      { label: 'Billing Name', value: display.billing_name },
+      { label: 'Billing Email', value: display.billing_email },
+      { label: 'Billing Address', value: display.billing_address },
+    ].filter(f => f.value)
+
+    const hasAny = credits.length || shoot.length || billing.length || display.specs || moodboards.length
+
+    return (
+      <div className="border border-neutral-100 p-6 mb-4">
+        <div className="flex items-center justify-between mb-4">
+          <p className="text-xs tracking-widest uppercase text-neutral-400">Project Details</p>
+          <button onClick={() => setEditing(true)} className="text-[10px] tracking-widest uppercase text-neutral-400 hover:text-black border border-neutral-200 px-3 py-1 hover:border-black transition-colors">Edit</button>
         </div>
-      )}
-    </div>
-  )
+
+        {!hasAny ? (
+          <button onClick={() => setEditing(true)} className="text-xs text-neutral-400 hover:text-black underline">+ Add project details</button>
+        ) : (
+          <div className="space-y-6">
+            {/* Credits */}
+            {credits.length > 0 && (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-3">
+                {credits.map(f => (
+                  <div key={f.label}>
+                    <p className="text-[10px] tracking-widest uppercase text-neutral-400 mb-0.5">{f.label}</p>
+                    <p className="text-sm">{creditLink(f.value, f.url)}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Shoot details */}
+            {shoot.length > 0 && (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-3">
+                {shoot.map(f => (
+                  <div key={f.label}>
+                    <p className="text-[10px] tracking-widest uppercase text-neutral-400 mb-0.5">{f.label}</p>
+                    <p className="text-sm">{f.value}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Client emails */}
+            {display.client_emails?.length > 0 && (
+              <div>
+                <p className="text-[10px] tracking-widest uppercase text-neutral-400 mb-0.5">Client Emails</p>
+                <p className="text-sm">{display.client_emails.join(', ')}</p>
+              </div>
+            )}
+
+            {/* Billing */}
+            {billing.length > 0 && (
+              <div>
+                <p className="text-[10px] tracking-widest uppercase text-neutral-400 mb-2">Billing</p>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-3">
+                  {billing.map(f => (
+                    <div key={f.label}>
+                      <p className="text-[10px] tracking-widest uppercase text-neutral-400 mb-0.5">{f.label}</p>
+                      <p className="text-sm">{f.value}</p>
+                    </div>
+                  ))}
+                </div>
+                {display.billing_notes && (
+                  <p className="text-xs text-neutral-500 mt-2 italic">{display.billing_notes}</p>
+                )}
+              </div>
+            )}
+
+            {/* Specs */}
+            {display.specs && (
+              <div>
+                <p className="text-[10px] tracking-widest uppercase text-neutral-400 mb-0.5">Requirements</p>
+                <p className="text-sm text-neutral-600 whitespace-pre-wrap">{display.specs}</p>
+              </div>
+            )}
+
+            {/* Moodboard */}
+            {moodboards.length > 0 && (
+              <div>
+                <p className="text-[10px] tracking-widest uppercase text-neutral-400 mb-2">Moodboard</p>
+                <div className="flex flex-wrap gap-3">
+                  {moodboards.map(m => (
+                    <div key={m.id} className="relative group w-20 h-24">
+                      <a href={m.public_url} target="_blank" rel="noopener noreferrer">
+                        <img src={m.public_url} alt={m.name} className="w-full h-full object-cover hover:opacity-80 transition-opacity" />
+                      </a>
+                      <button onClick={() => deleteMoodboard(m.id, m.storage_path)}
+                        className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <X size={9} />
+                      </button>
+                    </div>
+                  ))}
+                  <label className="w-20 h-24 border-2 border-dashed border-neutral-200 flex items-center justify-center cursor-pointer hover:border-black transition-colors">
+                    <input type="file" accept="image/*" multiple className="hidden" onChange={e => uploadMoodboard(e.target.files)} />
+                    <ImagePlus size={16} className={uploading ? 'animate-pulse text-neutral-400' : 'text-neutral-300'} />
+                  </label>
+                </div>
+              </div>
+            )}
+
+            {moodboards.length === 0 && (
+              <div>
+                <p className="text-[10px] tracking-widest uppercase text-neutral-400 mb-2">Moodboard</p>
+                <label className="inline-flex items-center gap-2 text-xs text-neutral-400 hover:text-black cursor-pointer border border-dashed border-neutral-200 px-4 py-2 hover:border-black transition-colors">
+                  <input type="file" accept="image/*" multiple className="hidden" onChange={e => uploadMoodboard(e.target.files)} />
+                  <ImagePlus size={14} />
+                  {uploading ? 'Uploading...' : 'Upload moodboard images'}
+                </label>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    )
+  }
 
   return (
     <div className="border border-black p-6 mb-4">
-      <div className="flex items-center justify-between mb-5">
-        <p className="text-xs tracking-widest uppercase">Edit Project Details</p>
-        <button onClick={() => setEditing(false)} className="text-neutral-400 hover:text-black text-lg leading-none">✕</button>
+      <div className="flex items-center justify-between mb-6">
+        <p className="text-xs tracking-widest uppercase font-medium">Edit Project Details</p>
+        <button onClick={() => { setForm(fromProject(display)); setEditing(false) }} className="text-neutral-400 hover:text-black text-lg leading-none">✕</button>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-        {fields.map(f => (
-          <div key={f.key}>
-            <p className="text-[10px] tracking-widest uppercase text-neutral-400 mb-1">{f.label}</p>
-            <input
-              type={f.type || 'text'}
-              value={(form as any)[f.key]}
-              onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))}
-              className="w-full border-b border-neutral-300 py-1.5 text-sm focus:outline-none focus:border-black bg-transparent"
-            />
-          </div>
-        ))}
-        <div>
-          <p className="text-[10px] tracking-widest uppercase text-neutral-400 mb-1">Client Emails <span className="normal-case">(comma separated)</span></p>
-          <input
-            value={form.client_emails}
-            onChange={e => setForm(p => ({ ...p, client_emails: e.target.value }))}
-            placeholder="email@client.com, email2@client.com"
-            className="w-full border-b border-neutral-300 py-1.5 text-sm focus:outline-none focus:border-black bg-transparent"
-          />
+
+      {!hasNewCols && (
+        <div className="border border-amber-200 bg-amber-50 px-4 py-2 mb-6 text-xs text-amber-700">
+          URL hyperlink fields + expanded billing are locked until you run the DB migration in Supabase SQL editor.
         </div>
-        <div>
-          <p className="text-[10px] tracking-widest uppercase text-neutral-400 mb-1">Description</p>
-          <input
-            value={form.description}
-            onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
-            className="w-full border-b border-neutral-300 py-1.5 text-sm focus:outline-none focus:border-black bg-transparent"
-          />
-        </div>
-      </div>
-      <div className="mb-5">
-        <p className="text-[10px] tracking-widest uppercase text-neutral-400 mb-1">Notes / Additional Specs</p>
-        <textarea
-          value={form.specs}
-          onChange={e => setForm(p => ({ ...p, specs: e.target.value }))}
-          rows={3}
-          className="w-full border-b border-neutral-300 py-1.5 text-sm focus:outline-none focus:border-black bg-transparent resize-none"
-        />
-      </div>
-      <div className="flex gap-3">
+      )}
+
+      <ProjectFormFields form={form} onChange={onChange} hasNewCols={hasNewCols} />
+
+      <div className="flex gap-3 mt-8">
         <button onClick={save} disabled={saving}
           className="px-6 py-2.5 text-xs tracking-widest uppercase bg-black text-white hover:bg-neutral-800 disabled:opacity-40 transition-colors">
           {saving ? 'Saving...' : 'Save'}
         </button>
-        <button onClick={() => setEditing(false)}
+        <button onClick={() => { setForm(fromProject(display)); setEditing(false) }}
           className="px-6 py-2.5 text-xs tracking-widest uppercase border border-neutral-300 hover:border-black transition-colors">
           Cancel
         </button>
