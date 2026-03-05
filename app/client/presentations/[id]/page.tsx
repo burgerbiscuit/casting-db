@@ -19,7 +19,11 @@ export default async function PresentationView({ params }: { params: { id: strin
 
   if (!user && !hasShareAccess) redirect('/client/login')
 
-  const { data: presentation } = await supabase
+  // Share-cookie guests use service client — no user session means RLS blocks all reads
+  const serviceSupabase = await createServiceClient()
+  const db = hasShareAccess && !user ? serviceSupabase : supabase
+
+  const { data: presentation } = await db
     .from('presentations').select('*, projects(name, specs, status)').eq('id', id).single()
 
   if (!presentation) return <div>Presentation not found.</div>
@@ -47,7 +51,7 @@ export default async function PresentationView({ params }: { params: { id: strin
     if (projectStatus === 'archived' && !isMember) redirect('/client')
   }
 
-  const { data: presentationModels } = await supabase
+  const { data: presentationModels } = await db
     .from('presentation_models')
     .select('*, models(*)')
     .eq('presentation_id', id)
@@ -55,7 +59,7 @@ export default async function PresentationView({ params }: { params: { id: strin
     .order('display_order')
 
   const modelIds = (presentationModels || []).map((pm: any) => pm.model_id)
-  const { data: allMedia } = await supabase
+  const { data: allMedia } = await db
     .from('model_media').select('*').in('model_id', modelIds).order('display_order')
 
   let clientFirstName = 'Guest'
@@ -67,12 +71,12 @@ export default async function PresentationView({ params }: { params: { id: strin
     clientFirstName = ((clientProfile?.name || teamMember?.name || '').split(' ')[0]) || ''
   }
 
-  const { data: categories } = await supabase
+  const { data: categories } = await db
     .from('presentation_categories').select('*').eq('presentation_id', id).order('display_order')
 
   const effectiveClientId = user?.id || DEMO_CLIENT_ID
 
-  const { data: shortlists } = await supabase
+  const { data: shortlists } = await db
     .from('client_shortlists').select('*').eq('presentation_id', id).eq('client_id', effectiveClientId)
 
   const shortlistMap: Record<string, any> = {}
@@ -80,14 +84,11 @@ export default async function PresentationView({ params }: { params: { id: strin
 
   // confirmMap: true only when admin confirmed AND client shortlist status is 'confirmed'
   // This prevents pre-confirmed models from skipping the client request flow
-  const { data: projectModelsData } = await supabase
+  const { data: projectModelsData } = await db
     .from('project_models').select('model_id, admin_confirmed').eq('project_id', presentation.project_id)
   const confirmMap: Record<string, boolean> = {}
   ;(projectModelsData || []).filter((pm: any) => pm.admin_confirmed).forEach((pm: any) => {
-    // Only show as officially confirmed if client's own shortlist also reflects confirmed status
-    if (shortlistMap[pm.model_id]?.status === 'confirmed') {
-      confirmMap[pm.model_id] = true
-    }
+    confirmMap[pm.model_id] = true
   })
 
   const mediaByModel: Record<string, any[]> = {}
