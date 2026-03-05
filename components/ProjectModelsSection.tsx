@@ -185,11 +185,16 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
     await supabase.from('project_models')
       .update({ admin_confirmed: next, status: next ? 'confirmed' : 'pending' })
       .eq('project_id', projectId).eq('model_id', modelId)
-    // Sync presentation visibility — IN = visible to client, OUT = hidden
-    if (mainPres?.id && presModels[modelId]) {
-      await supabase.from('presentation_models')
+    // Sync is_visible across ALL presentations in this project
+    const { data: allPres } = await supabase
+      .from('presentations').select('id').eq('project_id', projectId)
+    await Promise.all((allPres || []).map(pres =>
+      supabase.from('presentation_models')
         .update({ is_visible: next })
-        .eq('presentation_id', mainPres.id).eq('model_id', modelId)
+        .eq('presentation_id', pres.id).eq('model_id', modelId)
+    ))
+    // Update local state
+    if (presModels[modelId]) {
       setPresModels(prev => ({ ...prev, [modelId]: { ...prev[modelId], is_visible: next } }))
     }
   }
