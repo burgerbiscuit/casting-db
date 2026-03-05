@@ -25,6 +25,7 @@ interface Props {
   onChange: (items: PresentationModel[]) => void
   onRemove: (id: string) => void
   onFieldChange: (id: string, field: keyof PresentationModel, value: any) => void
+  onToggleVisible: (id: string, visible: boolean) => void
   categories?: { id: string; name: string }[]
   onCategoryChange?: (pmId: string, categoryId: string | null) => void
   onCreateCategory?: (name: string) => Promise<void>
@@ -80,10 +81,11 @@ function SectionPicker({ categoryId, categories, onCategoryChange, onCreateCateg
   )
 }
 
-function SortableItem({ item, onRemove, onFieldChange, categories, onCategoryChange, onCreateCategory }: {
+function SortableItem({ item, onRemove, onFieldChange, onToggleVisible, categories, onCategoryChange, onCreateCategory }: {
   item: PresentationModel
   onRemove: (id: string) => void
   onFieldChange: (id: string, field: keyof PresentationModel, value: any) => void
+  onToggleVisible: (id: string, visible: boolean) => void
   categories?: { id: string; name: string }[]
   onCategoryChange?: (pmId: string, categoryId: string | null) => void
   onCreateCategory?: (name: string) => Promise<void>
@@ -91,9 +93,10 @@ function SortableItem({ item, onRemove, onFieldChange, categories, onCategoryCha
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: item.id })
   const style = { transform: CSS.Transform.toString(transform), transition }
   const inp = 'w-full border-b border-neutral-200 bg-transparent py-1 text-xs focus:outline-none focus:border-black resize-none placeholder:text-neutral-300'
+  const hidden = !item.is_visible
 
   return (
-    <div ref={setNodeRef} style={style} className="border border-neutral-200 bg-white p-4">
+    <div ref={setNodeRef} style={style} className={`border p-4 transition-colors ${hidden ? 'border-neutral-100 bg-neutral-50 opacity-60' : 'border-neutral-200 bg-white'}`}>
       <div className="flex items-start gap-3">
         <button {...attributes} {...listeners} className="mt-1 text-neutral-300 hover:text-neutral-600 cursor-grab active:cursor-grabbing">
           <GripVertical size={16} />
@@ -105,19 +108,26 @@ function SortableItem({ item, onRemove, onFieldChange, categories, onCategoryCha
                 const sorted = [...(item.models.model_media || [])].filter((m: any) => m.is_visible !== false).sort((a: any, b: any) => a.display_order - b.display_order)
                 const photo = sorted[0]?.public_url
                 return photo
-                  ? <img src={photo} className="w-10 h-12 object-cover object-top flex-shrink-0" alt="" />
+                  ? <img src={photo} className={`w-10 h-12 object-cover object-top flex-shrink-0 ${hidden ? 'grayscale' : ''}`} alt="" />
                   : <div className="w-10 h-12 bg-neutral-100 flex-shrink-0" />
               })()}
               <div>
-                <p className="text-sm font-medium">{item.models.first_name} {item.models.last_name}</p>
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-medium">{item.models.first_name} {item.models.last_name}</p>
+                  {hidden && <span className="text-[9px] tracking-widest uppercase bg-neutral-200 text-neutral-500 px-1.5 py-0.5">Hidden</span>}
+                </div>
                 {item.models.agency && <p className="text-xs text-neutral-400">{item.models.agency}</p>}
               </div>
             </div>
-            <div className="flex gap-2">
-              <button onClick={() => onFieldChange(item.id, 'is_visible', !item.is_visible)} className={item.is_visible ? 'text-black' : 'text-neutral-300'}>
-                {item.is_visible ? <Eye size={14} /> : <EyeOff size={14} />}
+            <div className="flex items-center gap-2">
+              {/* Visibility toggle — auto-saves immediately */}
+              <button
+                onClick={() => onToggleVisible(item.id, !item.is_visible)}
+                title={hidden ? 'Show on client presentation' : 'Hide from client (keep on back end)'}
+                className={`flex items-center gap-1 px-2 py-1 text-[10px] tracking-widest uppercase border transition-colors ${hidden ? 'border-neutral-300 text-neutral-400 hover:border-black hover:text-black' : 'border-black text-black hover:bg-neutral-100'}`}>
+                {hidden ? <><EyeOff size={11} /> Show</> : <><Eye size={11} /> Visible</>}
               </button>
-              <button onClick={() => onRemove(item.id)} className="text-neutral-300 hover:text-red-500"><X size={14} /></button>
+              <button onClick={() => onRemove(item.id)} title="Remove from presentation entirely" className="text-neutral-300 hover:text-red-500 ml-1"><X size={14} /></button>
             </div>
           </div>
 
@@ -175,7 +185,7 @@ function SortableItem({ item, onRemove, onFieldChange, categories, onCategoryCha
   )
 }
 
-export function SortableModelList({ items, onChange, onRemove, onFieldChange, categories, onCategoryChange, onCreateCategory }: Props) {
+export function SortableModelList({ items, onChange, onRemove, onFieldChange, onToggleVisible, categories, onCategoryChange, onCreateCategory }: Props) {
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
@@ -195,7 +205,7 @@ export function SortableModelList({ items, onChange, onRemove, onFieldChange, ca
       <SortableContext items={items.map(i => i.id)} strategy={verticalListSortingStrategy}>
         <div className="space-y-2">
           {items.map(item => (
-            <SortableItem key={item.id} item={item} onRemove={onRemove} onFieldChange={onFieldChange} categories={categories} onCategoryChange={onCategoryChange} onCreateCategory={onCreateCategory} />
+            <SortableItem key={item.id} item={item} onRemove={onRemove} onFieldChange={onFieldChange} onToggleVisible={onToggleVisible} categories={categories} onCategoryChange={onCategoryChange} onCreateCategory={onCreateCategory} />
           ))}
         </div>
       </SortableContext>

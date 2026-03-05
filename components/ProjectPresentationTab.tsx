@@ -105,6 +105,12 @@ export function ProjectPresentationTab({ projectId, presentationId: initialPresI
     setPresentationModels(prev => prev.map(m => m.id === pmId ? { ...m, [field]: value } : m))
   }
 
+  const toggleVisible = async (pmId: string, visible: boolean) => {
+    // Optimistic update + auto-save immediately — no Save button needed
+    setPresentationModels(prev => prev.map(m => m.id === pmId ? { ...m, is_visible: visible } : m))
+    await supabase.from('presentation_models').update({ is_visible: visible }).eq('id', pmId)
+  }
+
   const assignCategory = async (pmId: string, categoryId: string | null) => {
     await supabase.from('presentation_models').update({ category_id: categoryId || null }).eq('id', pmId)
     setPresentationModels(prev => prev.map(m => m.id === pmId ? { ...m, category_id: categoryId } : m))
@@ -202,7 +208,9 @@ export function ProjectPresentationTab({ projectId, presentationId: initialPresI
     <div>
       {/* Toolbar */}
       <div className="flex items-center justify-between mb-8 flex-wrap gap-3">
-        <p className="text-xs text-neutral-400">{presentationModels.length} model{presentationModels.length !== 1 ? 's' : ''} · {categories.length} section{categories.length !== 1 ? 's' : ''}</p>
+        <p className="text-xs text-neutral-400">
+          {presentationModels.filter(m => m.is_visible).length} visible · {presentationModels.filter(m => !m.is_visible).length} hidden · {categories.length} section{categories.length !== 1 ? 's' : ''}
+        </p>
         <div className="flex gap-3 items-center flex-wrap">
           {emailStatus && <span className="text-xs text-neutral-500 tracking-wider">{emailStatus}</span>}
           <button onClick={load} title="Refresh"
@@ -306,12 +314,15 @@ export function ProjectPresentationTab({ projectId, presentationId: initialPresI
           {/* Uncategorized */}
           {uncategorized.length > 0 && (
             <div className="mb-6">
-              <p className="text-[10px] tracking-widest uppercase text-neutral-400 mb-2 pb-1 border-b border-neutral-100">Uncategorized ({uncategorized.length})</p>
+              <p className="text-[10px] tracking-widest uppercase text-neutral-400 mb-2 pb-1 border-b border-neutral-100">
+                Uncategorized ({uncategorized.filter(m => m.is_visible).length} visible{uncategorized.filter(m => !m.is_visible).length > 0 ? `, ${uncategorized.filter(m => !m.is_visible).length} hidden` : ''})
+              </p>
               <SortableModelList
                 items={uncategorized}
                 onChange={(items) => setPresentationModels(prev => [...items, ...prev.filter(m => m.category_id)])}
                 onRemove={removeModel}
                 onFieldChange={onFieldChange}
+                onToggleVisible={toggleVisible}
                 categories={categories}
                 onCategoryChange={assignCategory}
                 onCreateCategory={async (name) => { await addCategoryByName(name) }}
@@ -321,13 +332,16 @@ export function ProjectPresentationTab({ projectId, presentationId: initialPresI
 
           {byCategory.map(cat => (
             <div key={cat.id} className="mb-6">
-              <p className="text-[10px] tracking-widest uppercase font-medium mb-2 pb-1 border-b border-black">{cat.name} ({cat.models.length})</p>
+              <p className="text-[10px] tracking-widest uppercase font-medium mb-2 pb-1 border-b border-black">
+                {cat.name} ({cat.models.filter((m: any) => m.is_visible).length} visible{cat.models.filter((m: any) => !m.is_visible).length > 0 ? `, ${cat.models.filter((m: any) => !m.is_visible).length} hidden` : ''})
+              </p>
               {cat.models.length === 0 && <p className="text-xs text-neutral-300 py-2">No models in this section yet.</p>}
               <SortableModelList
                 items={cat.models}
                 onChange={(items) => setPresentationModels(prev => [...prev.filter(m => m.category_id !== cat.id), ...items])}
                 onRemove={removeModel}
                 onFieldChange={onFieldChange}
+                onToggleVisible={toggleVisible}
                 categories={categories}
                 onCategoryChange={assignCategory}
                 onCreateCategory={async (name) => { await addCategoryByName(name) }}
