@@ -27,7 +27,7 @@ export default function ModelsPage() {
     setLoading(true)
     let query = supabase
       .from('models')
-      .select('id, first_name, last_name, agency, height_ft, height_in, based_in, gender, date_of_birth, skills, hobbies, reviewed, notes, created_at')
+      .select('id, first_name, last_name, agency, height_ft, height_in, based_in, gender, date_of_birth, skills, hobbies, reviewed, notes, created_at, ethnicity_broad, ethnicity_specific')
       .order('last_name', { ascending: true }).order('first_name', { ascending: true })
       .limit(300)
 
@@ -36,7 +36,7 @@ export default function ModelsPage() {
     if (heightFt) query = query.eq('height_ft', parseInt(heightFt))
     if (city) query = query.ilike('based_in', `%${city}%`)
     if (gender) query = query.ilike('gender', `%${gender}%`)
-    if (keyword) query = query.or(`skills.cs.{${keyword}},hobbies.cs.{${keyword}},agency.ilike.%${keyword}%,based_in.ilike.%${keyword}%`)
+    if (keyword) query = query.or(`skills.cs.{${keyword}},hobbies.cs.{${keyword}},agency.ilike.%${keyword}%,based_in.ilike.%${keyword}%,ethnicity_broad.ilike.%${keyword}%,ethnicity_specific.ilike.%${keyword}%`)
 
     const { data: modelData } = await query
     if (!modelData) { setLoading(false); return }
