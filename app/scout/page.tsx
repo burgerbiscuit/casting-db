@@ -132,34 +132,20 @@ export default function ScoutPage() {
     if (!form.first_name || !form.last_name) { setError('Please enter your name.'); return }
     setLoading(true); setError('')
     try {
-      const res = await fetch('/api/scout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...form,
-          ethnicity_broad: form.ethnicity_broad.join(','),
-          ethnicity_specific: form.ethnicity_specific.join(','),
-          skills: form.skills,
-          hobbies: form.hobbies,
-          languages: form.languages,
-        })
+      // Use FormData so images upload server-side with service key (bypasses storage RLS)
+      const fd = new FormData()
+      Object.entries(form).forEach(([k, v]) => {
+        if (Array.isArray(v)) fd.append(k, JSON.stringify(v))
+        else if (v !== null && v !== undefined) fd.append(k, String(v))
       })
-      const { id: modelId } = await res.json()
-      if (!res.ok) throw new Error('Submission failed')
-      if (modelId) {
-        for (const file of selfieFiles) {
-          const ext = file.name.split('.').pop() || 'jpg'
-          const path = `${modelId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
-          const { error: upErr } = await supabase.storage.from('model-media').upload(path, file)
-          if (!upErr) {
-            const { data: { publicUrl } } = supabase.storage.from('model-media').getPublicUrl(path)
-            await supabase.from('model_media').insert({ model_id: modelId, storage_path: path, public_url: publicUrl, type: 'photo', is_visible: true })
-          }
-        }
-      }
+      selfieFiles.filter(Boolean).forEach(file => fd.append('photos', file))
+
+      const res = await fetch('/api/scout', { method: 'POST', body: fd })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'Submission failed')
       setStep('done')
-    } catch (e) {
-      setError('Something went wrong. Please try again.')
+    } catch (e: any) {
+      setError(e.message || 'Something went wrong. Please try again.')
     } finally {
       setLoading(false)
     }

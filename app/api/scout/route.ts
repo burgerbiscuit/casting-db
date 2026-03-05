@@ -27,7 +27,32 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Too many submissions. Please try again later.' }, { status: 429 })
   }
 
-  const body = await req.json()
+  const contentType = req.headers.get('content-type') || ''
+  const supabase = await createServiceClient()
+
+  // Parse as multipart FormData (supports file uploads) or fall back to JSON
+  let body: Record<string, any> = {}
+  let photoFiles: { name: string; arrayBuffer: ArrayBuffer; type: string }[] = []
+
+  if (contentType.includes('multipart/form-data')) {
+    const formData = await req.formData()
+    for (const [key, value] of formData.entries()) {
+      if ((key === 'photos' || key.startsWith('photo')) && value instanceof File && value.size > 0) {
+        photoFiles.push({ name: value.name, arrayBuffer: await value.arrayBuffer(), type: value.type })
+      } else if (value instanceof File) {
+        // ignore other file fields
+      } else if (typeof value === 'string') {
+        // Parse JSON arrays if needed
+        if (key === 'skills' || key === 'hobbies' || key === 'languages' || key === 'ethnicity_broad' || key === 'ethnicity_specific') {
+          try { body[key] = JSON.parse(value) } catch { body[key] = value ? [value] : [] }
+        } else {
+          body[key] = value
+        }
+      }
+    }
+  } else {
+    body = await req.json()
+  }
 
   // Validate required fields
   const firstName = (body.first_name || '').trim()
@@ -42,7 +67,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid email address.' }, { status: 400 })
   }
 
-  const supabase = await createServiceClient()
   const { data, error } = await supabase.from('models').insert({
     first_name: firstName,
     last_name: lastName,
@@ -51,6 +75,7 @@ export async function POST(req: NextRequest) {
     gender: body.gender || null,
     date_of_birth: body.date_of_birth || null,
     instagram_handle: body.instagram_handle || null,
+    tiktok_handle: body.tiktok_handle || null,
     portfolio_url: body.portfolio_url || null,
     website_url: body.website_url || null,
     agency: body.agency || null,
@@ -60,8 +85,8 @@ export async function POST(req: NextRequest) {
     bust: body.bust || null, waist: body.waist || null, hips: body.hips || null,
     chest: body.chest || null, dress_size: body.dress_size || null,
     shoe_size: body.shoe_size || null, suit_size: body.suit_size || null, inseam: body.inseam || null,
-    ethnicity_broad: body.ethnicity_broad || null,
-    ethnicity_specific: body.ethnicity_specific || null,
+    ethnicity_broad: Array.isArray(body.ethnicity_broad) ? body.ethnicity_broad.join(',') : (body.ethnicity_broad || null),
+    ethnicity_specific: Array.isArray(body.ethnicity_specific) ? body.ethnicity_specific.join(',') : (body.ethnicity_specific || null),
     languages: Array.isArray(body.languages) ? body.languages : [],
     skills: Array.isArray(body.skills) ? body.skills : [],
     hobbies: Array.isArray(body.hobbies) ? body.hobbies : [],
@@ -76,5 +101,37 @@ export async function POST(req: NextRequest) {
     console.error('Scout insert error:', error.message)
     return NextResponse.json({ error: 'Submission failed. Please try again.' }, { status: 500 })
   }
-  return NextResponse.json({ ok: true, id: data.id })
+
+  const modelId = data.id
+
+  // Upload photos server-side using service key — bypasses storage RLS
+  const uploadErrors: string[] = []
+  for (const photo of photoFiles.slice(0, 2)) {
+    try {
+      const ext = photo.name.split('.').pop()?.toLowerCase() || 'jpg'
+      const path = `${modelId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+      const { error: upErr } = await supabase.storage
+        .from('model-media')
+        .upload(path, photo.arrayBuffer, { contentType: photo.type || 'image/jpeg' })
+      if (upErr) {
+        console.error('Scout photo upload error:', upErr.message)
+        uploadErrors.push(upErr.message)
+        continue
+      }
+      const { data: { publicUrl } } = supabase.storage.from('model-media').getPublicUrl(path)
+      await supabase.from('model_media').insert({
+        model_id: modelId,
+        storage_path: path,
+        public_url: publicUrl,
+        type: 'photo',
+        is_visible: true,
+        display_order: photoFiles.indexOf(photo),
+      })
+    } catch (err: any) {
+      console.error('Scout photo exception:', err?.message)
+      uploadErrors.push(err?.message || 'upload failed')
+    }
+  }
+
+  return NextResponse.json({ ok: true, id: modelId, uploadErrors })
 }
