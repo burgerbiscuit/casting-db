@@ -48,12 +48,16 @@ export async function middleware(request: NextRequest) {
   }
 
   if (path.startsWith('/client') && path !== '/client/login' && path !== '/client/signup') {
-    // Allow share-cookie access to specific presentation pages (no login required)
+    // Allow share-cookie access to presentation or project pages (no login required)
     const presShareMatch = path.match(/^\/client\/presentations\/([^/]+)$/)
     if (presShareMatch) {
       const presId = presShareMatch[1]
-      const shareCookie = request.cookies.get(`share_${presId}`)?.value
-      if (shareCookie === 'true') return supabaseResponse // pass through as guest
+      if (request.cookies.get(`share_${presId}`)?.value === 'true') return supabaseResponse
+    }
+    const projShareMatch = path.match(/^\/client\/([^/]+)$/)
+    if (projShareMatch) {
+      const projId = projShareMatch[1]
+      if (request.cookies.get(`share_project_${projId}`)?.value === 'true') return supabaseResponse
     }
 
     if (!user) return NextResponse.redirect(new URL('/client/login', request.url))

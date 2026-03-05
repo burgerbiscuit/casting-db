@@ -1,6 +1,7 @@
 import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import { cookies } from 'next/headers'
 import { ProjectActions, PresentationDeleteButton } from './ProjectActions'
 
 export default async function ProjectDashboard({ params }: { params: { projectId: string } }) {
@@ -9,17 +10,19 @@ export default async function ProjectDashboard({ params }: { params: { projectId
   const serviceSupabase = await createServiceClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  if (!user) {
+  const cookieStore = await cookies()
+  const hasShareAccess = cookieStore.get(`share_project_${projectId}`)?.value === 'true'
+
+  if (!user && !hasShareAccess) {
     redirect(`/client/login?redirect=/client/${projectId}`)
   }
 
-  // Check if team member
-  const { data: member } = await serviceSupabase
-    .from('team_members').select('id').eq('user_id', user.id).single()
-  const isMember = !!member
+  // Check if team member (only for real users)
+  const isMember = user ? !!(await serviceSupabase
+    .from('team_members').select('id').eq('user_id', user.id).single()).data : false
 
-  // For clients, verify they have access to this project
-  if (!isMember) {
+  // For real clients (not share guests), verify they have access to this project
+  if (user && !isMember) {
     const { data: access } = await serviceSupabase
       .from('client_projects')
       .select('id')
