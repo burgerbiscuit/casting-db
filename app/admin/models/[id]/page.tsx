@@ -130,6 +130,14 @@ export default function ModelProfile({ params }: { params: { id: string } }) {
         onCancel={() => setCropTarget(null)}
       />
     )}
+    {showDeleteModel && (
+      <DeleteConfirmModal
+        title={`Delete ${model.first_name} ${model.last_name}?`}
+        description="This will permanently remove the model, all their media, and remove them from any projects. This cannot be undone."
+        onConfirm={deleteModel}
+        onCancel={() => setShowDeleteModel(false)}
+      />
+    )}
     <div>
       <div className="flex items-center justify-between mb-10">
         <div>
