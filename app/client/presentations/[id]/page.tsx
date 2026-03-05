@@ -82,10 +82,11 @@ export default async function PresentationView({ params }: { params: { id: strin
   const shortlistMap: Record<string, any> = {}
   ;(shortlists || []).forEach(s => { shortlistMap[s.model_id] = s })
 
-  // confirmMap: true only when admin confirmed AND client shortlist status is 'confirmed'
-  // This prevents pre-confirmed models from skipping the client request flow
-  const { data: projectModelsData } = await db
-    .from('project_models').select('model_id, admin_confirmed').eq('project_id', presentation.project_id)
+  // confirmMap: fetch admin_confirmed by model_id (not project_id) so it works regardless of which project the presentation belongs to
+  const modelIds = (presentationModels || []).map((pm: any) => pm.model_id).filter(Boolean)
+  const { data: projectModelsData } = modelIds.length > 0
+    ? await db.from('project_models').select('model_id, admin_confirmed').in('model_id', modelIds)
+    : { data: [] }
   const confirmMap: Record<string, boolean> = {}
   ;(projectModelsData || []).filter((pm: any) => pm.admin_confirmed).forEach((pm: any) => {
     confirmMap[pm.model_id] = true
