@@ -118,7 +118,7 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
 
   useEffect(() => { load() }, [load])
 
-  // Realtime: re-load when client_shortlists changes (client shortlists/requests confirmation)
+  // Realtime: re-load when client_shortlists changes — include load in deps to avoid stale closure
   useEffect(() => {
     const channel = supabase
       .channel('admin-shortlist-watch-' + projectId)
@@ -129,7 +129,7 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
       }, () => { load() })
       .subscribe()
     return () => { supabase.removeChannel(channel) }
-  }, [projectId])
+  }, [projectId, load])
 
 
   const savePresNotes = async (modelId: string, notes: string) => {
@@ -220,30 +220,7 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
     ))
   }
 
-  const setClientStatus = async (modelId: string, newStatus: string | null) => {
-    setShortlistStatus(r => {
-      const next = { ...r }
-      if (newStatus) next[modelId] = newStatus
-      else delete next[modelId]
-      return next
-    })
-    // If clearing status, remove from client_shortlists
-    if (!newStatus) {
-      await supabase.from('client_shortlists').delete().eq('model_id', modelId)
-      return
-    }
-    // Upsert client_shortlists — must include presentation_id so client presentation page can read it
-    const presId = mainPres?.id
-    if (!presId) return
-    const { error } = await supabase.from('client_shortlists').upsert(
-      { model_id: modelId, presentation_id: presId, status: newStatus },
-      { onConflict: 'presentation_id,model_id,client_id' }
-    )
-    if (error) {
-      // Fallback: try insert without conflict constraint
-      await supabase.from('client_shortlists').insert({ model_id: modelId, presentation_id: presId, status: newStatus })
-    }
-  }
+  // setClientStatus removed — client shortlist status is read-only on admin side (clients write, admin reads)
 
   const [models, setModels] = useState(modelsWithPhotos)
   const [addSearch, setAddSearch] = useState('')

@@ -101,14 +101,19 @@ export function PresentationViewer({
   const [confirmModal, setConfirmModal] = useState<{ modelId: string; modelName: string } | null>(null)
   const [undoConfirmModal, setUndoConfirmModal] = useState<{ modelId: string; modelName: string } | null>(null)
 
-  // Realtime: watch project_models for admin confirming
+  // Realtime: watch project_models for admin confirming — filtered to only this presentation's models
+  const presModelIds = presentationModels.map(pm => pm.model_id).filter(Boolean)
   useEffect(() => {
+    if (presModelIds.length === 0) return
     let channel: any
     const setup = async () => {
       const supabase = (await import('@/lib/supabase/client')).createClient()
-      channel = supabase.channel('admin-confirm-watch')
+      channel = supabase.channel('admin-confirm-watch-' + presentationId)
         .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'project_models' }, async () => {
-          const { data } = await supabase.from('project_models').select('model_id, admin_confirmed')
+          // Re-fetch admin_confirmed only for models in THIS presentation
+          const { data } = await supabase.from('project_models')
+            .select('model_id, admin_confirmed')
+            .in('model_id', presModelIds)
           if (data) {
             const m: Record<string, boolean> = {}
             data.filter((pm: any) => pm.admin_confirmed).forEach((pm: any) => { m[pm.model_id] = true })
@@ -119,7 +124,7 @@ export function PresentationViewer({
     }
     setup()
     return () => { if (channel) channel.unsubscribe() }
-  }, [])
+  }, [presentationId])
 
   // Realtime: watch client_shortlists so count is always accurate
   useEffect(() => {
