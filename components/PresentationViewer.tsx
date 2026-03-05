@@ -559,11 +559,11 @@ export function PresentationViewer({
                   {isShortlisted ? 'Shortlisted' : 'Shortlist'}
                 </button>
               </div>
-              {/* OK to Release */}
-              {isShortlisted && (
+              {/* OK to Release — only shown after admin officially confirms */}
+              {confirmMap[pm.model_id] && (
                 <button
                   onClick={() => handleRelease(pm.model_id)}
-                  className={`w-full mt-2 py-2 text-[10px] tracking-widest uppercase border transition-colors ${releases[pm.model_id] ? 'bg-black text-white border-black' : 'border-neutral-200 text-neutral-400 hover:border-black hover:text-black'}`}>
+                  className={`w-full mt-2 py-2 text-[10px] tracking-widest uppercase border transition-colors ${releases[pm.model_id] ? 'bg-green-600 text-white border-green-600' : 'border-green-400 text-green-600 hover:bg-green-600 hover:text-white'}`}>
                   {releases[pm.model_id] ? '✓ OK to Release' : 'OK to Release'}
                 </button>
               )}

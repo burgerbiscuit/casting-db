@@ -68,7 +68,7 @@ export function ProjectPresentationTab({ projectId, presentationId: initialPresI
             presentation_id: pres.id,
             model_id: pm.model_id,
             display_order: i,
-            is_visible: pm.admin_confirmed || false,
+            is_visible: true,
           }))
         )
       }
@@ -85,7 +85,7 @@ export function ProjectPresentationTab({ projectId, presentationId: initialPresI
       .from('project_models').select('admin_confirmed').eq('project_id', projectId).eq('model_id', model.id).single()
     await supabase.from('presentation_models').insert({
       presentation_id: presId, model_id: model.id, display_order: maxOrder + 1,
-      is_visible: pm?.admin_confirmed || false,
+      is_visible: true,
     })
     load()
   }

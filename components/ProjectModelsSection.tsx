@@ -150,7 +150,7 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
     } else {
       const { data } = await supabase.from('presentation_models').insert({
         presentation_id: mainPres.id, model_id: modelId, display_order: displayOrder,
-        show_sizing: true, show_instagram: true, is_visible: adminConfirmed[modelId] || false
+        show_sizing: true, show_instagram: true, is_visible: true
       }).select().single()
       if (data) {
         setPresModelIds(prev => new Set([...prev, modelId]))
@@ -169,7 +169,7 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
       if (!modelId) continue
       const { data } = await supabase.from('presentation_models').upsert({
         presentation_id: mainPres.id, model_id: modelId,
-        display_order: presModelIds.size + i, show_sizing: true, show_instagram: true, is_visible: adminConfirmed[modelId] || false
+        display_order: presModelIds.size + i, show_sizing: true, show_instagram: true, is_visible: true
       }, { onConflict: 'presentation_id,model_id' }).select().single()
       if (data) {
         setPresModelIds(prev => new Set([...prev, modelId]))
@@ -178,25 +178,36 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
     }
   }
 
-  const toggleConfirmed = async (modelId: string) => {
-    const next = !adminConfirmed[modelId]
-    setAdminConfirmed(r => ({ ...r, [modelId]: next }))
-    // Update project_models
+  // Officially confirm a model (admin action after client requests confirmation)
+  const officiallyConfirm = async (modelId: string) => {
+    setAdminConfirmed(r => ({ ...r, [modelId]: true }))
     await supabase.from('project_models')
-      .update({ admin_confirmed: next, status: next ? 'confirmed' : 'pending' })
+      .update({ admin_confirmed: true, status: 'confirmed' })
       .eq('project_id', projectId).eq('model_id', modelId)
-    // Sync is_visible across ALL presentations in this project
+  }
+
+  // Remove model from all presentations (hide from client, sink to bottom of admin list)
+  const removeFromPresentation = async (modelId: string) => {
+    setPresModels(prev => ({ ...prev, [modelId]: { ...prev[modelId], is_visible: false } }))
     const { data: allPres } = await supabase
       .from('presentations').select('id').eq('project_id', projectId)
     await Promise.all((allPres || []).map(pres =>
       supabase.from('presentation_models')
-        .update({ is_visible: next })
+        .update({ is_visible: false })
         .eq('presentation_id', pres.id).eq('model_id', modelId)
     ))
-    // Update local state
-    if (presModels[modelId]) {
-      setPresModels(prev => ({ ...prev, [modelId]: { ...prev[modelId], is_visible: next } }))
-    }
+  }
+
+  // Restore model to all presentations
+  const restoreToPresentation = async (modelId: string) => {
+    setPresModels(prev => ({ ...prev, [modelId]: { ...prev[modelId], is_visible: true } }))
+    const { data: allPres } = await supabase
+      .from('presentations').select('id').eq('project_id', projectId)
+    await Promise.all((allPres || []).map(pres =>
+      supabase.from('presentation_models')
+        .update({ is_visible: true })
+        .eq('presentation_id', pres.id).eq('model_id', modelId)
+    ))
   }
 
   const setClientStatus = async (modelId: string, newStatus: string | null) => {
@@ -266,7 +277,7 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
       const { data: existing } = await supabase.from('presentation_models').select('id').eq('presentation_id', mainPres.id).eq('model_id', model.id).single()
       if (!existing) {
         const { data: last } = await supabase.from('presentation_models').select('display_order').eq('presentation_id', mainPres.id).order('display_order', { ascending: false }).limit(1).single()
-        await supabase.from('presentation_models').insert({ presentation_id: mainPres.id, model_id: model.id, display_order: (last?.display_order ?? -1) + 1, show_sizing: true, show_instagram: true, show_portfolio: true, is_visible: adminConfirmed[model.id] || false })
+        await supabase.from('presentation_models').insert({ presentation_id: mainPres.id, model_id: model.id, display_order: (last?.display_order ?? -1) + 1, show_sizing: true, show_instagram: true, show_portfolio: true, is_visible: true })
       }
     }
     // Add to local state
@@ -293,15 +304,24 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
     return aName.localeCompare(bName)
   }
 
-  const inModels = [...models].filter(pm => adminConfirmed[pm.models?.id]).sort(alphaSort)
-  const outModels = [...models].filter(pm => !adminConfirmed[pm.models?.id]).sort(alphaSort)
-  const sorted = [...inModels, ...outModels]
+  // Sort: officially confirmed first (green), then confirmation requested, shortlisted, others — removed from pres sink to bottom
+  const alphaByLast = (a: any, b: any) => (a.models?.last_name || '').localeCompare(b.models?.last_name || '')
+  const isRemoved = (pm: any) => presModels[pm.models?.id] ? presModels[pm.models?.id].is_visible === false : false
 
-  // Group for list view (legacy, kept for grid view)
-  const confirmed = sorted.filter(pm => adminConfirmed[pm.models?.id])
-  const pending = sorted.filter(pm => !adminConfirmed[pm.models?.id] && shortlistStatus[pm.models?.id] === 'pending_confirmation')
-  const shortlisted = sorted.filter(pm => shortlistStatus[pm.models?.id] === 'shortlisted')
-  const others = sorted.filter(pm => !shortlistStatus[pm.models?.id])
+  const activeModels = models.filter(pm => !isRemoved(pm))
+  const removedModels = models.filter(pm => isRemoved(pm))
+
+  const confirmedGroup = activeModels.filter(pm => adminConfirmed[pm.models?.id]).sort(alphaByLast)
+  const pendingGroup = activeModels.filter(pm => !adminConfirmed[pm.models?.id] && shortlistStatus[pm.models?.id] === 'pending_confirmation').sort(alphaByLast)
+  const shortlistedGroup = activeModels.filter(pm => !adminConfirmed[pm.models?.id] && shortlistStatus[pm.models?.id] === 'shortlisted').sort(alphaByLast)
+  const othersGroup = activeModels.filter(pm => !adminConfirmed[pm.models?.id] && !shortlistStatus[pm.models?.id]).sort(alphaByLast)
+  const sorted = [...confirmedGroup, ...pendingGroup, ...shortlistedGroup, ...othersGroup, ...removedModels]
+
+  // Legacy aliases for grid view
+  const confirmed = confirmedGroup
+  const pending = pendingGroup
+  const shortlisted = shortlistedGroup
+  const others = othersGroup
 
   const ModelListRow = ({ pm, i }: { pm: any; i: number }) => {
     const model = pm.models
@@ -328,35 +348,54 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
           {pm.photo ? <img src={pm.photo} className="w-8 h-10 object-cover object-top flex-shrink-0" alt="" />
             : <div className="w-8 h-10 bg-neutral-100 flex items-center justify-center text-neutral-300 text-[9px]">{getInitials(model)}</div>}
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <p className={`text-xs font-medium ${!adminConfirmed[mid] ? 'text-neutral-400' : ''}`}>
+            <div className="flex items-center gap-2 flex-wrap">
+              <p className={`text-xs font-medium ${isRemoved(pm) ? 'text-neutral-300 line-through' : ''}`}>
                 {model?.first_name} {model?.last_name}
               </p>
-              {/* Client shortlist status badge (read-only) */}
-              {status === 'pending_confirmation' && (
-                <span className={`text-[8px] tracking-widest uppercase px-1.5 py-0.5 ${STATUS_COLOR['pending_confirmation']}`}>
-                  Confirmation Requested
+              {/* Officially confirmed badge */}
+              {adminConfirmed[mid] && (
+                <span className="text-[8px] tracking-widest uppercase px-1.5 py-0.5 bg-green-600 text-white">
+                  Officially Confirmed
                 </span>
               )}
-              {status === 'shortlisted' && (
+              {/* Confirmation requested badge + action button */}
+              {!adminConfirmed[mid] && status === 'pending_confirmation' && (
+                <>
+                  <span className={`text-[8px] tracking-widest uppercase px-1.5 py-0.5 ${STATUS_COLOR['pending_confirmation']}`}>
+                    Confirmation Requested
+                  </span>
+                  <button
+                    onClick={() => officiallyConfirm(mid)}
+                    className="text-[8px] tracking-widest uppercase px-2 py-0.5 border border-green-500 text-green-600 hover:bg-green-600 hover:text-white transition-colors">
+                    Officially Confirm
+                  </button>
+                </>
+              )}
+              {status === 'shortlisted' && !adminConfirmed[mid] && (
                 <span className={`text-[8px] tracking-widest uppercase px-1.5 py-0.5 ${STATUS_COLOR['shortlisted']}`}>
                   Shortlisted
+                </span>
+              )}
+              {isRemoved(pm) && (
+                <span className="text-[8px] tracking-widest uppercase px-1.5 py-0.5 text-neutral-300 border border-neutral-200">
+                  Removed from Presentation
                 </span>
               )}
             </div>
             {model?.agency && <p className="text-[10px] text-neutral-400">{model?.agency}</p>}
           </div>
-          {/* IN / OUT toggle */}
-          <button
-            onClick={() => toggleConfirmed(mid)}
-            title={adminConfirmed[mid] ? 'Mark as OUT (hide from client)' : 'Mark as IN (show to client)'}
-            className={`flex-shrink-0 text-[8px] tracking-widest uppercase px-2 py-1 border transition-colors ${
-              adminConfirmed[mid]
-                ? 'bg-green-600 text-white border-green-600 hover:bg-red-500 hover:border-red-500'
-                : 'border-neutral-300 text-neutral-400 hover:border-green-500 hover:text-green-600'
-            }`}>
-            {adminConfirmed[mid] ? 'IN ✓' : 'OUT'}
-          </button>
+          {/* Remove / Restore from presentation */}
+          {presModelIds.has(mid) && (
+            isRemoved(pm)
+              ? <button onClick={() => restoreToPresentation(mid)}
+                  className="flex-shrink-0 text-[8px] tracking-widest uppercase px-2 py-1 border border-neutral-300 text-neutral-400 hover:border-black hover:text-black transition-colors whitespace-nowrap">
+                  Restore
+                </button>
+              : <button onClick={() => removeFromPresentation(mid)}
+                  className="flex-shrink-0 text-[8px] tracking-widest uppercase px-2 py-1 border border-neutral-200 text-neutral-300 hover:border-red-300 hover:text-red-400 transition-colors whitespace-nowrap">
+                  Remove
+                </button>
+          )}
           <button onClick={() => setExpanded(!expanded)} className="text-[10px] text-neutral-300 hover:text-black transition-colors px-2">
             {expanded ? '▲' : '▼'}
           </button>
