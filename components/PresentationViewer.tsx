@@ -316,10 +316,10 @@ export function PresentationViewer({
   }
 
   // Group sorted (non-shortlisted) by category for section headers — alphabetical within each section
-  const uncategorized = unreleasedSorted.filter(pm => !pm.category_id && !shortlists[pm.model_id]).sort(alphaSort)
   // Released models go to the very bottom, outside all categories
   const releasedModels = sorted.filter(pm => !!releases[pm.model_id])
   const unreleasedSorted = sorted.filter(pm => !releases[pm.model_id])
+  const uncategorized = unreleasedSorted.filter(pm => !pm.category_id && !shortlists[pm.model_id]).sort(alphaSort)
 
   const byCategory = categories.map(cat => ({
     ...cat,
