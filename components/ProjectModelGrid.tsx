@@ -34,7 +34,10 @@ function ModelGridCard({ pm, presentationId, initialIncluded, displayOrder }: {
   const togglePresentation = async () => {
     if (!presentationId) return
     if (included) {
-      await supabase.from('presentation_models').delete().eq('presentation_id', presentationId).eq('model_id', model.id)
+      await Promise.all([
+        supabase.from('presentation_models').delete().eq('presentation_id', presentationId).eq('model_id', model.id),
+        supabase.from('client_shortlists').delete().eq('presentation_id', presentationId).eq('model_id', model.id),
+      ])
       setIncluded(false)
     } else {
       await supabase.from('presentation_models').insert({

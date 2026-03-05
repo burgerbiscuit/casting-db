@@ -147,7 +147,10 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
     if (!mainPres?.id) return
     const included = presModelIds.has(modelId)
     if (included) {
-      await supabase.from('presentation_models').delete().eq('presentation_id', mainPres.id).eq('model_id', modelId)
+      await Promise.all([
+        supabase.from('presentation_models').delete().eq('presentation_id', mainPres.id).eq('model_id', modelId),
+        supabase.from('client_shortlists').delete().eq('presentation_id', mainPres.id).eq('model_id', modelId),
+      ])
       setPresModelIds(prev => { const s = new Set(prev); s.delete(modelId); return s })
       setPresModels(prev => { const m = { ...prev }; delete m[modelId]; return m })
     } else {
@@ -276,11 +279,14 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
 
   const removeFromProject = async (modelId: string, modelName: string) => {
     if (!confirm(`Remove ${modelName} from this project? They will still be in the models database.`)) return
-    await supabase.from('presentation_models').delete()
-      .eq('model_id', modelId)
-      .in('presentation_id', mainPres?.id ? [mainPres.id] : [])
-    await supabase.from('project_models').delete()
-      .eq('project_id', projectId).eq('model_id', modelId)
+    // Remove from all presentations and clean up shortlists for all their presentations
+    if (mainPres?.id) {
+      await Promise.all([
+        supabase.from('presentation_models').delete().eq('presentation_id', mainPres.id).eq('model_id', modelId),
+        supabase.from('client_shortlists').delete().eq('presentation_id', mainPres.id).eq('model_id', modelId),
+      ])
+    }
+    await supabase.from('project_models').delete().eq('project_id', projectId).eq('model_id', modelId)
     setModels(prev => prev.filter(pm => pm.models?.id !== modelId))
     setPresModelIds(prev => { const s = new Set(prev); s.delete(modelId); return s })
   }

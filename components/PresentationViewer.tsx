@@ -278,31 +278,58 @@ export function PresentationViewer({
   }
 
   const handleConfirm = async (modelId: string) => {
-    const supabase = (await import('@/lib/supabase/client')).createClient()
     setClientStatus(prev => ({ ...prev, [modelId]: 'pending_confirmation' }))
     setShortlists(prev => ({ ...prev, [modelId]: true }))
-    await supabase.from('client_shortlists').upsert(
-      { presentation_id: presentationId, model_id: modelId, client_id: clientId, status: 'pending_confirmation' },
-      { onConflict: 'presentation_id,model_id,client_id' }
-    )
+    try {
+      await fetch('/api/shortlist', {
+        method: 'POST',
+        body: JSON.stringify({
+          action: 'updateStatus',
+          presentationId,
+          modelId,
+          status: 'pending_confirmation',
+        }),
+      })
+    } catch (err) {
+      console.error('Confirm failed:', err)
+      setClientStatus(prev => { const s = { ...prev }; delete s[modelId]; return s })
+    }
   }
 
   const handleUndoConfirm = async (modelId: string) => {
-    const supabase = (await import('@/lib/supabase/client')).createClient()
     setClientStatus(prev => ({ ...prev, [modelId]: 'shortlisted' }))
-    await supabase.from('client_shortlists').upsert(
-      { presentation_id: presentationId, model_id: modelId, client_id: clientId, status: 'shortlisted' },
-      { onConflict: 'presentation_id,model_id,client_id' }
-    )
+    try {
+      await fetch('/api/shortlist', {
+        method: 'POST',
+        body: JSON.stringify({
+          action: 'updateStatus',
+          presentationId,
+          modelId,
+          status: 'shortlisted',
+        }),
+      })
+    } catch (err) {
+      console.error('Undo confirm failed:', err)
+    }
   }
 
   const handleRelease = async (modelId: string) => {
     const next = !releases[modelId]
     setReleases(r => ({ ...r, [modelId]: next }))
-    await supabase.from('client_shortlists').upsert({
-      presentation_id: presentationId, model_id: modelId, client_id: clientId,
-      is_released: next, status: 'shortlisted'
-    }, { onConflict: 'presentation_id,model_id,client_id' })
+    try {
+      await fetch('/api/shortlist', {
+        method: 'POST',
+        body: JSON.stringify({
+          action: 'updateRelease',
+          presentationId,
+          modelId,
+          isReleased: next,
+        }),
+      })
+    } catch (err) {
+      console.error('Release toggle failed:', err)
+      setReleases(r => ({ ...r, [modelId]: !next }))
+    }
   }
 
   const confirmedCount = Object.keys(adminConfirmed).filter(k => adminConfirmed[k] && clientStatus[k] === "pending_confirmation").length
@@ -574,9 +601,21 @@ export function PresentationViewer({
                   {(adminConfirmed[pm.model_id] && clientStatus[pm.model_id] === "pending_confirmation") ? '✓ Officially Confirmed' : (clientStatus[pm.model_id] === "pending_confirmation") ? 'Confirmation Pending' : 'Request Confirmation'}
                 </button>
                 <button
-                  onClick={() => isShortlisted
-                    ? supabase.from('client_shortlists').delete().eq('presentation_id', presentationId).eq('model_id', pm.model_id).eq('client_id', clientId).then(() => setShortlists(s => ({ ...s, [pm.model_id]: false })))
-                    : supabase.from('client_shortlists').upsert({ presentation_id: presentationId, model_id: pm.model_id, client_id: clientId, status: 'shortlisted', author_name: clientFirstName }, { onConflict: 'presentation_id,model_id,client_id' }).then(() => setShortlists(s => ({ ...s, [pm.model_id]: true })))}
+                  onClick={() => {
+                    const next = !isShortlisted
+                    setShortlists(s => ({ ...s, [pm.model_id]: next }))
+                    fetch('/api/shortlist', {
+                      method: 'POST',
+                      body: JSON.stringify({
+                        action: 'toggle',
+                        presentationId,
+                        modelId: pm.model_id,
+                      }),
+                    }).catch(err => {
+                      console.error('Toggle shortlist failed:', err)
+                      setShortlists(s => ({ ...s, [pm.model_id]: !next }))
+                    })
+                  }}
                   className={`px-4 py-2.5 border transition-colors flex items-center gap-1.5 text-[10px] tracking-widest uppercase ${isShortlisted ? 'bg-black text-white border-black' : 'border-neutral-300 text-neutral-500 hover:border-black'}`}>
                   <Heart size={13} className={isShortlisted ? 'fill-white text-white' : ''} />
                   {isShortlisted ? 'Shortlisted' : 'Shortlist'}
@@ -786,26 +825,41 @@ function SlideActions({ presentationId, modelId, clientId, initialShortlisted, i
   }
 
   const toggle = async () => {
-    const { createClient } = await import('@/lib/supabase/client')
-    const supabase = createClient()
     const next = !shortlisted
     setShortlisted(next)
     onShortlistChange?.(next)
-    if (next) {
-      await supabase.from('client_shortlists').upsert({ presentation_id: presentationId, model_id: modelId, client_id: clientId, notes })
-    } else {
-      await supabase.from('client_shortlists').delete().eq('presentation_id', presentationId).eq('model_id', modelId).eq('client_id', clientId)
+    try {
+      await fetch('/api/shortlist', {
+        method: 'POST',
+        body: JSON.stringify({
+          action: 'toggle',
+          presentationId,
+          modelId,
+          notes,
+        }),
+      })
+    } catch (err) {
+      console.error('Toggle failed:', err)
+      setShortlisted(!next)
+      onShortlistChange?.(!next)
     }
   }
 
   const saveNotes = async (val: string) => {
     setNotes(val)
-    const { createClient } = await import('@/lib/supabase/client')
-    const supabase = createClient()
-    await supabase.from('client_shortlists').upsert(
-      { presentation_id: presentationId, model_id: modelId, client_id: clientId, notes: val, author_name: clientFirstName || null },
-      { onConflict: 'presentation_id,model_id,client_id' }
-    )
+    try {
+      await fetch('/api/shortlist', {
+        method: 'POST',
+        body: JSON.stringify({
+          action: 'updateNotes',
+          presentationId,
+          modelId,
+          notes: val,
+        }),
+      })
+    } catch (err) {
+      console.error('Save notes failed:', err)
+    }
   }
 
 

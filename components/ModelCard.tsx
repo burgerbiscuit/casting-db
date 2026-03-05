@@ -36,39 +36,37 @@ export function ModelCard({ presentationModel, model, media, presentationId, cli
   const toggleShortlist = async () => {
     const next = !shortlisted
     setShortlisted(next); onShortlistChange?.(next)
-    if (next) {
-      // Insert with status='shortlisted' only if new; never overwrite existing status (pending/confirmed)
-      const { data: existing } = await supabase.from('client_shortlists')
-        .select('id, status').eq('presentation_id', presentationId).eq('model_id', model.id).eq('client_id', clientId).maybeSingle()
-      if (existing) {
-        // Already exists — just update notes, preserve status
-        await supabase.from('client_shortlists').update({ notes }).eq('id', existing.id)
-      } else {
-        await supabase.from('client_shortlists').insert({
-          presentation_id: presentationId,
-          model_id: model.id,
-          client_id: clientId,
-          status: 'shortlisted',
+    try {
+      await fetch('/api/shortlist', {
+        method: 'POST',
+        body: JSON.stringify({
+          action: 'toggle',
+          presentationId,
+          modelId: model.id,
           notes,
-        })
-      }
-    } else {
-      await supabase.from('client_shortlists')
-        .delete()
-        .eq('presentation_id', presentationId)
-        .eq('model_id', model.id)
-        .eq('client_id', clientId)
+        }),
+      })
+    } catch (err) {
+      console.error('Toggle shortlist failed:', err)
+      setShortlisted(!next) // revert optimistic update
     }
   }
 
   const saveNotes = async (val: string) => {
     setNotes(val)
     if (shortlisted || val) {
-      // Update notes only — never overwrite status
-      const { data: existing } = await supabase.from('client_shortlists')
-        .select('id').eq('presentation_id', presentationId).eq('model_id', model.id).eq('client_id', clientId).maybeSingle()
-      if (existing) {
-        await supabase.from('client_shortlists').update({ notes: val }).eq('id', existing.id)
+      try {
+        await fetch('/api/shortlist', {
+          method: 'POST',
+          body: JSON.stringify({
+            action: 'updateNotes',
+            presentationId,
+            modelId: model.id,
+            notes: val,
+          }),
+        })
+      } catch (err) {
+        console.error('Save notes failed:', err)
       }
     }
   }

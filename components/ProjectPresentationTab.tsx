@@ -91,7 +91,13 @@ export function ProjectPresentationTab({ projectId, presentationId: initialPresI
   }
 
   const removeModel = async (pmId: string) => {
-    await supabase.from('presentation_models').delete().eq('id', pmId)
+    const pm = presentationModels.find(m => m.id === pmId)
+    if (!pm) return
+    // Delete both presentation_models and orphaned client_shortlists
+    await Promise.all([
+      supabase.from('presentation_models').delete().eq('id', pmId),
+      supabase.from('client_shortlists').delete().eq('presentation_id', pm.presentation_id).eq('model_id', pm.model_id),
+    ])
     load()
   }
 
