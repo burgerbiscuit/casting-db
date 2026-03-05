@@ -18,7 +18,7 @@ export default function ShareGate({ presentationId, presentationName }: { presen
       body: JSON.stringify({ presentationId, password }),
     })
     if (res.ok) {
-      router.refresh()
+      router.push(`/client/presentations/${presentationId}`)
     } else {
       setError('Incorrect password')
       setLoading(false)

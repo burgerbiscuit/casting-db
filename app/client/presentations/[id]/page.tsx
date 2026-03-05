@@ -3,39 +3,49 @@ import { PresentationViewer } from '@/components/PresentationViewer'
 import Link from 'next/link'
 import { Download } from 'lucide-react'
 import { redirect } from 'next/navigation'
+import { cookies } from 'next/headers'
+
+// Fixed demo client UUID — used for share-link guests so shortlisting writes somewhere
+const DEMO_CLIENT_ID = '00000000-0000-0000-0000-000000000000'
 
 export default async function PresentationView({ params }: { params: { id: string } }) {
   const { id } = params
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  if (!user) redirect('/client/login')
+  // Check if they have share-cookie access (no login required)
+  const cookieStore = await cookies()
+  const hasShareAccess = cookieStore.get(`share_${id}`)?.value === 'true'
+
+  if (!user && !hasShareAccess) redirect('/client/login')
 
   const { data: presentation } = await supabase
     .from('presentations').select('*, projects(name, specs, status)').eq('id', id).single()
 
   if (!presentation) return <div>Presentation not found.</div>
 
-  // IDOR fix: verify the logged-in client has access to this presentation's project
-  const { data: access } = await supabase
-    .from('client_projects')
-    .select('id')
-    .eq('client_id', user.id)
-    .eq('project_id', presentation.project_id)
-    .single()
-
-  const isTeamMember = !!access || false
+  // Share-link guests skip all access checks — they're viewing a pre-approved public presentation
   let isMember = false
-  if (!access) {
-    const supabaseSvc = await createServiceClient()
-    const { data: member } = await supabaseSvc.from('team_members').select('id').eq('user_id', user.id).single()
-    if (!member) redirect('/client')
-    isMember = true
-  }
+  if (user) {
+    // IDOR fix: verify the logged-in client has access to this presentation's project
+    const { data: access } = await supabase
+      .from('client_projects')
+      .select('id')
+      .eq('client_id', user.id)
+      .eq('project_id', presentation.project_id)
+      .single()
 
-  // Archived projects: only team members can still view
-  const projectStatus = (presentation.projects as any)?.status
-  if (projectStatus === 'archived' && !isMember) redirect('/client')
+    if (!access) {
+      const supabaseSvc = await createServiceClient()
+      const { data: member } = await supabaseSvc.from('team_members').select('id').eq('user_id', user.id).single()
+      if (!member) redirect('/client')
+      isMember = true
+    }
+
+    // Archived projects: only team members can still view
+    const projectStatus = (presentation.projects as any)?.status
+    if (projectStatus === 'archived' && !isMember) redirect('/client')
+  }
 
   const { data: presentationModels } = await supabase
     .from('presentation_models')
@@ -48,18 +58,22 @@ export default async function PresentationView({ params }: { params: { id: strin
   const { data: allMedia } = await supabase
     .from('model_media').select('*').in('model_id', modelIds).order('display_order')
 
-  const { data: clientProfile } = await supabase
-    .from('client_profiles').select('name').eq('user_id', user.id).single()
-  // Also check team_members for their name
-  const { data: teamMember } = !clientProfile ? await supabase
-    .from('team_members').select('name').eq('user_id', user.id).single() : { data: null }
-  const clientFirstName = ((clientProfile?.name || teamMember?.name || '').split(' ')[0]) || ''
+  let clientFirstName = 'Guest'
+  if (user) {
+    const { data: clientProfile } = await supabase
+      .from('client_profiles').select('name').eq('user_id', user.id).single()
+    const { data: teamMember } = !clientProfile ? await supabase
+      .from('team_members').select('name').eq('user_id', user.id).single() : { data: null }
+    clientFirstName = ((clientProfile?.name || teamMember?.name || '').split(' ')[0]) || ''
+  }
 
   const { data: categories } = await supabase
     .from('presentation_categories').select('*').eq('presentation_id', id).order('display_order')
 
+  const effectiveClientId = user?.id || DEMO_CLIENT_ID
+
   const { data: shortlists } = await supabase
-    .from('client_shortlists').select('*').eq('presentation_id', id).eq('client_id', user?.id)
+    .from('client_shortlists').select('*').eq('presentation_id', id).eq('client_id', effectiveClientId)
 
   const shortlistMap: Record<string, any> = {}
   ;(shortlists || []).forEach(s => { shortlistMap[s.model_id] = s })
@@ -103,7 +117,7 @@ export default async function PresentationView({ params }: { params: { id: strin
         presentationModels={sanitizedModels}
         mediaByModel={mediaByModel}
         presentationId={id}
-        clientId={user?.id || ''}
+        clientId={effectiveClientId}
         clientFirstName={clientFirstName}
         categories={categories || []}
         shortlistMap={shortlistMap}

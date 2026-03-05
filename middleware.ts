@@ -48,6 +48,14 @@ export async function middleware(request: NextRequest) {
   }
 
   if (path.startsWith('/client') && path !== '/client/login' && path !== '/client/signup') {
+    // Allow share-cookie access to specific presentation pages (no login required)
+    const presShareMatch = path.match(/^\/client\/presentations\/([^/]+)$/)
+    if (presShareMatch) {
+      const presId = presShareMatch[1]
+      const shareCookie = request.cookies.get(`share_${presId}`)?.value
+      if (shareCookie === 'true') return supabaseResponse // pass through as guest
+    }
+
     if (!user) return NextResponse.redirect(new URL('/client/login', request.url))
     const { data: isMember } = await supabaseSvc
       .from('team_members')

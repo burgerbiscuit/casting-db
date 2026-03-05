@@ -29,7 +29,10 @@ export default async function SharePage({ params }: { params: { id: string } }) 
     return <ShareGate presentationId={id} presentationName={presentation.name} />
   }
 
-  // Fetch full presentation data
+  // Already authed — send them to the full client presentation
+  redirect(`/client/presentations/${id}`)
+
+  // Fetch full presentation data (unreachable but needed for type safety)
   const [{ data: presModels }, { data: categories }, { data: project }] = await Promise.all([
     supabase
       .from('presentation_models')
