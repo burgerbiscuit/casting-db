@@ -133,12 +133,6 @@ export default async function ProjectDashboard({ params }: { params: { projectId
                   <span className="text-sm">{pres.name}</span>
                   <span className="text-xs tracking-widest uppercase text-neutral-400">View &rarr;</span>
                 </Link>
-                <Link
-                  href={`/client/presentations/${pres.id}/chart`}
-                  className="border-l border-neutral-200 px-4 py-3.5 text-xs tracking-widest uppercase text-neutral-400 hover:text-black hover:bg-neutral-50 transition-colors whitespace-nowrap"
-                >
-                  Chart &rarr;
-                </Link>
                 {isMember && (
                   <div className="border-l border-neutral-200 px-3 flex items-center gap-3">
                     <PresentationDeleteButton presId={pres.id} />
