@@ -59,10 +59,17 @@ export function ProjectPresentationTab({ projectId, presentationId: initialPresI
     }).select().single()
     if (pres) {
       setPresId(pres.id)
-      const { data: projectModels } = await supabase.from('project_models').select('model_id').eq('project_id', projectId)
+      // Fetch confirmed state so is_visible reflects admin_confirmed from the start
+      const { data: projectModels } = await supabase
+        .from('project_models').select('model_id, admin_confirmed').eq('project_id', projectId)
       if (projectModels?.length) {
         await supabase.from('presentation_models').insert(
-          projectModels.map((pm: any, i: number) => ({ presentation_id: pres.id, model_id: pm.model_id, display_order: i }))
+          projectModels.map((pm: any, i: number) => ({
+            presentation_id: pres.id,
+            model_id: pm.model_id,
+            display_order: i,
+            is_visible: pm.admin_confirmed || false,
+          }))
         )
       }
       load()
@@ -73,7 +80,13 @@ export function ProjectPresentationTab({ projectId, presentationId: initialPresI
   const addModel = async (model: any) => {
     if (!presId) return
     const maxOrder = Math.max(0, ...presentationModels.map(m => m.display_order))
-    await supabase.from('presentation_models').insert({ presentation_id: presId, model_id: model.id, display_order: maxOrder + 1 })
+    // Check if model is confirmed in project before making visible
+    const { data: pm } = await supabase
+      .from('project_models').select('admin_confirmed').eq('project_id', projectId).eq('model_id', model.id).single()
+    await supabase.from('presentation_models').insert({
+      presentation_id: presId, model_id: model.id, display_order: maxOrder + 1,
+      is_visible: pm?.admin_confirmed || false,
+    })
     load()
   }
 

@@ -150,7 +150,7 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
     } else {
       const { data } = await supabase.from('presentation_models').insert({
         presentation_id: mainPres.id, model_id: modelId, display_order: displayOrder,
-        show_sizing: true, show_instagram: true, is_visible: true
+        show_sizing: true, show_instagram: true, is_visible: adminConfirmed[modelId] || false
       }).select().single()
       if (data) {
         setPresModelIds(prev => new Set([...prev, modelId]))
@@ -169,7 +169,7 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
       if (!modelId) continue
       const { data } = await supabase.from('presentation_models').upsert({
         presentation_id: mainPres.id, model_id: modelId,
-        display_order: presModelIds.size + i, show_sizing: true, show_instagram: true, is_visible: true
+        display_order: presModelIds.size + i, show_sizing: true, show_instagram: true, is_visible: adminConfirmed[modelId] || false
       }, { onConflict: 'presentation_id,model_id' }).select().single()
       if (data) {
         setPresModelIds(prev => new Set([...prev, modelId]))
@@ -266,7 +266,7 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
       const { data: existing } = await supabase.from('presentation_models').select('id').eq('presentation_id', mainPres.id).eq('model_id', model.id).single()
       if (!existing) {
         const { data: last } = await supabase.from('presentation_models').select('display_order').eq('presentation_id', mainPres.id).order('display_order', { ascending: false }).limit(1).single()
-        await supabase.from('presentation_models').insert({ presentation_id: mainPres.id, model_id: model.id, display_order: (last?.display_order ?? -1) + 1, show_sizing: true, show_instagram: true, show_portfolio: true, is_visible: true })
+        await supabase.from('presentation_models').insert({ presentation_id: mainPres.id, model_id: model.id, display_order: (last?.display_order ?? -1) + 1, show_sizing: true, show_instagram: true, show_portfolio: true, is_visible: adminConfirmed[model.id] || false })
       }
     }
     // Add to local state
