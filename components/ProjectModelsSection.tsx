@@ -181,9 +181,16 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
   // Officially confirm a model (admin action after client requests confirmation)
   const officiallyConfirm = async (modelId: string) => {
     setAdminConfirmed(r => ({ ...r, [modelId]: true }))
+    // Also ensure is_visible=true — confirmed models must be visible to clients
+    setPresModels(prev => prev[modelId] ? { ...prev, [modelId]: { ...prev[modelId], is_visible: true } } : prev)
     await supabase.from('project_models')
       .update({ admin_confirmed: true, status: 'confirmed' })
       .eq('project_id', projectId).eq('model_id', modelId)
+    const { data: allPres } = await supabase.from('presentations').select('id').eq('project_id', projectId)
+    await Promise.all((allPres || []).map(pres =>
+      supabase.from('presentation_models').update({ is_visible: true })
+        .eq('presentation_id', pres.id).eq('model_id', modelId)
+    ))
   }
 
   // Remove model from all presentations (hide from client, sink to bottom of admin list)
