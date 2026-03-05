@@ -419,6 +419,10 @@ export function PresentationViewer({
                       className={`w-full mt-1 py-1.5 text-[9px] tracking-widest uppercase transition-colors border ${(adminConfirmed[pm.model_id] && clientStatus[pm.model_id] === "pending_confirmation") ? 'bg-green-600 text-white border-green-600' : clientStatus[pm.model_id] === "pending_confirmation" ? 'bg-amber-400 text-white border-amber-400 cursor-default' : 'border-neutral-200 hover:border-black text-neutral-400 hover:text-black'}`}>
                       {(adminConfirmed[pm.model_id] && clientStatus[pm.model_id] === "pending_confirmation") ? '✓ Officially Confirmed' : clientStatus[pm.model_id] === "pending_confirmation" ? 'Confirmation Pending' : 'Request Confirmation'}
                     </button>
+                    <button onClick={() => handleRelease(pm.model_id)}
+                      className={`w-full mt-1 py-1.5 text-[9px] tracking-widest uppercase border transition-colors ${releases[pm.model_id] ? 'bg-neutral-800 text-white border-neutral-800' : 'border-neutral-200 text-neutral-300 hover:border-neutral-500 hover:text-neutral-500'}`}>
+                      {releases[pm.model_id] ? '✓ OK to Release' : 'OK to Release'}
+                    </button>
                   </div>
                 ))}
               </div>
@@ -445,6 +449,10 @@ export function PresentationViewer({
                   }}
                   className={`w-full mt-1 py-1.5 text-[9px] tracking-widest uppercase transition-colors border ${(adminConfirmed[pm.model_id] && clientStatus[pm.model_id] === "pending_confirmation") ? 'bg-green-600 text-white border-green-600' : (clientStatus[pm.model_id] === "pending_confirmation") ? 'bg-amber-400 text-white border-amber-400 cursor-default' : 'border-neutral-200 hover:border-black text-neutral-400 hover:text-black'}`}>
                   {(adminConfirmed[pm.model_id] && clientStatus[pm.model_id] === "pending_confirmation") ? '✓ Officially Confirmed' : (clientStatus[pm.model_id] === "pending_confirmation") ? 'Confirmation Pending' : 'Request Confirmation'}
+                </button>
+                <button onClick={() => handleRelease(pm.model_id)}
+                  className={`w-full mt-1 py-1.5 text-[9px] tracking-widest uppercase border transition-colors ${releases[pm.model_id] ? 'bg-neutral-800 text-white border-neutral-800' : 'border-neutral-200 text-neutral-300 hover:border-neutral-500 hover:text-neutral-500'}`}>
+                  {releases[pm.model_id] ? '✓ OK to Release' : 'OK to Release'}
                 </button>
               </div>
             )
