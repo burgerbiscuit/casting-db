@@ -1,6 +1,7 @@
 import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import { cookies } from 'next/headers'
 import { PrintButton } from '@/components/PrintButton'
 
 export default async function ConfirmationChartPage({ params, searchParams }: { params: { id: string }; searchParams: { hidden?: string } }) {
@@ -9,7 +10,9 @@ export default async function ConfirmationChartPage({ params, searchParams }: { 
   const showCol = (col: string) => !hiddenCols.has(col)
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/client/login')
+  const cookieStore = await cookies()
+  const hasShareAccess = cookieStore.get(`share_${id}`)?.value === 'true'
+  if (!user && !hasShareAccess) redirect('/client/login')
 
   const serviceSupabase = await createServiceClient()
 
@@ -24,23 +27,26 @@ export default async function ConfirmationChartPage({ params, searchParams }: { 
 
   const project = presentation.projects as any
 
-  // Access check
-  const { data: member } = await serviceSupabase.from('team_members').select('id').eq('user_id', user.id).single()
-  const isMember = !!member
-  if (!isMember) {
-    const { data: access } = await serviceSupabase
-      .from('client_projects').select('id')
-      .eq('client_id', user.id).eq('project_id', project.id).single()
-    if (!access) redirect('/client')
-    // Non-team members: only show if chart is approved
-    if (!(presentation as any).chart_approved) {
-      return (
-        <div className="max-w-3xl mx-auto text-center py-20">
-          <p className="text-xs tracking-widest uppercase text-neutral-300 mb-3">Not yet available</p>
-          <p className="text-sm text-neutral-400">The confirmation chart for this project isn&apos;t ready yet. Check back soon.</p>
-          <a href="/client" className="mt-6 inline-block text-[11px] tracking-widest uppercase text-neutral-400 hover:text-black">← Back to Projects</a>
-        </div>
-      )
+  // Access check — share-cookie guests bypass all checks
+  let isMember = false
+  if (user) {
+    const { data: member } = await serviceSupabase.from('team_members').select('id').eq('user_id', user.id).single()
+    isMember = !!member
+    if (!isMember) {
+      const { data: access } = await serviceSupabase
+        .from('client_projects').select('id')
+        .eq('client_id', user.id).eq('project_id', project.id).single()
+      if (!access) redirect('/client')
+      // Non-team members: only show if chart is approved
+      if (!(presentation as any).chart_approved) {
+        return (
+          <div className="max-w-3xl mx-auto text-center py-20">
+            <p className="text-xs tracking-widest uppercase text-neutral-300 mb-3">Not yet available</p>
+            <p className="text-sm text-neutral-400">The confirmation chart for this project isn&apos;t ready yet. Check back soon.</p>
+            <a href="/client" className="mt-6 inline-block text-[11px] tracking-widest uppercase text-neutral-400 hover:text-black">← Back to Projects</a>
+          </div>
+        )
+      }
     }
   }
 

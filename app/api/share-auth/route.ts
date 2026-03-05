@@ -27,10 +27,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Wrong password' }, { status: 401 })
     }
 
+    // Also set share cookies for all presentations in this project
+    const { data: presentations } = await supabase
+      .from('presentations')
+      .select('id')
+      .eq('project_id', projectId)
+
     const res = NextResponse.json({ ok: true })
     res.cookies.set(`share_project_${projectId}`, 'true', {
       httpOnly: true, path: '/', maxAge: 60 * 60 * 24 * 7, sameSite: 'lax',
     })
+    for (const pres of presentations || []) {
+      res.cookies.set(`share_${pres.id}`, 'true', {
+        httpOnly: true, path: '/', maxAge: 60 * 60 * 24 * 7, sameSite: 'lax',
+      })
+    }
     return res
   }
 
