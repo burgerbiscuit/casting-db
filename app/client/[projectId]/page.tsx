@@ -124,15 +124,6 @@ export default async function ProjectDashboard({ params }: { params: { projectId
           <p className="text-sm text-neutral-400">No presentations available yet.</p>
         ) : (
           <div className="space-y-2">
-            {chartApproved && mainPres && (
-              <Link
-                href={`/client/presentations/${mainPres.id}/chart`}
-                className="flex items-center justify-between border border-green-200 bg-green-50 px-5 py-3.5 hover:border-green-400 transition-colors"
-              >
-                <span className="text-xs tracking-widest uppercase text-green-700 font-medium">✓ Confirmation Chart</span>
-                <span className="text-xs tracking-widest uppercase text-green-600">Download &rarr;</span>
-              </Link>
-            )}
             {visiblePresentations.map((pres: any) => (
               <div key={pres.id} className="flex items-center border border-neutral-200 hover:border-neutral-400 transition-colors">
                 <Link
@@ -141,6 +132,12 @@ export default async function ProjectDashboard({ params }: { params: { projectId
                 >
                   <span className="text-sm">{pres.name}</span>
                   <span className="text-xs tracking-widest uppercase text-neutral-400">View &rarr;</span>
+                </Link>
+                <Link
+                  href={`/client/presentations/${pres.id}/chart`}
+                  className="border-l border-neutral-200 px-4 py-3.5 text-xs tracking-widest uppercase text-neutral-400 hover:text-black hover:bg-neutral-50 transition-colors whitespace-nowrap"
+                >
+                  Chart &rarr;
                 </Link>
                 {isMember && (
                   <div className="border-l border-neutral-200 px-3 flex items-center gap-3">
