@@ -333,7 +333,7 @@ export function PresentationViewer({
   }
 
   const confirmedCount = Object.keys(adminConfirmed).filter(k => adminConfirmed[k] && clientStatus[k] === "pending_confirmation").length
-  const shortlistedCount = Object.values(shortlists).filter(Boolean).length
+  const shortlistedCount = Object.keys(shortlists).filter(k => shortlists[k] && !releases[k]).length
 
     // Sort alphabetically by last name within a section
   const alphaSort = (a: any, b: any) => {
@@ -436,7 +436,7 @@ export function PresentationViewer({
             <div className="mb-8">
               <p className="label mb-4 flex items-center gap-2"><Heart size={10} className="fill-black text-black" /> Shortlisted</p>
               <div className={`grid gap-3 ${isMobile ? 'grid-cols-2' : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6'}`}>
-                {sorted.filter(pm => shortlists[pm.model_id]).map(pm => (
+                {sorted.filter(pm => shortlists[pm.model_id] && !releases[pm.model_id]).map(pm => (
                   <div key={pm.id} className="relative">
                     {(adminConfirmed[pm.model_id] && clientStatus[pm.model_id] === "pending_confirmation") && (
                       <div className="absolute top-2 left-2 z-10 bg-black text-white text-[9px] tracking-widest uppercase px-2 py-1">Officially Confirmed</div>
