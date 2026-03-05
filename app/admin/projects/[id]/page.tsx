@@ -46,6 +46,7 @@ export default async function ProjectDetail({ params, searchParams }: { params: 
   const appUrl = 'https://cast.tashatongpreecha.com'
   const modelLink = `${appUrl}/cast/${project.slug}`
   const clientLink = presentations?.[0] ? `${appUrl}/client/presentations/${presentations[0].id}` : null
+  const shareLink = project.share_password ? `${appUrl}/share/project/${id}` : null
   const contactSheetUrl = `/api/contact-sheet/${id}`
 
   const modelsWithPhotos = (projectModels || []).map((pm: any) => ({
@@ -70,7 +71,7 @@ export default async function ProjectDetail({ params, searchParams }: { params: 
 
       <ProjectSpecsPanel project={project} />
 
-      <div className="grid grid-cols-2 gap-4 mb-10">
+      <div className={`grid ${shareLink ? 'grid-cols-3' : 'grid-cols-2'} gap-4 mb-10`}>
         <div className="border border-neutral-200 p-6">
           <p className="label mb-1">Model Sign-In Link</p>
           <p className="text-xs text-neutral-400 mb-4">Share with models so they can check in.</p>
@@ -93,9 +94,21 @@ export default async function ProjectDetail({ params, searchParams }: { params: 
               </div>
             </>
           ) : (
-<p className="text-xs text-neutral-400 italic">Go to the Presentation tab to set up the client view.</p>
+            <p className="text-xs text-neutral-400 italic">Go to the Presentation tab to set up the client view.</p>
           )}
         </div>
+        {shareLink && (
+          <div className="border border-neutral-200 p-6">
+            <p className="label mb-1">Demo / Share Link</p>
+            <p className="text-xs text-neutral-400 mb-1">Password-gated — no login required.</p>
+            <p className="text-xs text-neutral-300 mb-4">Password: <span className="text-neutral-500 font-mono">{project.share_password}</span></p>
+            <div className="bg-neutral-50 px-3 py-2 text-xs text-neutral-500 mb-3 break-all">{shareLink}</div>
+            <div className="flex gap-4 items-center">
+              <a href={shareLink} target="_blank" className="text-xs tracking-widest uppercase underline">Open ↗</a>
+              <CopyButton text={shareLink} />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Tabs */}
