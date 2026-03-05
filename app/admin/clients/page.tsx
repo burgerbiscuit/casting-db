@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { ChevronDown, ChevronUp, Bell } from 'lucide-react'
+import { ChevronDown, ChevronUp, Bell, Copy, Trash2, RefreshCw } from 'lucide-react'
 
 export default function ClientsPage() {
   const supabase = createClient()
@@ -20,16 +20,59 @@ export default function ClientsPage() {
   const [resending, setResending] = useState<string | null>(null)
   const [editingClient, setEditingClient] = useState<any>(null)
 
+  // Token-based access links
+  const [tokenLinks, setTokenLinks] = useState<any[]>([])
+  const [newTokenName, setNewTokenName] = useState('')
+  const [newTokenEmail, setNewTokenEmail] = useState('')
+  const [newTokenPassword, setNewTokenPassword] = useState('')
+  const [newTokenProjectIds, setNewTokenProjectIds] = useState<string[]>([])
+  const [creatingToken, setCreatingToken] = useState(false)
+  const [createdToken, setCreatedToken] = useState<any>(null)
+  const [copiedId, setCopiedId] = useState<string | null>(null)
+
   const load = useCallback(async () => {
-    const [clientsRes, { data: projs }, { data: reqs }] = await Promise.all([
+    const [clientsRes, { data: projs }, { data: reqs }, tokenRes] = await Promise.all([
       fetch('/api/admin/clients').then(r => r.json()),
       supabase.from('projects').select('id, name, status').order('created_at', { ascending: false }),
       supabase.from('client_requests').select('*').eq('status', 'pending').order('created_at', { ascending: false }),
+      fetch('/api/admin/client-tokens').then(r => r.json()),
     ])
     setClients(Array.isArray(clientsRes) ? clientsRes : [])
     setProjects(projs || [])
     setRequests(reqs || [])
+    setTokenLinks(Array.isArray(tokenRes) ? tokenRes : [])
   }, [])
+
+  const createTokenLink = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setCreatingToken(true)
+    const res = await fetch('/api/admin/client-tokens', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: newTokenName, email: newTokenEmail, password: newTokenPassword, projectIds: newTokenProjectIds }),
+    })
+    const data = await res.json()
+    if (data.ok) {
+      setCreatedToken(data)
+      setNewTokenName(''); setNewTokenEmail(''); setNewTokenPassword(''); setNewTokenProjectIds([])
+      load()
+    } else {
+      alert('Error: ' + data.error)
+    }
+    setCreatingToken(false)
+  }
+
+  const deleteTokenLink = async (tokenId: string) => {
+    if (!confirm('Delete this access link? The client will no longer be able to log in.')) return
+    await fetch('/api/admin/client-tokens', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tokenId }) })
+    load()
+  }
+
+  const copyToClipboard = (text: string, id: string) => {
+    navigator.clipboard.writeText(text)
+    setCopiedId(id)
+    setTimeout(() => setCopiedId(null), 2000)
+  }
 
   useEffect(() => { load() }, [load])
 
@@ -93,6 +136,109 @@ export default function ClientsPage() {
   return (
     <div>
       <h1 className="text-2xl font-light tracking-widest uppercase mb-10">Clients</h1>
+
+      {/* ── ACCESS LINKS (new simple system) ── */}
+      <section className="mb-14">
+        <p className="label mb-1">Client Access Links</p>
+        <p className="text-xs text-neutral-400 mb-6">Generate a link + password per client. Send both — no account creation needed.</p>
+
+        <div className="grid grid-cols-2 gap-10">
+          {/* Create form */}
+          <form onSubmit={createTokenLink} className="space-y-4">
+            <Input label="Client Name *" value={newTokenName} onChange={e => setNewTokenName(e.target.value)} required />
+            <Input label="Email (optional, for your records)" value={newTokenEmail} onChange={e => setNewTokenEmail(e.target.value)} />
+            <div>
+              <label className="label block mb-1">Password <span className="font-normal normal-case text-neutral-400">(leave blank to auto-generate)</span></label>
+              <input value={newTokenPassword} onChange={e => setNewTokenPassword(e.target.value)}
+                placeholder="e.g. coral-stone-482"
+                className="w-full border-b border-neutral-200 py-2 text-sm focus:outline-none focus:border-black bg-transparent" />
+            </div>
+            <div>
+              <p className="label mb-2">Project Access</p>
+              <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                {projects.filter(p => p.status === 'active').map(p => (
+                  <label key={p.id} className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={newTokenProjectIds.includes(p.id)}
+                      onChange={() => setNewTokenProjectIds(prev => prev.includes(p.id) ? prev.filter(id => id !== p.id) : [...prev, p.id])}
+                      className="w-3 h-3" />
+                    <span className="text-xs text-neutral-600">{p.name}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+            <Button type="submit" disabled={creatingToken || !newTokenName.trim()} size="sm">
+              {creatingToken ? 'Generating...' : '+ Generate Link'}
+            </Button>
+          </form>
+
+          {/* Newly created — show prominently */}
+          {createdToken && (
+            <div className="border border-black p-6 bg-neutral-50">
+              <div className="flex items-center justify-between mb-4">
+                <p className="text-xs tracking-widest uppercase font-medium">✓ Link Created — Copy & Send</p>
+                <button onClick={() => setCreatedToken(null)} className="text-neutral-400 hover:text-black text-xs">Dismiss</button>
+              </div>
+              <div className="space-y-3">
+                <div>
+                  <p className="text-[10px] tracking-widest uppercase text-neutral-400 mb-1">Access Link</p>
+                  <div className="flex items-center gap-2">
+                    <code className="text-xs bg-white border border-neutral-200 px-2 py-1 flex-1 break-all">{createdToken.link}</code>
+                    <button onClick={() => copyToClipboard(createdToken.link, 'link')} className="text-neutral-400 hover:text-black flex-shrink-0">
+                      {copiedId === 'link' ? '✓' : <Copy size={13} />}
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-[10px] tracking-widest uppercase text-neutral-400 mb-1">Password</p>
+                  <div className="flex items-center gap-2">
+                    <code className="text-xs bg-white border border-neutral-200 px-3 py-1 font-mono">{createdToken.password}</code>
+                    <button onClick={() => copyToClipboard(createdToken.password, 'pass')} className="text-neutral-400 hover:text-black">
+                      {copiedId === 'pass' ? '✓' : <Copy size={13} />}
+                    </button>
+                  </div>
+                </div>
+                <button
+                  onClick={() => copyToClipboard(`Your casting portal link:\n${createdToken.link}\n\nPassword: ${createdToken.password}`, 'both')}
+                  className="w-full py-2 border border-neutral-300 text-xs tracking-widest uppercase hover:border-black transition-colors mt-2">
+                  {copiedId === 'both' ? '✓ Copied!' : <><Copy size={11} className="inline mr-1" />Copy Both (for pasting into email/text)</>}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Existing token links */}
+        {tokenLinks.length > 0 && (
+          <div className="mt-8">
+            <p className="text-[10px] tracking-widest uppercase text-neutral-400 mb-3">Active Links ({tokenLinks.length})</p>
+            <div className="space-y-2">
+              {tokenLinks.map(t => (
+                <div key={t.id} className="flex items-center gap-4 border border-neutral-100 px-4 py-3 bg-white">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium">{t.name}</p>
+                    {t.email && <p className="text-xs text-neutral-400">{t.email}</p>}
+                    {t.project_names?.length > 0 && <p className="text-xs text-neutral-400">{t.project_names.join(', ')}</p>}
+                  </div>
+                  <code className="text-xs text-neutral-500 font-mono hidden lg:block">{t.password_display}</code>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <button
+                      onClick={() => copyToClipboard(`Your casting portal link:\n${window.location.origin}/client/access/${t.token}\n\nPassword: ${t.password_display}`, t.id)}
+                      title="Copy link + password"
+                      className="text-xs px-3 py-1.5 border border-neutral-200 hover:border-black transition-colors flex items-center gap-1">
+                      {copiedId === t.id ? '✓ Copied' : <><Copy size={11} />Copy</>}
+                    </button>
+                    <button onClick={() => deleteTokenLink(t.id)} title="Delete link" className="text-neutral-300 hover:text-red-500 transition-colors">
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </section>
+
+      <hr className="border-neutral-100 mb-12" />
 
       {/* Pending requests */}
       {requests.length > 0 && (
