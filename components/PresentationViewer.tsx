@@ -311,10 +311,14 @@ export function PresentationViewer({
   }
 
   // Group sorted (non-shortlisted) by category for section headers — alphabetical within each section
-  const uncategorized = sorted.filter(pm => !pm.category_id && !shortlists[pm.model_id]).sort(alphaSort)
+  const uncategorized = unreleasedSorted.filter(pm => !pm.category_id && !shortlists[pm.model_id]).sort(alphaSort)
+  // Released models go to the very bottom, outside all categories
+  const releasedModels = sorted.filter(pm => !!releases[pm.model_id])
+  const unreleasedSorted = sorted.filter(pm => !releases[pm.model_id])
+
   const byCategory = categories.map(cat => ({
     ...cat,
-    models: sorted.filter(pm => pm.category_id === cat.id && !shortlists[pm.model_id]).sort(alphaSort)
+    models: unreleasedSorted.filter(pm => pm.category_id === cat.id && !shortlists[pm.model_id]).sort(alphaSort)
   })).filter(cat => cat.models.length > 0)
 
   const getSizingParts = (pm: any, model: any): string[] => {
@@ -469,6 +473,12 @@ export function PresentationViewer({
                   <div className={byCategory.length > 0 ? 'mb-8' : ''}>
                     {byCategory.length > 0 && <p className="text-xs tracking-widest uppercase text-neutral-400 mb-4 pb-2 border-b border-neutral-200">Other</p>}
                     <div className={gridClass}>{uncategorized.map(renderCard)}</div>
+                  </div>
+                )}
+                {releasedModels.length > 0 && (
+                  <div className="mt-8 opacity-40">
+                    <p className="text-xs tracking-widest uppercase text-neutral-400 mb-4 pb-2 border-b border-neutral-200">OK to Release</p>
+                    <div className={gridClass}>{releasedModels.map(renderCard)}</div>
                   </div>
                 )}
               </>

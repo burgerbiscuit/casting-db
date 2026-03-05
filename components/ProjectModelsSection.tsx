@@ -76,13 +76,16 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
 
   const load = useCallback(async () => {
     if (!mainPres?.id) return
+    // Fetch all presentation IDs for this project to capture shortlists across all presentations
+    const { data: allPres } = await supabase.from('presentations').select('id').eq('project_id', projectId)
+    const allPresIds = (allPres || []).map((p: any) => p.id)
     const [{ data: pm }, { data: sl }] = await Promise.all([
       supabase.from('presentation_models')
         .select('id, model_id, admin_notes, is_visible, rate, location, pm_option, category_id')
         .eq('presentation_id', mainPres.id),
-      supabase.from('client_shortlists')
-        .select('model_id, status')
-        .eq('presentation_id', mainPres.id),
+      allPresIds.length > 0
+        ? supabase.from('client_shortlists').select('model_id, status').in('presentation_id', allPresIds)
+        : Promise.resolve({ data: [] }),
     ])
     const pmMap: Record<string, any> = {}
     ;(pm || []).forEach((m: any) => { pmMap[m.model_id] = m })
@@ -229,15 +232,16 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
       await supabase.from('client_shortlists').delete().eq('model_id', modelId)
       return
     }
-    // Upsert client_shortlists
-    const { data: existing } = await supabase.from('client_shortlists').select('id').eq('model_id', modelId).maybeSingle()
-    if (existing) {
-      await supabase.from('client_shortlists').update({ status: newStatus }).eq('model_id', modelId)
-    } else {
-      // Find presentation_model_id
-      const { data: pm } = await supabase.from('presentation_models')
-        .select('id').eq('model_id', modelId).maybeSingle()
-      await supabase.from('client_shortlists').insert({ model_id: modelId, status: newStatus, presentation_model_id: pm?.id || null })
+    // Upsert client_shortlists — must include presentation_id so client presentation page can read it
+    const presId = mainPres?.id
+    if (!presId) return
+    const { error } = await supabase.from('client_shortlists').upsert(
+      { model_id: modelId, presentation_id: presId, status: newStatus },
+      { onConflict: 'presentation_id,model_id,client_id' }
+    )
+    if (error) {
+      // Fallback: try insert without conflict constraint
+      await supabase.from('client_shortlists').insert({ model_id: modelId, presentation_id: presId, status: newStatus })
     }
   }
 
