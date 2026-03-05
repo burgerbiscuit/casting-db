@@ -559,14 +559,12 @@ export function PresentationViewer({
                   {isShortlisted ? 'Shortlisted' : 'Shortlist'}
                 </button>
               </div>
-              {/* OK to Release — only shown after admin officially confirms */}
-              {confirmMap[pm.model_id] && (
-                <button
-                  onClick={() => handleRelease(pm.model_id)}
-                  className={`w-full mt-2 py-2 text-[10px] tracking-widest uppercase border transition-colors ${releases[pm.model_id] ? 'bg-green-600 text-white border-green-600' : 'border-green-400 text-green-600 hover:bg-green-600 hover:text-white'}`}>
-                  {releases[pm.model_id] ? '✓ OK to Release' : 'OK to Release'}
-                </button>
-              )}
+              {/* OK to Release — always visible, lets client cut models they don't want */}
+              <button
+                onClick={() => handleRelease(pm.model_id)}
+                className={`w-full mt-2 py-2 text-[10px] tracking-widest uppercase border transition-colors ${releases[pm.model_id] ? 'bg-neutral-800 text-white border-neutral-800' : 'border-neutral-200 text-neutral-400 hover:border-neutral-500 hover:text-neutral-600'}`}>
+                {releases[pm.model_id] ? '✓ OK to Release' : 'OK to Release'}
+              </button>
             </div>
           </div>
         )
