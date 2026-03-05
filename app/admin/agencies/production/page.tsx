@@ -215,55 +215,55 @@ export default function ProductionContactsPage() {
               </button>
 
               {!reviewCollapsed && (
-                <div className="overflow-x-auto border border-amber-100 rounded-sm bg-amber-50/30 -mx-4 md:mx-0">
-                  <table className="w-full text-sm min-w-[700px]">
-                    <thead>
-                      <tr className="border-b border-amber-100">
-                        <th className="text-left w-6 py-2 pl-4"><input type="checkbox"
-                          checked={reviewContacts.every(c => selected.has(c.id)) && reviewContacts.length > 0}
-                          onChange={() => {
-                            const allIds = reviewContacts.map(c => c.id)
-                            const allSelected = allIds.every(id => selected.has(id))
-                            const newSet = new Set(selected)
-                            allIds.forEach(id => allSelected ? newSet.delete(id) : newSet.add(id))
-                            setSelected(newSet)
-                          }} className="cursor-pointer" /></th>
-                        <th className="text-left label py-2 pr-6 text-amber-700">Agency</th>
-                        <th className="text-left label py-2 pr-6 text-amber-700">Name</th>
-                        <th className="text-left label py-2 pr-6 text-amber-700">Role / Focus</th>
-                        <th className="text-left label py-2 pr-6 text-amber-700">City</th>
-                        <th className="text-left label py-2 pr-6 text-amber-700">Email</th>
-                        <th className="text-left label py-2 text-amber-700">Instagram</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {reviewContacts.map(c => (
-                        <tr key={c.id} className={`border-b border-amber-100 hover:bg-amber-50 ${selected.has(c.id) ? 'bg-blue-50' : ''}`}>
-                          <td className="py-2.5 pl-4 pr-2"><input type="checkbox"
-                            checked={selected.has(c.id)}
-                            onChange={() => toggleSelect(c.id)}
-                            className="cursor-pointer" /></td>
-                          <td className="py-2.5 pr-6 font-medium text-xs">{c.agency_name}</td>
-                          <td className="py-2.5 pr-6 text-neutral-600 text-xs">{c.agent_name || '—'}</td>
-                          <td className="py-2.5 pr-6 text-neutral-400 text-xs max-w-[200px] truncate" title={c.section || c.board || ''}>{c.section || c.board || '—'}</td>
-                          <td className="py-2.5 pr-6 text-neutral-500 text-xs">{c.city || '—'}</td>
-                          <td className="py-2.5 pr-6">
-                            {c.email_invalid ? <span className="text-red-400 text-xs line-through">{c.email || 'invalid'}</span> : c.email ? <a href={`mailto:${c.email}`} className="underline underline-offset-2 hover:opacity-60 text-xs">{c.email}</a> : <span className="text-neutral-300 text-xs">—</span>}
-                          </td>
-                          <td className="py-2.5 text-neutral-500 text-xs">
-                            {c.cell_phone ? (
-                              c.cell_phone.startsWith('@')
-                                ? <a href={`https://instagram.com/${c.cell_phone.replace('@','')}`} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:opacity-60">{c.cell_phone}</a>
-                                : c.cell_phone
-                            ) : '—'}
-                          </td>
-                          <td className="py-2.5 text-right pr-3">
-                            <button onClick={() => setEditTarget(c)} className="text-[10px] tracking-widest uppercase text-neutral-400 hover:text-black transition-colors">Edit</button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                <div className="space-y-0 border border-amber-100">
+                  {reviewContacts.map((c, i) => (
+                    <div key={c.id} className={`flex items-start gap-4 px-4 py-3 border-b border-amber-50 last:border-0 ${i % 2 === 0 ? 'bg-white' : 'bg-amber-50/20'}`}>
+                      {/* Info */}
+                      <div className="flex-1 min-w-0 grid grid-cols-1 md:grid-cols-4 gap-x-6 gap-y-0.5">
+                        <div className="min-w-0">
+                          <p className="text-xs font-medium truncate">{c.agency_name}</p>
+                          {c.agent_name && c.agent_name !== c.agency_name && (
+                            <p className="text-[11px] text-neutral-500 truncate">{c.agent_name}</p>
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[11px] text-neutral-500 truncate" title={c.section || c.board || ''}>{c.section || c.board || '—'}</p>
+                          {c.city && <p className="text-[10px] text-neutral-400">{c.city}</p>}
+                        </div>
+                        <div className="min-w-0">
+                          {c.email ? (
+                            <a href={`mailto:${c.email}`} className="text-[11px] underline underline-offset-2 hover:opacity-60 truncate block">{c.email}</a>
+                          ) : <span className="text-[11px] text-neutral-300">No email</span>}
+                        </div>
+                        <div className="min-w-0">
+                          <span className="text-[10px] text-neutral-400 uppercase tracking-wider">{c.contact_type}</span>
+                        </div>
+                      </div>
+                      {/* Actions */}
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <button
+                          onClick={async () => {
+                            await supabase.from('agency_contacts').update({ needs_review: false }).eq('id', c.id)
+                            setReviewContacts(prev => prev.filter(x => x.id !== c.id))
+                            setContacts(prev => [...prev, { ...c, needs_review: false }])
+                          }}
+                          className="text-[10px] tracking-widest uppercase px-3 py-1.5 bg-black text-white hover:bg-neutral-700 transition-colors whitespace-nowrap">
+                          ✓ Keep
+                        </button>
+                        <button
+                          onClick={async () => {
+                            await supabase.from('agency_contacts').delete().eq('id', c.id)
+                            setReviewContacts(prev => prev.filter(x => x.id !== c.id))
+                          }}
+                          className="text-[10px] tracking-widest uppercase px-3 py-1.5 border border-red-200 text-red-400 hover:bg-red-50 transition-colors whitespace-nowrap">
+                          ✗ Remove
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  {reviewContacts.length === 0 && (
+                    <p className="text-xs text-neutral-400 px-4 py-6 text-center">All contacts reviewed ✓</p>
+                  )}
                 </div>
               )}
             </div>
@@ -271,7 +271,7 @@ export default function ProductionContactsPage() {
 
           {/* Main contacts table */}
           {contacts.length > 0 && (
-            <div className="overflow-x-auto -mx-4 md:mx-0">
+            <div className="overflow-x-auto">
               <table className="w-full text-sm min-w-[700px]">
                 <thead>
                   <tr className="border-b border-neutral-200">
