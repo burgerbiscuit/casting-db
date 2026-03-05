@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { cookies } from 'next/headers'
 import { PrintButton } from '@/components/PrintButton'
+import ConfirmationChartTable from '@/components/ConfirmationChartTable'
 
 export default async function ConfirmationChartPage({ params, searchParams }: { params: { id: string }; searchParams: { hidden?: string } }) {
   const { id } = params
@@ -109,10 +110,26 @@ export default async function ConfirmationChartPage({ params, searchParams }: { 
           </div>
         </div>
 
-        {/* Table */}
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse text-[11px]" style={{ minWidth: 900 }}>
-            {/* Project header */}
+        {/* Project label */}
+        <div className="mb-3 text-center">
+          <p className="text-[11px] tracking-widest uppercase font-semibold text-neutral-700">{projectLabel}</p>
+        </div>
+
+        {/* Editable chart table */}
+        <ConfirmationChartTable
+          rows={confirmed}
+          photoMap={photoMap}
+          agentMap={agentMap}
+          projectRate={project.model_rate || null}
+          projectUsage={project.usage || null}
+          projectDate={project.shoot_date || null}
+          shootDate={shootDate}
+          showCol={showCol}
+          isMember={isMember || hasShareAccess}
+        />
+
+        {/* Legacy table placeholder — remove old table below */}
+        <div style={{display:'none'}}><table className="w-full border-collapse text-[11px]" style={{ minWidth: 900 }}>
             <thead>
               <tr>
                 <td colSpan={9} className="border border-neutral-800 bg-neutral-900 text-white text-center py-2.5 px-4 tracking-widest uppercase text-[11px] font-semibold">
@@ -268,7 +285,7 @@ export default async function ConfirmationChartPage({ params, searchParams }: { 
               })}
             </tbody>
           </table>
-        </div>
+        </div></div>
 
         {/* Footer */}
         <div className="no-print mt-12 pt-6 border-t border-neutral-100 text-center">
