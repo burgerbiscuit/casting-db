@@ -17,9 +17,9 @@ export default async function ProjectDashboard({ params }: { params: { projectId
     redirect(`/client/login?redirect=/client/${projectId}`)
   }
 
-  // Check if team member (only for real users)
-  const isMember = user ? !!(await serviceSupabase
-    .from('team_members').select('id').eq('user_id', user.id).single()).data : false
+  // Share-cookie guests get full visibility (same as team member) — they already authenticated with the password
+  const isMember = hasShareAccess || (user ? !!(await serviceSupabase
+    .from('team_members').select('id').eq('user_id', user.id).single()).data : false)
 
   // For real clients (not share guests), verify they have access to this project
   if (user && !isMember) {
