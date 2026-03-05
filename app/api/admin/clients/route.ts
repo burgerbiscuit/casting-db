@@ -12,10 +12,30 @@ export async function GET() {
     .from('team_members').select('id').eq('user_id', user.id).single()
   if (!member) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
-  const { data: clients } = await serviceSupabase
+  // Fetch client profiles
+  const { data: profiles } = await serviceSupabase
     .from('client_profiles')
-    .select('*, client_projects(project_id)')
+    .select('*')
     .order('created_at', { ascending: false })
 
-  return NextResponse.json(clients || [])
+  if (!profiles) return NextResponse.json([])
+
+  // Fetch all client_projects (client_id = auth user_id, matches client_profiles.user_id)
+  const { data: clientProjects } = await serviceSupabase
+    .from('client_projects')
+    .select('client_id, project_id')
+
+  // Merge: attach client_projects array to each profile by user_id
+  const projectsByUser: Record<string, { project_id: string }[]> = {}
+  for (const cp of clientProjects || []) {
+    if (!projectsByUser[cp.client_id]) projectsByUser[cp.client_id] = []
+    projectsByUser[cp.client_id].push({ project_id: cp.project_id })
+  }
+
+  const merged = profiles.map(p => ({
+    ...p,
+    client_projects: projectsByUser[p.user_id] || [],
+  }))
+
+  return NextResponse.json(merged)
 }
