@@ -84,7 +84,7 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
         .select('id, model_id, admin_notes, is_visible, rate, location, pm_option, category_id')
         .eq('presentation_id', mainPres.id),
       allPresIds.length > 0
-        ? supabase.from('client_shortlists').select('model_id, status').in('presentation_id', allPresIds)
+        ? supabase.from('client_shortlists').select('model_id, status, is_released').in('presentation_id', allPresIds)
         : Promise.resolve({ data: [] }),
     ])
     const pmMap: Record<string, any> = {}
@@ -105,6 +105,8 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
     const statusMap: Record<string, string> = {}
     ;(sl || []).forEach((s: any) => {
       const newStatus = s.status || 'shortlisted'
+      // Skip released — they should not appear in shortlisted/pending groups on admin
+      if (newStatus === 'released') return
       const current = statusMap[s.model_id]
       if (!current || (STATUS_PRIORITY[newStatus] ?? 0) > (STATUS_PRIORITY[current] ?? 0)) {
         statusMap[s.model_id] = newStatus

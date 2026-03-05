@@ -75,24 +75,28 @@ export async function POST(req: NextRequest) {
   if (action === 'updateRelease') {
     const { data: existing } = await serviceSupa
       .from('client_shortlists')
-      .select('id')
+      .select('id, status')
       .eq('presentation_id', presentationId)
       .eq('model_id', modelId)
       .eq('client_id', user.id)
       .maybeSingle()
 
     if (existing) {
+      // Only update is_released; preserve existing status (don't demote confirmed → shortlisted)
+      // If releasing, set status to 'released'; if un-releasing, revert to 'shortlisted'
+      const newStatus = isReleased ? 'released' : 'shortlisted'
       await serviceSupa
         .from('client_shortlists')
-        .update({ is_released: isReleased, status: 'shortlisted' })
+        .update({ is_released: isReleased, status: newStatus })
         .eq('id', existing.id)
     } else {
+      // No existing row — create one just for the release signal
       await serviceSupa.from('client_shortlists').insert({
         presentation_id: presentationId,
         model_id: modelId,
         client_id: user.id,
         is_released: isReleased,
-        status: 'shortlisted',
+        status: 'released',
       })
     }
     return NextResponse.json({ ok: true })
