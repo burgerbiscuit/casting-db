@@ -15,6 +15,9 @@ interface Contact {
   office_phone: string | null
   cell_phone: string | null
   contact_type: string
+  website: string | null
+  instagram: string | null
+  description: string | null
 }
 
 interface Props {
@@ -43,6 +46,9 @@ export function ContactEditModal({ contact, onClose, onSaved, onDeleted }: Props
       section: form.section || null,
       office_phone: form.office_phone || null,
       cell_phone: form.cell_phone || null,
+      website: form.website || null,
+      instagram: form.instagram || null,
+      description: form.description || null,
     }).eq('id', contact.id)
     setSaving(false)
     onSaved()
@@ -72,15 +78,25 @@ export function ContactEditModal({ contact, onClose, onSaved, onDeleted }: Props
             <h3 className="text-sm font-medium tracking-widest uppercase">Edit Contact</h3>
             <button onClick={onClose}><X size={14} className="text-neutral-400 hover:text-black" /></button>
           </div>
-          <div className="grid grid-cols-2 gap-x-6 gap-y-4 mb-8">
-            <Field label="Agency" k="agency_name" />
-            <Field label="Agent / Contact Name" k="agent_name" />
-            <Field label="Email" k="email" />
-            <Field label="Instagram / Recent Work" k="board" />
+          <div className="grid grid-cols-2 gap-x-6 gap-y-4 mb-6">
+            <Field label="Company" k="agency_name" />
+            <Field label="Contact Name" k="agent_name" />
+            <Field label="Role / Title" k="section" />
             <Field label="City" k="city" />
-            <Field label="Section" k="section" />
-            <Field label="Office Phone" k="office_phone" />
-            <Field label="Instagram Handle" k="cell_phone" />
+            <Field label="Email" k="email" />
+            <Field label="Phone" k="office_phone" />
+            <Field label="Website" k="website" />
+            <Field label="Instagram" k="instagram" />
+          </div>
+          <div className="mb-8">
+            <label className="label text-[10px] block mb-1">Description / Notable Work</label>
+            <textarea
+              value={(form.description as string) || ''}
+              onChange={e => setField('description', e.target.value)}
+              rows={3}
+              placeholder="Clients, brands, projects they've worked on..."
+              className="w-full border border-neutral-200 bg-transparent p-2 text-sm focus:outline-none focus:border-black resize-none"
+            />
           </div>
           <div className="flex items-center justify-between">
             <button onClick={() => setShowDelete(true)}

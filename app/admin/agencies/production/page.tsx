@@ -219,24 +219,40 @@ export default function ProductionContactsPage() {
                   {reviewContacts.map((c, i) => (
                     <div key={c.id} className={`flex items-start gap-4 px-4 py-3 border-b border-amber-50 last:border-0 ${i % 2 === 0 ? 'bg-white' : 'bg-amber-50/20'}`}>
                       {/* Info */}
-                      <div className="flex-1 min-w-0 grid grid-cols-1 md:grid-cols-4 gap-x-6 gap-y-0.5">
+                      <div className="flex-1 min-w-0 grid grid-cols-1 md:grid-cols-5 gap-x-5 gap-y-0.5">
                         <div className="min-w-0">
                           <p className="text-xs font-medium truncate">{c.agency_name}</p>
                           {c.agent_name && c.agent_name !== c.agency_name && (
                             <p className="text-[11px] text-neutral-500 truncate">{c.agent_name}</p>
                           )}
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-[11px] text-neutral-500 truncate" title={c.section || c.board || ''}>{c.section || c.board || '—'}</p>
                           {c.city && <p className="text-[10px] text-neutral-400">{c.city}</p>}
                         </div>
-                        <div className="min-w-0">
+                        <div className="min-w-0 md:col-span-2">
+                          {c.section && <p className="text-[11px] text-neutral-600 truncate">{c.section}</p>}
+                          {c.description && <p className="text-[10px] text-neutral-400 line-clamp-2">{c.description}</p>}
+                          {!c.section && !c.description && c.board && <p className="text-[10px] text-neutral-400 truncate">{c.board}</p>}
+                        </div>
+                        <div className="min-w-0 space-y-0.5">
                           {c.email ? (
                             <a href={`mailto:${c.email}`} className="text-[11px] underline underline-offset-2 hover:opacity-60 truncate block">{c.email}</a>
                           ) : <span className="text-[11px] text-neutral-300">No email</span>}
+                          {(c.office_phone || (c.cell_phone && !c.cell_phone.startsWith('@'))) && (
+                            <p className="text-[11px] text-neutral-500">{c.office_phone || c.cell_phone}</p>
+                          )}
                         </div>
-                        <div className="min-w-0">
-                          <span className="text-[10px] text-neutral-400 uppercase tracking-wider">{c.contact_type}</span>
+                        <div className="min-w-0 space-y-0.5">
+                          {c.website && (
+                            <a href={c.website.startsWith('http') ? c.website : `https://${c.website}`} target="_blank" rel="noopener noreferrer"
+                              className="text-[11px] underline underline-offset-2 hover:opacity-60 truncate block">
+                              {c.website.replace(/^https?:\/\/(www\.)?/, '')}
+                            </a>
+                          )}
+                          {(c.instagram || c.cell_phone?.startsWith('@')) && (
+                            <a href={`https://instagram.com/${(c.instagram || c.cell_phone).replace('@','')}`} target="_blank" rel="noopener noreferrer"
+                              className="text-[11px] text-neutral-500 hover:opacity-60 truncate block">
+                              {(c.instagram || c.cell_phone).startsWith('@') ? (c.instagram || c.cell_phone) : `@${c.instagram || c.cell_phone}`}
+                            </a>
+                          )}
                         </div>
                       </div>
                       {/* Actions */}
@@ -269,54 +285,63 @@ export default function ProductionContactsPage() {
             </div>
           )}
 
-          {/* Main contacts table */}
+          {/* Main contacts list */}
           {contacts.length > 0 && (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm min-w-[700px]">
-                <thead>
-                  <tr className="border-b border-neutral-200">
-                    <th className="text-left w-6 py-2"><input type="checkbox" 
-                      checked={selected.size === contacts.length && contacts.length > 0}
-                      onChange={() => {
-                        if (selected.size === contacts.length) setSelected(new Set())
-                        else setSelected(new Set(contacts.map(c => c.id)))
-                      }} className="cursor-pointer" /></th>
-                    <th className="text-left label py-2 pr-6">Agency</th>
-                    <th className="text-left label py-2 pr-6">Agent</th>
-                    <th className="text-left label py-2 pr-6">Recent Work</th>
-                    <th className="text-left label py-2 pr-6">City</th>
-                    <th className="text-left label py-2 pr-6">Email</th>
-                    <th className="text-left label py-2">Instagram</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {contacts.map(c => (
-                    <tr key={c.id} className={`border-b border-neutral-100 hover:bg-neutral-50 ${selected.has(c.id) ? 'bg-blue-50' : ''}`}>
-                      <td className="py-2.5 px-2"><input type="checkbox" 
-                        checked={selected.has(c.id)}
-                        onChange={() => toggleSelect(c.id)}
-                        className="cursor-pointer" /></td>
-                      <td className="py-2.5 pr-6 font-medium text-xs">{c.agency_name}</td>
-                      <td className="py-2.5 pr-6 text-neutral-600 text-xs">{c.agent_name || '—'}</td>
-                      <td className="py-2.5 pr-6 text-neutral-400 text-xs max-w-[220px] truncate" title={c.board || ''}>{c.board || '—'}</td>
-                      <td className="py-2.5 pr-6 text-neutral-500 text-xs">{c.city || '—'}</td>
-                      <td className="py-2.5 pr-6">
-                        {c.email_invalid ? <span className="text-red-400 text-xs line-through">{c.email || 'invalid'}</span> : c.email ? <a href={`mailto:${c.email}`} className="underline underline-offset-2 hover:opacity-60 text-xs">{c.email}</a> : <span className="text-neutral-300 text-xs">—</span>}
-                      </td>
-                      <td className="py-2.5 text-neutral-500 text-xs">
-                        {c.cell_phone ? (
-                          c.cell_phone.startsWith('@')
-                            ? <a href={`https://instagram.com/${c.cell_phone.replace('@','')}`} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:opacity-60">{c.cell_phone}</a>
-                            : c.cell_phone
-                        ) : '—'}
-                      </td>
-                      <td className="py-2.5 text-right">
-                        <button onClick={() => setEditTarget(c)} className="text-[10px] tracking-widest uppercase text-neutral-400 hover:text-black transition-colors">Edit</button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="border border-neutral-200 divide-y divide-neutral-100">
+              {contacts.map((c, i) => {
+                const igHandle = c.instagram || (c.cell_phone?.startsWith('@') ? c.cell_phone : null)
+                const phone = c.office_phone || (!c.cell_phone?.startsWith('@') ? c.cell_phone : null)
+                return (
+                  <div key={c.id} className={`flex items-start gap-3 px-4 py-3 ${selected.has(c.id) ? 'bg-blue-50' : i % 2 === 0 ? 'bg-white' : 'bg-neutral-50/40'}`}>
+                    <input type="checkbox"
+                      checked={selected.has(c.id)}
+                      onChange={() => toggleSelect(c.id)}
+                      className="cursor-pointer mt-1 flex-shrink-0" />
+                    <div className="flex-1 min-w-0 grid grid-cols-1 md:grid-cols-5 gap-x-5 gap-y-0.5">
+                      {/* Col 1: Company + Name */}
+                      <div className="min-w-0">
+                        <p className="text-xs font-medium truncate">{c.agency_name}</p>
+                        {c.agent_name && <p className="text-[11px] text-neutral-500 truncate">{c.agent_name}</p>}
+                        {c.city && <p className="text-[10px] text-neutral-400">{c.city}</p>}
+                      </div>
+                      {/* Col 2: Role + Description */}
+                      <div className="min-w-0 md:col-span-2">
+                        {c.section && <p className="text-[11px] text-neutral-600 truncate">{c.section}</p>}
+                        {c.description && <p className="text-[10px] text-neutral-400 line-clamp-2">{c.description}</p>}
+                        {!c.section && !c.description && c.board && <p className="text-[10px] text-neutral-400 truncate">{c.board}</p>}
+                      </div>
+                      {/* Col 3: Contact info */}
+                      <div className="min-w-0 space-y-0.5">
+                        {c.email && (
+                          c.email_invalid
+                            ? <p className="text-[11px] text-red-400 line-through truncate">{c.email}</p>
+                            : <a href={`mailto:${c.email}`} className="text-[11px] underline underline-offset-2 hover:opacity-60 truncate block">{c.email}</a>
+                        )}
+                        {phone && <p className="text-[11px] text-neutral-500">{phone}</p>}
+                      </div>
+                      {/* Col 4: Web + Instagram */}
+                      <div className="min-w-0 space-y-0.5">
+                        {c.website && (
+                          <a href={c.website.startsWith('http') ? c.website : `https://${c.website}`} target="_blank" rel="noopener noreferrer"
+                            className="text-[11px] underline underline-offset-2 hover:opacity-60 truncate block">
+                            {c.website.replace(/^https?:\/\/(www\.)?/, '')}
+                          </a>
+                        )}
+                        {igHandle && (
+                          <a href={`https://instagram.com/${igHandle.replace('@','')}`} target="_blank" rel="noopener noreferrer"
+                            className="text-[11px] text-neutral-500 hover:opacity-60 truncate block">
+                            {igHandle.startsWith('@') ? igHandle : `@${igHandle}`}
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                    <button onClick={() => setEditTarget(c)}
+                      className="text-[10px] tracking-widest uppercase text-neutral-400 hover:text-black transition-colors flex-shrink-0 mt-0.5">
+                      Edit
+                    </button>
+                  </div>
+                )
+              })}
             </div>
           )}
         </>
