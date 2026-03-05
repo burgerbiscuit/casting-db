@@ -713,9 +713,9 @@ export default function CastPage({ params }: { params: { slug: string } }) {
                 placeholder="yourhandle (no @)" />
 
               <Input label="Portfolio URL" value={form.portfolio_url}
-                onChange={e => setForm(f => ({ ...f, portfolio_url: e.target.value }))} type="url" placeholder="https://..." />
+                onChange={e => setForm(f => ({ ...f, portfolio_url: e.target.value }))} type="text" placeholder="yoursite.com or https://..." />
               <Input label="Website URL" value={form.website_url}
-                onChange={e => setForm(f => ({ ...f, website_url: e.target.value }))} type="url" placeholder="https://..." />
+                onChange={e => setForm(f => ({ ...f, website_url: e.target.value }))} type="text" placeholder="yoursite.com or https://..." />
 
               <ChipInput
                 label="Languages Spoken"
@@ -799,7 +799,7 @@ export default function CastPage({ params }: { params: { slug: string } }) {
 
               <div className="border-t border-neutral-100 pt-6 space-y-4">
                 <p className="label">Optional Contact</p>
-                <Input label="Email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} type="email" />
+                <Input label="Email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} type="text" inputMode="email" />
                 <Input label="Phone" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} type="tel" />
                 <div className="relative">
                   <Input label="Based In (City, Country)" value={form.based_in}

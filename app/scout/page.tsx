@@ -506,7 +506,7 @@ export default function ScoutPage() {
 
           {/* Contact */}
           <div className="grid grid-cols-2 gap-4">
-            <div><label className={lbl}>Email</label><input type="email" value={form.email} onChange={e => set('email', e.target.value)} className={inp} /></div>
+            <div><label className={lbl}>Email</label><input type="text" inputMode="email" value={form.email} onChange={e => set('email', e.target.value)} className={inp} /></div>
             <div><label className={lbl}>Phone</label><input value={form.phone} onChange={e => set('phone', e.target.value)} className={inp} /></div>
           </div>
 
