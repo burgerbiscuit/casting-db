@@ -191,10 +191,10 @@ export default function ModelProfile({ params }: { params: { id: string } }) {
 
       {/* Photos */}
       {media.length > 0 && (
-        <div className="mb-10 flex gap-4 max-h-[50vh]">
+        <div className="mb-10 flex gap-4">
           {media.slice(0, 2).map(m => (
             <img key={m.id} src={m.public_url} alt={`${model.first_name} ${model.last_name}`} 
-              className="h-full aspect-[3/4] object-cover rounded border border-neutral-200" />
+              className="w-36 h-48 object-cover object-top rounded border border-neutral-200 flex-shrink-0" />
           ))}
         </div>
       )}
