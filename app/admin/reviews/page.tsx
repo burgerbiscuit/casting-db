@@ -12,7 +12,7 @@ export default function ReviewsPage() {
 
   const load = async () => {
     const [{ data: m }, { data: a }, { data: o }] = await Promise.all([
-      supabase.from('models').select('id, first_name, last_name, created_at, agency, instagram').eq('reviewed', false).order('created_at', { ascending: false }),
+      supabase.from('models').select('id, first_name, last_name, created_at, agency, instagram_handle, source').eq('reviewed', false).order('created_at', { ascending: false }),
       supabase.from('agent_submissions').select('*').eq('reviewed', false).order('created_at', { ascending: false }),
       supabase.from('other_submissions').select('*').eq('reviewed', false).order('created_at', { ascending: false }),
     ])
@@ -68,7 +68,7 @@ export default function ReviewsPage() {
             <div key={m.id} className="flex items-center justify-between py-4">
               <div>
                 <p className="text-sm font-medium">{m.first_name} {m.last_name}</p>
-                <p className="text-xs text-neutral-400 mt-0.5">{m.agency || '—'} · {m.instagram ? `@${m.instagram}` : '—'} · Submitted {fmt(m.created_at)}</p>
+                <p className="text-xs text-neutral-400 mt-0.5">{m.agency || '—'} · {m.instagram_handle ? `@${m.instagram_handle}` : '—'} · {m.source || 'scouting'} · Submitted {fmt(m.created_at)}</p>
               </div>
               <div className="flex items-center gap-3">
                 <a href={`/admin/models/${m.id}`} className="text-[10px] tracking-widest uppercase text-neutral-400 hover:text-black border border-neutral-200 px-3 py-1.5 hover:border-black transition-colors">View Profile</a>
