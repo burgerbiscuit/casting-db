@@ -82,8 +82,14 @@ export function ImageCropper({ src, filename, onDone, onCancel }: Props) {
     try {
       setProcessing(true)
       const blob = await getCroppedBlob()
-      if (blob) onDone(blob, filename.replace(/\.[^.]+$/, '') + '_cropped.jpg')
-      else onDone(await fetch(src).then(r => r.blob()), filename)
+      console.log('Crop result:', { blob: blob?.size, completedCrop })
+      if (blob) {
+        console.log('Using cropped blob:', blob.size, 'bytes')
+        onDone(blob, filename.replace(/\.[^.]+$/, '') + '_cropped.jpg')
+      } else {
+        console.log('Crop returned null, falling back to original')
+        onDone(await fetch(src).then(r => r.blob()), filename)
+      }
     } catch (e) {
       console.error('Crop error:', e)
       alert('Failed to crop image. Try refreshing and trying again.')
