@@ -44,21 +44,29 @@ export function ImageCropper({ src, filename, onDone, onCancel }: Props) {
       canvas.height = Math.round(completedCrop.height * scaleY)
       const ctx = canvas.getContext('2d')
       if (!ctx) throw new Error('Could not get canvas context')
-      ctx.save()
-      ctx.translate(canvas.width / 2, canvas.height / 2)
-      ctx.rotate((rotate * Math.PI) / 180)
-      ctx.scale(scale, scale)
-      ctx.translate(-canvas.width / 2, -canvas.height / 2)
+      
+      // Simple crop - no rotate/scale transforms
       ctx.drawImage(
         image,
-        completedCrop.x * scaleX, completedCrop.y * scaleY,
-        completedCrop.width * scaleX, completedCrop.height * scaleY,
-        0, 0, canvas.width, canvas.height
+        Math.round(completedCrop.x * scaleX),
+        Math.round(completedCrop.y * scaleY),
+        Math.round(completedCrop.width * scaleX),
+        Math.round(completedCrop.height * scaleY),
+        0, 0,
+        canvas.width,
+        canvas.height
       )
-      ctx.restore()
+      
       return new Promise<Blob | null>((resolve) => {
         try {
-          canvas.toBlob(b => resolve(b || null), 'image/jpeg', 0.95)
+          canvas.toBlob(
+            (blob) => {
+              if (blob) resolve(blob)
+              else resolve(null)
+            },
+            'image/jpeg',
+            0.95
+          )
         } catch (e) {
           console.error('toBlob error:', e)
           resolve(null)
@@ -68,7 +76,7 @@ export function ImageCropper({ src, filename, onDone, onCancel }: Props) {
       console.error('getCroppedBlob error:', e)
       return null
     }
-  }, [completedCrop, rotate, scale])
+  }, [completedCrop])
 
   const handleDone = async () => {
     try {
