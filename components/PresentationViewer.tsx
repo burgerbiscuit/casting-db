@@ -657,41 +657,45 @@ export function PresentationViewer({
               ))}
             </div>
 
-            {/* Right panel: name, sizing, buttons, notes, links */}
-            <div className={`flex-shrink-0 flex flex-col border-l border-neutral-100 ${isMobile ? 'w-40 px-3 py-3' : 'w-52 xl:w-64 px-4 py-4'}`}>
-              {/* Name + sizing */}
-              <div className="mb-3 pb-3 border-b border-neutral-100">
-                <h2 className="text-sm md:text-base font-light tracking-[0.12em] uppercase mb-1">
-                  {currentModel.first_name} {currentModel.last_name}
-                </h2>
-                <p className="text-xs text-neutral-500 tracking-wide leading-tight">
-                  {getSizingParts(current, currentModel).join(' · ')}
-                </p>
-              </div>
+            {/* Right panel: name, sizing, buttons, notes, links — scrollable */}
+            <div className={`flex-shrink-0 flex flex-col border-l border-neutral-100 overflow-y-auto ${isMobile ? 'w-40 px-3 py-3' : 'w-52 xl:w-64 px-4 py-4'}`}>
+              {/* Sticky header: Name + sizing + buttons */}
+              <div className="flex-shrink-0 sticky top-0 bg-white pb-3 border-b border-neutral-100 mb-3">
+                {/* Name + sizing */}
+                <div className="mb-3">
+                  <h2 className="text-sm md:text-base font-light tracking-[0.12em] uppercase mb-1">
+                    {currentModel.first_name} {currentModel.last_name}
+                  </h2>
+                  <p className="text-xs text-neutral-500 tracking-wide leading-tight">
+                    {getSizingParts(current, currentModel).join(' · ')}
+                  </p>
+                </div>
 
-              {/* Action buttons */}
-              <div className="flex flex-col gap-2 mb-4">
-                <button
-                  onClick={() => {
-                    const modelName = `${currentModel?.first_name} ${currentModel?.last_name}`
-                    const isOfficiallyConfirmed = adminConfirmed[current.model_id] && clientStatus[current.model_id] === "pending_confirmation"
-                    const isPending = clientStatus[current.model_id] === "pending_confirmation"
-                    if (isOfficiallyConfirmed) return
-                    if (isPending) { setUndoConfirmModal({ modelId: current.model_id, modelName }); return }
-                    setConfirmModal({ modelId: current.model_id, modelName })
-                  }}
-                  className={`text-xs tracking-widest uppercase border px-2 py-1.5 transition-colors whitespace-nowrap text-center ${(adminConfirmed[current.model_id] && clientStatus[current.model_id] === "pending_confirmation") ? 'bg-green-600 text-white border-green-600 cursor-default' : (clientStatus[current.model_id] === "pending_confirmation") ? 'bg-amber-400 text-white border-amber-400 hover:bg-amber-500' : 'border-neutral-300 text-neutral-500 hover:border-black hover:text-black'}`}>
-                  {(adminConfirmed[current.model_id] && clientStatus[current.model_id] === "pending_confirmation") ? '✓ Confirmed' : (clientStatus[current.model_id] === "pending_confirmation") ? '⏳ Pending ✕' : 'Confirm'}
-                </button>
-                <div>
-                  <SlideActions presentationId={presentationId} modelId={current.model_id} clientId={clientId}
-                    initialShortlisted={!!shortlists[current.model_id]} initialNotes={shortlistMap[current.model_id]?.notes || ""} initialAuthor={shortlistMap[current.model_id]?.author_name || ''}
-                    onShortlistChange={(v) => handleShortlistChange(current.model_id, v)} compact={true} model={currentModel} projectName={projectName} clientFirstName={clientFirstName} />
+                {/* Action buttons */}
+                <div className="flex flex-col gap-2">
+                  <button
+                    onClick={() => {
+                      const modelName = `${currentModel?.first_name} ${currentModel?.last_name}`
+                      const isOfficiallyConfirmed = adminConfirmed[current.model_id] && clientStatus[current.model_id] === "pending_confirmation"
+                      const isPending = clientStatus[current.model_id] === "pending_confirmation"
+                      if (isOfficiallyConfirmed) return
+                      if (isPending) { setUndoConfirmModal({ modelId: current.model_id, modelName }); return }
+                      setConfirmModal({ modelId: current.model_id, modelName })
+                    }}
+                    className={`text-xs tracking-widest uppercase border px-2 py-1.5 transition-colors whitespace-nowrap text-center ${(adminConfirmed[current.model_id] && clientStatus[current.model_id] === "pending_confirmation") ? 'bg-green-600 text-white border-green-600 cursor-default' : (clientStatus[current.model_id] === "pending_confirmation") ? 'bg-amber-400 text-white border-amber-400 hover:bg-amber-500' : 'border-neutral-300 text-neutral-500 hover:border-black hover:text-black'}`}>
+                    {(adminConfirmed[current.model_id] && clientStatus[current.model_id] === "pending_confirmation") ? '✓ Confirmed' : (clientStatus[current.model_id] === "pending_confirmation") ? '⏳ Pending ✕' : 'Confirm'}
+                  </button>
+                  <div>
+                    <SlideActions presentationId={presentationId} modelId={current.model_id} clientId={clientId}
+                      initialShortlisted={!!shortlists[current.model_id]} initialNotes={shortlistMap[current.model_id]?.notes || ""} initialAuthor={shortlistMap[current.model_id]?.author_name || ''}
+                      onShortlistChange={(v) => handleShortlistChange(current.model_id, v)} compact={true} model={currentModel} projectName={projectName} clientFirstName={clientFirstName} />
+                  </div>
                 </div>
               </div>
 
+              {/* Scrollable content below */}
               {/* Admin notes / rate / location */}
-              <div className="flex-1 flex flex-col items-center justify-center space-y-3 text-center py-3 border-b border-neutral-100">
+              <div className="flex-shrink-0 flex flex-col items-center justify-center space-y-3 text-center py-3 border-b border-neutral-100 mb-3">
                 {current.admin_notes && (
                   <p className="text-[11px] text-neutral-700 italic leading-relaxed">{current.admin_notes}</p>
                 )}
@@ -703,8 +707,8 @@ export function PresentationViewer({
                 )}
               </div>
 
-              {/* Client notes + links at bottom */}
-              <div className="space-y-3">
+              {/* Client notes + links */}
+              <div className="flex-shrink-0 space-y-3">
                 <textarea
                   value={clientNotes[current.model_id] || ''}
                   onChange={e => handleClientNotesChange(current.model_id, e.target.value)}
