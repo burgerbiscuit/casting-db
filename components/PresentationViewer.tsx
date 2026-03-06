@@ -635,18 +635,13 @@ export function PresentationViewer({
 {view === 'slides' && current && currentModel && (
   <div onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} className="fixed inset-0 bg-white z-40 flex flex-col overflow-hidden" style={{height: '100vh'}}>
     
-    {/* TOP BAR: Model name/stats (left) | Buttons (right) */}
-    <div className="flex-shrink-0 border-b border-neutral-300 px-8 py-4 flex items-center justify-between">
-      {/* Left: Model name + stats */}
-      <div>
-        <h1 className="text-base font-light tracking-[0.15em] uppercase mb-1">{currentModel.first_name} {currentModel.last_name}</h1>
-        <p className="text-[9px] text-neutral-600 tracking-wider">
-          {currentModel.primary_city && <>{currentModel.primary_city} · </>}
-          {getSizingParts(current, currentModel).join(' · ')}
-        </p>
-      </div>
-      
-      {/* Right: Buttons */}
+    {/* TOP BAR: Logo (centered) */}
+    <div className="flex-shrink-0 border-b border-neutral-300 px-8 py-3 flex items-center justify-center">
+      <img src="/logo.jpg" alt="Logo" className="h-5 w-auto" />
+    </div>
+
+    {/* BUTTONS BAR: Confirm + Shortlist */}
+    <div className="flex-shrink-0 border-b border-neutral-300 px-8 py-2 flex items-center justify-end">
       <div className="flex gap-2">
         <button
           onClick={() => {
