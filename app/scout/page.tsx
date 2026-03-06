@@ -543,6 +543,7 @@ export default function ScoutPage() {
           <div>
             <p className="label mb-2">Photos (Optional)</p>
             <p className="text-xs text-neutral-400 mb-1">Upload up to 2 photos of yourself.</p>
+            <p className="text-xs text-neutral-400 mb-1">Recent, unedited photos with no makeup or filters preferred.</p>
             <p className="text-[11px] text-neutral-300 mb-3">Max 8 MB per photo — large images are automatically compressed.</p>
             <div className="flex gap-3">
               {[0,1].map(i => (
