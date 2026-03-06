@@ -748,6 +748,8 @@ export function PresentationViewer({
     </div>
   </div>
 )}
+    </div>
+  )
 
   if (compact) return (
     <div className="flex items-center gap-2 relative">
