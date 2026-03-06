@@ -44,14 +44,23 @@ export default function ProjectSpecsPanel({ project }: { project: any }) {
     setUploading(true)
     setUploadError('')
     try {
-      const fd = new FormData()
-      fd.append('projectId', project.id)
-      fd.append('fileType', 'moodboard')
-      Array.from(files).forEach(f => fd.append('files', f))
-      const res = await fetch('/api/project-files', { method: 'POST', body: fd })
-      const data = await res.json().catch(() => ({}))
-      if (!res.ok) throw new Error(data.error || `Upload failed (${res.status})`)
-      if (!data.files?.length) throw new Error(`Server accepted upload but saved 0 files. Check Supabase storage permissions.`)
+      for (const file of Array.from(files)) {
+        // Upload directly to Supabase storage (bypasses Vercel 4.5MB API limit)
+        const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg'
+        const path = `project-files/${project.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+        const { error: upErr } = await supabase.storage.from('model-media').upload(path, file, { contentType: file.type })
+        if (upErr) throw new Error(`Storage upload failed: ${upErr.message}`)
+        const { data: { publicUrl } } = supabase.storage.from('model-media').getPublicUrl(path)
+        // Save record to DB
+        const { error: dbErr } = await supabase.from('project_files').insert({
+          project_id: project.id,
+          name: file.name,
+          storage_path: path,
+          public_url: publicUrl,
+          file_type: 'moodboard',
+        })
+        if (dbErr) throw new Error(`DB save failed: ${dbErr.message}`)
+      }
     } catch (e: any) {
       setUploadError(e.message || 'Upload failed')
     }
