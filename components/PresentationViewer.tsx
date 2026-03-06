@@ -753,22 +753,6 @@ export function PresentationViewer({
     </div>
   </div>
 )}
-    setNotes(val)
-    try {
-      await fetch('/api/shortlist', {
-        method: 'POST',
-        body: JSON.stringify({
-          action: 'updateNotes',
-          presentationId,
-          modelId,
-          notes: val,
-        }),
-      })
-    } catch (err) {
-      console.error('Save notes failed:', err)
-    }
-  }
-
 
   if (compact) return (
     <div className="flex items-center gap-2 relative">
