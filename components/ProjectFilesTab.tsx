@@ -1,6 +1,5 @@
 'use client'
 import { useState, useRef } from 'react'
-import { createBrowserClient } from '@supabase/ssr'
 import { Upload, X, FileText, Image, Presentation } from 'lucide-react'
 
 type ProjectFile = {
@@ -15,37 +14,39 @@ type ProjectFile = {
 export default function ProjectFilesTab({ projectId, initialFiles }: { projectId: string, initialFiles: ProjectFile[] }) {
   const [files, setFiles] = useState<ProjectFile[]>(initialFiles)
   const [uploading, setUploading] = useState(false)
+  const [error, setError] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
-
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
 
   const upload = async (fileList: FileList) => {
     setUploading(true)
-    for (const file of Array.from(fileList)) {
-      const ext = file.name.split('.').pop() || ''
-      const path = `project-files/${projectId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
-      const { error: upErr } = await supabase.storage.from('model-media').upload(path, file)
-      if (upErr) { console.error(upErr); continue }
-      const { data: { publicUrl } } = supabase.storage.from('model-media').getPublicUrl(path)
-      const { data: record } = await supabase.from('project_files').insert({
-        project_id: projectId,
-        name: file.name,
-        storage_path: path,
-        public_url: publicUrl,
-        file_type: file.type,
-      }).select().single()
-      if (record) setFiles(prev => [...prev, record])
+    setError('')
+    try {
+      const fd = new FormData()
+      fd.append('projectId', projectId)
+      Array.from(fileList).forEach(f => fd.append('files', f))
+
+      const res = await fetch('/api/project-files', { method: 'POST', body: fd })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Upload failed')
+      if (data.files?.length) setFiles(prev => [...prev, ...data.files])
+      if (data.files?.length < fileList.length) setError('Some files failed to upload.')
+    } catch (e: any) {
+      setError(e.message || 'Upload failed')
     }
     setUploading(false)
   }
 
   const remove = async (f: ProjectFile) => {
-    await supabase.storage.from('model-media').remove([f.storage_path])
-    await supabase.from('project_files').delete().eq('id', f.id)
-    setFiles(prev => prev.filter(x => x.id !== f.id))
+    setFiles(prev => prev.filter(x => x.id !== f.id)) // optimistic
+    try {
+      await fetch('/api/project-files', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileId: f.id, storagePath: f.storage_path }),
+      })
+    } catch (e) {
+      setFiles(prev => [...prev, f]) // revert on error
+    }
   }
 
   const icon = (type: string) => {
@@ -71,6 +72,8 @@ export default function ProjectFilesTab({ projectId, initialFiles }: { projectId
           accept="image/*,.pdf,.ppt,.pptx,.key,.doc,.docx"
           onChange={e => e.target.files && upload(e.target.files)} />
       </div>
+
+      {error && <p className="text-xs text-red-500 mb-4">{error}</p>}
 
       {files.length === 0 ? (
         <p className="text-xs text-neutral-400 text-center py-8">No files uploaded yet</p>
