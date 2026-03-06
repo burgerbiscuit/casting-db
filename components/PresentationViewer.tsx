@@ -635,62 +635,34 @@ export function PresentationViewer({
       {view === 'slides' && current && currentModel && (
         <div onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} className="fixed inset-0 bg-white z-40 flex flex-row overflow-hidden" style={{height: '100vh'}}>
 
-          {/* Left sidebar: buttons + controls */}
-          <div className="flex-shrink-0 border-r border-neutral-100 px-3 py-3 flex flex-col gap-2 overflow-y-auto" style={{width: '200px'}}>
-            {/* Prev button */}
-            <button onClick={prev} disabled={slideIndex === 0}
-              className="w-full py-2 text-neutral-400 hover:text-black disabled:opacity-20 transition-colors border border-neutral-300 text-[10px] tracking-widest uppercase flex items-center justify-center gap-1">
-              <ChevronLeft size={12} /> Prev
-            </button>
-
-            {/* Counter */}
-            <div className="text-center text-[10px] text-neutral-400 tracking-widest uppercase border border-neutral-100 py-2">
-              {slideIndex + 1} / {sorted.length}
+          {/* Left: 2 photos side by side */}
+          <div className="flex-1 flex gap-3 overflow-hidden px-6 py-6 bg-neutral-50 items-center justify-center min-w-0">
+            {/* Photo 1 */}
+            <div className="flex-1 h-full bg-neutral-200 flex items-center justify-center overflow-hidden min-w-0">
+              {photoMedia[0] ? (
+                photoMedia[0].type === 'video'
+                  ? <video src={photoMedia[0].public_url} className="w-full h-full object-cover" controls />
+                  : <img src={photoMedia[0].public_url} alt={currentModel.first_name} className="w-full h-full object-cover object-top" />
+              ) : (
+                <div className="text-neutral-400 text-sm">No photo</div>
+              )}
             </div>
 
-            {/* Confirm button */}
-            <button
-              onClick={() => {
-                const modelName = `${currentModel?.first_name} ${currentModel?.last_name}`
-                const isOfficiallyConfirmed = adminConfirmed[current.model_id] && clientStatus[current.model_id] === "pending_confirmation"
-                const isPending = clientStatus[current.model_id] === "pending_confirmation"
-                if (isOfficiallyConfirmed) return
-                if (isPending) { setUndoConfirmModal({ modelId: current.model_id, modelName }); return }
-                setConfirmModal({ modelId: current.model_id, modelName })
-              }}
-              className={`w-full py-2 text-[9px] tracking-widest uppercase border px-2 transition-colors text-center ${(adminConfirmed[current.model_id] && clientStatus[current.model_id] === "pending_confirmation") ? 'bg-green-600 text-white border-green-600 cursor-default' : (clientStatus[current.model_id] === "pending_confirmation") ? 'bg-amber-400 text-white border-amber-400 hover:bg-amber-500' : 'border-neutral-300 text-neutral-600 hover:border-black hover:text-black'}`}>
-              {(adminConfirmed[current.model_id] && clientStatus[current.model_id] === "pending_confirmation") ? '✓' : (clientStatus[current.model_id] === "pending_confirmation") ? '⏳' : 'Confirm'}
-            </button>
-
-            {/* Heart/shortlist button */}
-            <SlideActionsVertical presentationId={presentationId} modelId={current.model_id} clientId={clientId}
-              initialShortlisted={!!shortlists[current.model_id]} initialNotes={shortlistMap[current.model_id]?.notes || ""} initialAuthor={shortlistMap[current.model_id]?.author_name || ''}
-              onShortlistChange={(v) => handleShortlistChange(current.model_id, v)} model={currentModel} projectName={projectName} clientFirstName={clientFirstName} />
-
-            {/* Release button */}
-            <button
-              onClick={() => handleRelease(current.model_id)}
-              className={`w-full py-2 text-[9px] tracking-widest uppercase border px-2 transition-colors text-center ${releases[current.model_id] ? 'bg-neutral-200 border-neutral-300 text-neutral-600' : 'border-neutral-300 text-neutral-600 hover:border-black'}`}>
-              {releases[current.model_id] ? '✓ Release' : 'Release'}
-            </button>
-
-            {/* Next button */}
-            <button onClick={next} disabled={slideIndex === sorted.length - 1}
-              className="w-full py-2 text-neutral-400 hover:text-black disabled:opacity-20 transition-colors border border-neutral-300 text-[10px] tracking-widest uppercase flex items-center justify-center gap-1">
-              Next <ChevronRight size={12} />
-            </button>
-
-            {/* Close button */}
-            <button onClick={() => setView('grid')} className="w-full py-2 text-neutral-400 hover:text-black transition-colors border border-neutral-300 text-[10px] tracking-widest uppercase">
-              Close ✕
-            </button>
+            {/* Photo 2 */}
+            <div className="flex-1 h-full bg-neutral-200 flex items-center justify-center overflow-hidden min-w-0">
+              {photoMedia[1] ? (
+                photoMedia[1].type === 'video'
+                  ? <video src={photoMedia[1].public_url} className="w-full h-full object-cover" controls />
+                  : <img src={photoMedia[1].public_url} alt={currentModel.first_name} className="w-full h-full object-cover object-top" />
+              ) : null}
+            </div>
           </div>
 
-          {/* Right side: content + photos */}
-          <div className="flex-1 flex flex-col overflow-hidden">
-            {/* Top: Name + sizing */}
-            <div className="flex-shrink-0 border-b border-neutral-100 px-8 py-4">
-              <h2 className="text-lg font-light tracking-[0.12em] uppercase mb-1 leading-tight">
+          {/* Right sidebar: info + buttons */}
+          <div className="flex-shrink-0 border-l border-neutral-100 px-6 py-6 flex flex-col gap-4 overflow-y-auto" style={{width: '280px'}}>
+            {/* Name + sizing */}
+            <div>
+              <h2 className="text-lg font-light tracking-[0.12em] uppercase mb-2 leading-tight">
                 {currentModel.first_name} {currentModel.last_name}
               </h2>
               <p className="text-[10px] text-neutral-600 tracking-wide leading-tight">
@@ -700,43 +672,81 @@ export function PresentationViewer({
             </div>
 
             {/* Links */}
-            <div className="flex-shrink-0 px-8 py-3 flex gap-2 flex-wrap border-b border-neutral-100">
+            <div className="flex flex-col gap-2">
               {current.show_instagram && currentModel.instagram_handle && (
                 <a href={"https://instagram.com/" + currentModel.instagram_handle}
                   target="_blank" rel="noopener noreferrer"
-                  className="text-[9px] tracking-widest uppercase border border-neutral-300 px-2 py-1 hover:border-black transition-colors">
-                  Instagram ↗
+                  className="text-[9px] tracking-widest uppercase border border-neutral-300 px-2 py-1.5 hover:border-black transition-colors text-center">
+                  INSTAGRAM ↗
                 </a>
               )}
               {current.show_portfolio && currentModel.portfolio_url && (
                 <a href={currentModel.portfolio_url.startsWith('http') ? currentModel.portfolio_url : 'https://' + currentModel.portfolio_url}
                   target="_blank" rel="noopener noreferrer"
-                  className="text-[9px] tracking-widest uppercase border border-neutral-300 px-2 py-1 hover:border-black transition-colors">
-                  Portfolio ↗
+                  className="text-[9px] tracking-widest uppercase border border-neutral-300 px-2 py-1.5 hover:border-black transition-colors text-center">
+                  PORTFOLIO ↗
                 </a>
               )}
               {videoMedia.length > 0 && (
                 <button onClick={() => setMediaModal({ url: videoMedia[0].public_url, type: 'video' })}
-                  className="text-[9px] tracking-widest uppercase border border-neutral-300 px-2 py-1 hover:border-black transition-colors">
-                  ▶ Video ↗
+                  className="text-[9px] tracking-widest uppercase border border-neutral-300 px-2 py-1.5 hover:border-black transition-colors">
+                  ▶ VIDEO ↗
                 </button>
               )}
             </div>
 
-            {/* Photos area */}
-            <div className="flex-1 flex items-center justify-center overflow-hidden px-8 py-4 bg-neutral-50">
-              <div className="h-full bg-neutral-200 flex items-center justify-center" style={{aspectRatio: '9/11'}}>
-                {currentMedia.length === 0 && (
-                  <div className="text-neutral-400 text-sm">No photos</div>
-                )}
-                {photoMedia[0] && (
-                  <>
-                    {photoMedia[0].type === 'video'
-                      ? <video src={photoMedia[0].public_url} className="w-full h-full object-cover" controls />
-                      : <img src={photoMedia[0].public_url} alt={currentModel.first_name} className="w-full h-full object-cover object-top" />}
-                  </>
-                )}
+            {/* Divider */}
+            <div className="border-t border-neutral-200"></div>
+
+            {/* Action buttons */}
+            <div className="flex flex-col gap-2">
+              {/* Prev */}
+              <button onClick={prev} disabled={slideIndex === 0}
+                className="w-full py-2 text-neutral-400 hover:text-black disabled:opacity-20 transition-colors border border-neutral-300 text-[9px] tracking-widest uppercase flex items-center justify-center gap-1">
+                <ChevronLeft size={12} /> PREV
+              </button>
+
+              {/* Counter */}
+              <div className="text-center text-[9px] text-neutral-400 tracking-widest uppercase border border-neutral-300 py-2">
+                {slideIndex + 1} / {sorted.length}
               </div>
+
+              {/* Next */}
+              <button onClick={next} disabled={slideIndex === sorted.length - 1}
+                className="w-full py-2 text-neutral-400 hover:text-black disabled:opacity-20 transition-colors border border-neutral-300 text-[9px] tracking-widest uppercase flex items-center justify-center gap-1">
+                NEXT <ChevronRight size={12} />
+              </button>
+
+              {/* Confirm */}
+              <button
+                onClick={() => {
+                  const modelName = `${currentModel?.first_name} ${currentModel?.last_name}`
+                  const isOfficiallyConfirmed = adminConfirmed[current.model_id] && clientStatus[current.model_id] === "pending_confirmation"
+                  const isPending = clientStatus[current.model_id] === "pending_confirmation"
+                  if (isOfficiallyConfirmed) return
+                  if (isPending) { setUndoConfirmModal({ modelId: current.model_id, modelName }); return }
+                  setConfirmModal({ modelId: current.model_id, modelName })
+                }}
+                className={`w-full py-2 text-[9px] tracking-widest uppercase border px-2 transition-colors text-center ${(adminConfirmed[current.model_id] && clientStatus[current.model_id] === "pending_confirmation") ? 'bg-green-600 text-white border-green-600 cursor-default' : (clientStatus[current.model_id] === "pending_confirmation") ? 'bg-amber-400 text-white border-amber-400 hover:bg-amber-500' : 'border-neutral-300 text-neutral-600 hover:border-black hover:text-black'}`}>
+                {(adminConfirmed[current.model_id] && clientStatus[current.model_id] === "pending_confirmation") ? '✓ CONFIRM' : (clientStatus[current.model_id] === "pending_confirmation") ? '⏳ PENDING' : 'CONFIRM'}
+              </button>
+
+              {/* Shortlist */}
+              <SlideActionsVertical presentationId={presentationId} modelId={current.model_id} clientId={clientId}
+                initialShortlisted={!!shortlists[current.model_id]} initialNotes={shortlistMap[current.model_id]?.notes || ""} initialAuthor={shortlistMap[current.model_id]?.author_name || ''}
+                onShortlistChange={(v) => handleShortlistChange(current.model_id, v)} model={currentModel} projectName={projectName} clientFirstName={clientFirstName} />
+
+              {/* Release */}
+              <button
+                onClick={() => handleRelease(current.model_id)}
+                className={`w-full py-2 text-[9px] tracking-widest uppercase border px-2 transition-colors text-center ${releases[current.model_id] ? 'bg-neutral-200 border-neutral-300 text-neutral-600' : 'border-neutral-300 text-neutral-600 hover:border-black'}`}>
+                {releases[current.model_id] ? '✓ RELEASE' : 'RELEASE'}
+              </button>
+
+              {/* Close */}
+              <button onClick={() => setView('grid')} className="w-full py-2 text-neutral-400 hover:text-black transition-colors border border-neutral-300 text-[9px] tracking-widest uppercase">
+                CLOSE ✕
+              </button>
             </div>
           </div>
         </div>
@@ -939,9 +949,8 @@ function SlideActionsVertical({ presentationId, modelId, clientId, initialShortl
 
   return (
     <button onClick={toggle}
-      className={`w-full py-2 text-[9px] tracking-widest uppercase border px-2 transition-colors text-center flex items-center justify-center gap-1 ${shortlisted ? 'bg-black text-white border-black' : 'border-neutral-300 text-neutral-600 hover:border-black'}`}>
-      <Heart size={10} className={shortlisted ? 'fill-white text-white' : ''} />
-      {shortlisted ? 'Shortlist' : 'Shortlist'}
+      className={`w-full py-2 text-[9px] tracking-widest uppercase border px-2 transition-colors text-center ${shortlisted ? 'bg-black text-white border-black' : 'border-neutral-300 text-neutral-600 hover:border-black'}`}>
+      {shortlisted ? '✓ SHORTLIST' : 'SHORTLIST'}
     </button>
   )
 }
