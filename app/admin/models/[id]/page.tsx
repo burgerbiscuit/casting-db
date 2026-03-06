@@ -189,6 +189,14 @@ export default function ModelProfile({ params }: { params: { id: string } }) {
         </div>
       </div>
 
+      {/* Primary Photo */}
+      {media.length > 0 && media[0]?.public_url && (
+        <div className="mb-10">
+          <img src={media[0].public_url} alt={`${model.first_name} ${model.last_name}`} 
+            className="w-full max-w-md aspect-[3/4] object-cover rounded border border-neutral-200" />
+        </div>
+      )}
+
       {/* Tabs */}
       <div className="flex gap-4 border-b border-neutral-200 mb-4">
         {(['profile', 'media'] as const).map(tab => (
