@@ -635,13 +635,11 @@ export function PresentationViewer({
 {view === 'slides' && current && currentModel && (
   <div onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} className="fixed inset-0 bg-white z-40 flex flex-col overflow-hidden" style={{height: '100vh'}}>
     
-    {/* TOP BAR: Logo | Name/Sizing | Buttons */}
-    <div className="flex-shrink-0 border-b border-neutral-200 px-6 py-4 flex items-center gap-6">
-      <img src="/logo.jpg" alt="Logo" className="h-6 w-auto" />
-      
-      {/* Center: Name + Sizing */}
-      <div className="flex-1 text-center">
-        <h1 className="text-lg font-light tracking-[0.15em] uppercase mb-0.5">{currentModel.first_name} {currentModel.last_name}</h1>
+    {/* TOP BAR: Model name/stats (left) | Buttons (right) */}
+    <div className="flex-shrink-0 border-b border-neutral-300 px-8 py-4 flex items-center justify-between">
+      {/* Left: Model name + stats */}
+      <div>
+        <h1 className="text-base font-light tracking-[0.15em] uppercase mb-1">{currentModel.first_name} {currentModel.last_name}</h1>
         <p className="text-[9px] text-neutral-600 tracking-wider">
           {currentModel.primary_city && <>{currentModel.primary_city} · </>}
           {getSizingParts(current, currentModel).join(' · ')}
@@ -649,7 +647,7 @@ export function PresentationViewer({
       </div>
       
       {/* Right: Buttons */}
-      <div className="flex gap-3 flex-shrink-0">
+      <div className="flex gap-2">
         <button
           onClick={() => {
             const modelName = `${currentModel?.first_name} ${currentModel?.last_name}`
@@ -659,8 +657,8 @@ export function PresentationViewer({
             if (isPending) { setUndoConfirmModal({ modelId: current.model_id, modelName }); return }
             setConfirmModal({ modelId: current.model_id, modelName })
           }}
-          className={`py-1 px-3 text-[9px] tracking-widest uppercase border ${(adminConfirmed[current.model_id] && clientStatus[current.model_id] === "pending_confirmation") ? 'bg-black text-white border-black' : 'border-neutral-300 text-neutral-600 hover:border-black'}`}>
-          CONFIRM
+          className={`py-1 px-3 text-[9px] tracking-widest uppercase border transition-colors ${(adminConfirmed[current.model_id] && clientStatus[current.model_id] === "pending_confirmation") ? 'bg-green-600 text-white border-green-600' : 'border-neutral-300 text-neutral-600 hover:border-black'}`}>
+          {(adminConfirmed[current.model_id] && clientStatus[current.model_id] === "pending_confirmation") ? '✓ CONFIRMED' : 'CONFIRM'}
         </button>
         
         <SlideActionsVertical presentationId={presentationId} modelId={current.model_id} clientId={clientId}
@@ -669,11 +667,11 @@ export function PresentationViewer({
       </div>
     </div>
     
-    {/* BODY: 2 columns (photos + notes) */}
+    {/* BODY: Photos left + Notes right */}
     <div className="flex-1 flex overflow-hidden" style={{paddingBottom: '48px'}}>
       
-      {/* LEFT: 2 Photos (expanded) */}
-      <div className="flex-1 flex gap-4 overflow-hidden px-6 py-6 bg-white min-w-0">
+      {/* LEFT: 2 Photos side by side */}
+      <div className="flex-1 flex gap-4 overflow-hidden px-8 py-6 bg-white">
         {/* Photo 1 */}
         <div className="flex-1 bg-neutral-200 flex items-center justify-center overflow-hidden">
           {photoMedia[0] ? (
@@ -696,7 +694,7 @@ export function PresentationViewer({
       </div>
       
       {/* RIGHT: Notes + Links */}
-      <div className="flex-shrink-0 border-l border-neutral-200 px-4 py-6 flex flex-col gap-3 overflow-y-auto" style={{width: '160px'}}>
+      <div className="flex-shrink-0 border-l border-neutral-300 px-6 py-6 flex flex-col gap-3 overflow-y-auto" style={{width: '160px'}}>
         <textarea placeholder="Your notes..." 
           className="w-full text-[8px] border border-neutral-300 bg-white p-2 focus:outline-none focus:border-black resize-none placeholder:text-neutral-400" 
           rows={4} />
@@ -727,7 +725,7 @@ export function PresentationViewer({
     </div>
     
     {/* BOTTOM BAR: Navigation */}
-    <div className="fixed bottom-0 left-0 right-0 border-t border-neutral-200 px-6 py-2 bg-white flex items-center justify-between" style={{height: '48px', zIndex: 50}}>
+    <div className="fixed bottom-0 left-0 right-0 border-t border-neutral-300 px-8 py-2 bg-white flex items-center justify-between" style={{height: '48px', zIndex: 50}}>
       <button onClick={prev} disabled={slideIndex === 0}
         className="py-1 px-3 text-neutral-400 hover:text-black disabled:opacity-20 transition-colors border border-neutral-300 text-[9px] tracking-widest uppercase">
         PREV
@@ -742,14 +740,6 @@ export function PresentationViewer({
     </div>
   </div>
 )}
-    } catch (err) {
-      console.error('Toggle failed:', err)
-      setShortlisted(!next)
-      onShortlistChange?.(!next)
-    }
-  }
-
-  const saveNotes = async (val: string) => {
     setNotes(val)
     try {
       await fetch('/api/shortlist', {
