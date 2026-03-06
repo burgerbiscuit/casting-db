@@ -698,7 +698,7 @@ export function PresentationViewer({
       </div>
       
       {/* RIGHT: Backend fields + Notes + Links */}
-      <div className="flex-shrink-0 border-l border-neutral-300 px-6 py-6 flex flex-col gap-3 overflow-y-auto" style={{width: '180px'}}>
+      <div className="flex-shrink-0 border-l border-neutral-300 px-6 py-6 flex flex-col gap-3 overflow-y-auto" style={{width: '360px'}}>
         {/* Backend fields */}
         {current.rate && (
           <div className="text-[8px] border border-neutral-200 p-2 bg-neutral-50">
