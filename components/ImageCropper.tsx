@@ -21,6 +21,7 @@ export function ImageCropper({ src, filename, onDone, onCancel }: Props) {
   const [aspect, setAspect] = useState<number | undefined>(3/4)
   const [rotate, setRotate] = useState(0)
   const [scale, setScale] = useState(1)
+  const [processing, setProcessing] = useState(false)
 
   const onImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
     const { width, height } = e.currentTarget
@@ -52,9 +53,16 @@ export function ImageCropper({ src, filename, onDone, onCancel }: Props) {
   }, [completedCrop, rotate, scale])
 
   const handleDone = async () => {
-    const blob = await getCroppedBlob()
-    if (blob) onDone(blob, filename.replace(/\.[^.]+$/, '') + '_cropped.jpg')
-    else onDone(await fetch(src).then(r => r.blob()), filename)
+    try {
+      setProcessing(true)
+      const blob = await getCroppedBlob()
+      if (blob) onDone(blob, filename.replace(/\.[^.]+$/, '') + '_cropped.jpg')
+      else onDone(await fetch(src).then(r => r.blob()), filename)
+    } catch (e) {
+      console.error('Crop error:', e)
+      alert('Failed to crop image. Try refreshing and trying again.')
+      setProcessing(false)
+    }
   }
 
   const aspects = [
@@ -109,11 +117,11 @@ export function ImageCropper({ src, filename, onDone, onCancel }: Props) {
 
         {/* Footer */}
         <div className="flex justify-end gap-3 px-6 py-4 border-t border-neutral-100">
-          <button onClick={onCancel} className="text-xs tracking-widest uppercase px-6 py-3 border border-neutral-300 hover:border-black">
+          <button onClick={onCancel} disabled={processing} className="text-xs tracking-widest uppercase px-6 py-3 border border-neutral-300 hover:border-black disabled:opacity-50 disabled:cursor-not-allowed">
             Skip Crop
           </button>
-          <button onClick={handleDone} className="text-xs tracking-widest uppercase px-6 py-3 bg-black text-white hover:bg-neutral-800">
-            Apply & Upload
+          <button onClick={handleDone} disabled={processing} className="text-xs tracking-widest uppercase px-6 py-3 bg-black text-white hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed">
+            {processing ? 'Processing...' : 'Apply & Upload'}
           </button>
         </div>
       </div>
