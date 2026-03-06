@@ -643,8 +643,8 @@ export function PresentationViewer({
     {/* MODEL INFO + BUTTONS BAR: Name/Sizing (left) | Confirm + Shortlist + Release (right) */}
     <div className="flex-shrink-0 px-8 py-3 flex items-center justify-between bg-white">
       <div>
-        <h2 className="text-base font-light tracking-[0.15em] uppercase mb-1">{currentModel.first_name} {currentModel.last_name}</h2>
-        <p className="text-[9px] text-neutral-600 tracking-wider">
+        <h2 className="text-xl font-light tracking-[0.15em] uppercase mb-1">{currentModel.first_name} {currentModel.last_name}</h2>
+        <p className="text-[11px] text-neutral-500 tracking-wider">
           {currentModel.primary_city && <>{currentModel.primary_city} · </>}
           {getSizingParts(current, currentModel).join(' · ')}
         </p>
@@ -721,23 +721,21 @@ export function PresentationViewer({
       {/* RIGHT: Backend fields + Notes + Links */}
       <div className="flex-shrink-0 px-6 py-6 flex flex-col gap-3 overflow-y-auto" style={{width: '360px'}}>
         {/* Backend fields */}
-        {current.rate && (
-          <div className="text-[8px] p-2">
-            <p className="text-neutral-500 uppercase tracking-wider font-medium mb-1">Rate</p>
+        {current.rate?.trim() && (
+          <div className="text-[9px]">
+            <p className="text-neutral-400 uppercase tracking-wider font-medium mb-0.5">Rate</p>
             <p className="text-neutral-700">{current.rate}</p>
           </div>
         )}
-        
-        {current.option && (
-          <div className="text-[8px] p-2">
-            <p className="text-neutral-500 uppercase tracking-wider font-medium mb-1">Option</p>
-            <p className="text-neutral-700">{current.option}</p>
+        {current.admin_notes?.trim() && (
+          <div className="text-[9px]">
+            <p className="text-neutral-400 uppercase tracking-wider font-medium mb-0.5">Option</p>
+            <p className="text-neutral-700">{current.admin_notes}</p>
           </div>
         )}
-        
-        {current.location && (
-          <div className="text-[8px] p-2">
-            <p className="text-neutral-500 uppercase tracking-wider font-medium mb-1">Location</p>
+        {current.location?.trim() && (
+          <div className="text-[9px]">
+            <p className="text-neutral-400 uppercase tracking-wider font-medium mb-0.5">Location</p>
             <p className="text-neutral-700">{current.location}</p>
           </div>
         )}

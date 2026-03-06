@@ -131,8 +131,12 @@ export function ModelCard({ presentationModel, model, media, presentationId, cli
           </a>
         )}
 
-        {presentationModel.admin_notes && (
-          <p className="text-xs text-neutral-600 italic mb-1 line-clamp-1">{presentationModel.admin_notes}</p>
+        {(presentationModel.rate?.trim() || presentationModel.location?.trim() || presentationModel.admin_notes?.trim()) && (
+          <div className="text-[10px] text-neutral-600 space-y-0.5 mb-1 border-t border-neutral-100 pt-2 mt-1">
+            {presentationModel.rate?.trim() && <p><span className="text-neutral-400 uppercase tracking-wider text-[9px]">Rate </span>{presentationModel.rate}</p>}
+            {presentationModel.admin_notes?.trim() && <p><span className="text-neutral-400 uppercase tracking-wider text-[9px]">Option </span>{presentationModel.admin_notes}</p>}
+            {presentationModel.location?.trim() && <p><span className="text-neutral-400 uppercase tracking-wider text-[9px]">Location </span>{presentationModel.location}</p>}
+          </div>
         )}
 
 
