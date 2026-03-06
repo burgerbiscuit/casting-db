@@ -629,7 +629,7 @@ export default function CastPage({ params }: { params: { slug: string } }) {
                   placeholder="Your agent's name"
                 />
                 {showAgentNameSuggestions && agentNameSuggestions.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 bg-white border border-neutral-200 z-10 shadow-sm">
+                  <div className="absolute top-full left-0 right-0 bg-white border border-neutral-200 z-10 shadow-sm max-h-48 overflow-y-auto">
                     {agentNameSuggestions.map(a => (
                       <button key={a} type="button"
                         onClick={() => { setForm(f => ({ ...f, agent_name: a })); setShowAgentNameSuggestions(false) }}
@@ -637,6 +637,13 @@ export default function CastPage({ params }: { params: { slug: string } }) {
                         {a}
                       </button>
                     ))}
+                    {form.agent_name && !agentNameSuggestions.includes(form.agent_name) && (
+                      <button type="button"
+                        onClick={() => setShowAgentNameSuggestions(false)}
+                        className="w-full px-4 py-2 text-left text-sm font-medium text-neutral-600 hover:bg-neutral-50 border-t border-neutral-200">
+                        ✓ Use "{form.agent_name}" (new)
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
