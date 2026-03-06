@@ -643,8 +643,8 @@ export function PresentationViewer({
           {/* Body: photos left + right panel with name/buttons */}
           <div className="flex flex-1 min-h-0 overflow-hidden">
 
-            {/* Photos flush left */}
-            <div className="flex flex-1 min-w-0 gap-2 pb-0 pl-4 pr-0 overflow-hidden">
+            {/* Photos flush left — constrained height to fit buttons */}
+            <div className="flex flex-1 min-w-0 gap-2 pb-0 pl-4 pr-0 overflow-hidden" style={{maxHeight: 'calc(100vh - 140px)'}}>
               {currentMedia.length === 0 && (
                 <div className="bg-neutral-200 flex items-center justify-center text-neutral-400 text-xs flex-1">No photos</div>
               )}
@@ -658,7 +658,7 @@ export function PresentationViewer({
             </div>
 
             {/* Right panel: name, sizing, buttons, notes, links — scrollable */}
-            <div className={`flex-shrink-0 flex flex-col border-l border-neutral-100 overflow-y-auto ${isMobile ? 'w-40 px-3 py-3' : 'w-52 xl:w-64 px-4 py-4'}`}>
+            <div className={`flex-shrink-0 flex flex-col border-l border-neutral-100 overflow-y-auto min-h-0 ${isMobile ? 'w-40 px-3 py-3' : 'w-52 xl:w-64 px-4 py-4'}`}>
               {/* Sticky header: Name + sizing + buttons */}
               <div className="flex-shrink-0 sticky top-0 bg-white pb-3 border-b border-neutral-100 mb-3">
                 {/* Name + sizing */}
