@@ -37,14 +37,25 @@ export default function ProjectSpecsPanel({ project }: { project: any }) {
     if (result.data) { setDisplay(result.data); setForm(fromProject(result.data)); setEditing(false) }
   }
 
+  const [uploadError, setUploadError] = useState('')
+
   const uploadMoodboard = async (files: FileList | null) => {
     if (!files) return
     setUploading(true)
-    const fd = new FormData()
-    fd.append('projectId', project.id)
-    fd.append('fileType', 'moodboard')
-    Array.from(files).forEach(f => fd.append('files', f))
-    await fetch('/api/project-files', { method: 'POST', body: fd })
+    setUploadError('')
+    try {
+      const fd = new FormData()
+      fd.append('projectId', project.id)
+      fd.append('fileType', 'moodboard')
+      Array.from(files).forEach(f => fd.append('files', f))
+      const res = await fetch('/api/project-files', { method: 'POST', body: fd })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.error || `Upload failed (${res.status})`)
+      }
+    } catch (e: any) {
+      setUploadError(e.message || 'Upload failed')
+    }
     setUploading(false)
     loadMoodboards()
   }
@@ -190,6 +201,7 @@ export default function ProjectSpecsPanel({ project }: { project: any }) {
                   <ImagePlus size={14} />
                   {uploading ? 'Uploading...' : 'Upload moodboard images'}
                 </label>
+                {uploadError && <p className="text-red-500 text-[10px] mt-2">{uploadError}</p>}
               </div>
             )}
           </div>
