@@ -636,12 +636,12 @@ export function PresentationViewer({
   <div onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} className="fixed inset-0 bg-white z-40 flex flex-col overflow-hidden" style={{height: '100vh'}}>
     
     {/* TOP BAR: Logo (centered) */}
-    <div className="flex-shrink-0 border-b border-neutral-300 px-8 py-3 flex items-center justify-center">
+    <div className="flex-shrink-0 px-8 py-3 flex items-center justify-center">
       <img src="/logo.jpg" alt="Logo" className="h-5 w-auto" />
     </div>
 
     {/* MODEL INFO + BUTTONS BAR: Name/Sizing (left) | Confirm + Shortlist + Release (right) */}
-    <div className="flex-shrink-0 border-b border-neutral-300 px-8 py-3 flex items-center justify-between bg-white">
+    <div className="flex-shrink-0 px-8 py-3 flex items-center justify-between bg-white">
       <div>
         <h2 className="text-base font-light tracking-[0.15em] uppercase mb-1">{currentModel.first_name} {currentModel.last_name}</h2>
         <p className="text-[9px] text-neutral-600 tracking-wider">
@@ -719,24 +719,24 @@ export function PresentationViewer({
       </div>
       
       {/* RIGHT: Backend fields + Notes + Links */}
-      <div className="flex-shrink-0 border-l border-neutral-300 px-6 py-6 flex flex-col gap-3 overflow-y-auto" style={{width: '360px'}}>
+      <div className="flex-shrink-0 px-6 py-6 flex flex-col gap-3 overflow-y-auto" style={{width: '360px'}}>
         {/* Backend fields */}
         {current.rate && (
-          <div className="text-[8px] border border-neutral-200 p-2 bg-neutral-50">
+          <div className="text-[8px] p-2">
             <p className="text-neutral-500 uppercase tracking-wider font-medium mb-1">Rate</p>
             <p className="text-neutral-700">{current.rate}</p>
           </div>
         )}
         
         {current.option && (
-          <div className="text-[8px] border border-neutral-200 p-2 bg-neutral-50">
+          <div className="text-[8px] p-2">
             <p className="text-neutral-500 uppercase tracking-wider font-medium mb-1">Option</p>
             <p className="text-neutral-700">{current.option}</p>
           </div>
         )}
         
         {current.location && (
-          <div className="text-[8px] border border-neutral-200 p-2 bg-neutral-50">
+          <div className="text-[8px] p-2">
             <p className="text-neutral-500 uppercase tracking-wider font-medium mb-1">Location</p>
             <p className="text-neutral-700">{current.location}</p>
           </div>
@@ -786,7 +786,7 @@ export function PresentationViewer({
     </div>
     
     {/* BOTTOM BAR: Navigation */}
-    <div className="fixed bottom-0 left-0 right-0 border-t border-neutral-300 px-8 py-2 bg-white flex items-center justify-between" style={{height: '48px', zIndex: 50}}>
+    <div className="fixed bottom-0 left-0 right-0 px-8 py-2 bg-white flex items-center justify-between" style={{height: '48px', zIndex: 50}}>
       <button onClick={prev} disabled={slideIndex === 0}
         className="py-1 px-3 text-neutral-400 hover:text-black disabled:opacity-20 transition-colors border border-neutral-300 text-[9px] tracking-widest uppercase">
         PREV
