@@ -49,10 +49,9 @@ export default function ProjectSpecsPanel({ project }: { project: any }) {
       fd.append('fileType', 'moodboard')
       Array.from(files).forEach(f => fd.append('files', f))
       const res = await fetch('/api/project-files', { method: 'POST', body: fd })
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}))
-        throw new Error(data.error || `Upload failed (${res.status})`)
-      }
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.error || `Upload failed (${res.status})`)
+      if (!data.files?.length) throw new Error(`Server accepted upload but saved 0 files. Check Supabase storage permissions.`)
     } catch (e: any) {
       setUploadError(e.message || 'Upload failed')
     }
@@ -189,6 +188,7 @@ export default function ProjectSpecsPanel({ project }: { project: any }) {
                     <input type="file" accept="image/*" multiple className="hidden" onChange={e => uploadMoodboard(e.target.files)} />
                     <ImagePlus size={16} className={uploading ? 'animate-pulse text-neutral-400' : 'text-neutral-300'} />
                   </label>
+                  {uploadError && <p className="text-red-500 text-[10px] mt-2 col-span-full">{uploadError}</p>}
                 </div>
               </div>
             )}
