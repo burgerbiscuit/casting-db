@@ -76,6 +76,9 @@ const NEW_COLS = ['photographer_url', 'stylist_url', 'client_url', 'billing_name
 
 export function toDbPayload(form: ProjectFormData, hasNewCols: boolean) {
   const base: any = {
+    name: form.name || null,
+    slug: form.slug || null,
+    description: form.description || null,
     client_name: form.client_name || null,
     photographer: form.photographer || null,
     stylist: form.stylist || null,
@@ -88,7 +91,6 @@ export function toDbPayload(form: ProjectFormData, hasNewCols: boolean) {
     specs: form.specs || null,
     billing_contact: form.billing_contact || null,
     client_emails: form.client_emails ? form.client_emails.split(',').map((e: string) => e.trim()).filter(Boolean) : null,
-    description: form.description || null,
     presentation_rounds: form.presentation_rounds.filter(r => r.date),
   }
   if (hasNewCols) {

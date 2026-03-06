@@ -27,9 +27,14 @@ export default function ProjectSpecsPanel({ project }: { project: any }) {
   const save = async () => {
     setSaving(true)
     const payload = toDbPayload(form, hasNewCols)
-    const { data: updated } = await supabase.from('projects').update(payload).eq('id', project.id).select().single()
+    const res = await fetch('/api/projects', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ projectId: project.id, ...payload })
+    })
+    const result = await res.json()
     setSaving(false)
-    if (updated) { setDisplay(updated); setForm(fromProject(updated)); setEditing(false) }
+    if (result.data) { setDisplay(result.data); setForm(fromProject(result.data)); setEditing(false) }
   }
 
   const uploadMoodboard = async (files: FileList | null) => {
