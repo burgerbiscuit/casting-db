@@ -21,7 +21,8 @@ export async function POST(req: NextRequest) {
       if (upErr) { console.error('Cast media upload error:', upErr.message); continue }
       const { data: { publicUrl } } = supabase.storage.from('model-media').getPublicUrl(path)
       await supabase.from('model_media').insert({
-        model_id: modelId, storage_path: path, public_url: publicUrl, type: 'photo', is_visible: true,
+        model_id: modelId, storage_path: path, public_url: publicUrl,
+        type: 'photo', is_visible: true, uploaded_at: new Date().toISOString(),
       })
     }
     return NextResponse.json({ ok: true })

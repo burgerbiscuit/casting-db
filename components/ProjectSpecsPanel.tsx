@@ -37,6 +37,7 @@ export default function ProjectSpecsPanel({ project }: { project: any }) {
     setUploading(true)
     const fd = new FormData()
     fd.append('projectId', project.id)
+    fd.append('fileType', 'moodboard')
     Array.from(files).forEach(f => fd.append('files', f))
     await fetch('/api/project-files', { method: 'POST', body: fd })
     setUploading(false)

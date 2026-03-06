@@ -67,6 +67,7 @@ export default function NewProject() {
     if (moodboardFiles.length > 0) {
       const fd = new FormData()
       fd.append('projectId', proj.id)
+      fd.append('fileType', 'moodboard')
       moodboardFiles.forEach(f => fd.append('files', f))
       await fetch('/api/project-files', { method: 'POST', body: fd })
     }

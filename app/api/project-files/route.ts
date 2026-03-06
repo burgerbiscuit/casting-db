@@ -20,6 +20,8 @@ export async function POST(req: NextRequest) {
   if (!projectId) return NextResponse.json({ error: 'Missing projectId' }, { status: 400 })
 
   const svc = await createServiceClient()
+  // Optional caller-specified file_type (e.g. 'moodboard'); falls back to MIME type
+  const fileTypeOverride = formData.get('fileType') as string | null
   const uploaded: any[] = []
 
   for (const [key, value] of formData.entries()) {
@@ -44,7 +46,7 @@ export async function POST(req: NextRequest) {
       name: value.name,
       storage_path: path,
       public_url: publicUrl,
-      file_type: value.type,
+      file_type: fileTypeOverride || value.type,
     }).select().single()
 
     if (record) uploaded.push(record)

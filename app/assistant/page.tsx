@@ -51,7 +51,7 @@ export default function AssistantPage() {
       const fd = new FormData()
       Object.entries(form).forEach(([k, v]) => {
         if (Array.isArray(v)) fd.append(k, JSON.stringify(v))
-        else fd.append(k, String(v ?? ''))
+        else if (v !== null && v !== undefined) fd.append(k, String(v))
       })
       if (resumeFile) fd.append('resume', resumeFile)
 
