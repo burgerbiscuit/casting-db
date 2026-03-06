@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { FileText, ExternalLink, Search, ChevronDown } from 'lucide-react'
+import { FileText, ExternalLink, Search, ChevronDown, X } from 'lucide-react'
 
 const STATUS_COLORS: Record<string, string> = {
   new: 'bg-blue-50 text-blue-700 border-blue-200',
@@ -17,6 +17,35 @@ const EXP_LABEL: Record<string, string> = {
   director: 'Director (10yr+)',
 }
 
+function ResumePreviewModal({ url, name, onClose }: { url: string; name: string; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 flex flex-col bg-black/80" onClick={onClose}>
+      <div className="flex items-center justify-between px-6 py-3 bg-black text-white flex-shrink-0" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center gap-3">
+          <FileText size={14} />
+          <span className="text-xs tracking-widest uppercase">{name} — Resume</span>
+        </div>
+        <div className="flex items-center gap-4">
+          <a href={url} target="_blank" rel="noopener noreferrer"
+            className="flex items-center gap-1.5 text-[10px] tracking-widest uppercase text-neutral-400 hover:text-white transition-colors">
+            <ExternalLink size={11} /> Open in new tab
+          </a>
+          <button onClick={onClose} className="text-neutral-400 hover:text-white transition-colors">
+            <X size={18} />
+          </button>
+        </div>
+      </div>
+      <div className="flex-1 min-h-0" onClick={e => e.stopPropagation()}>
+        <iframe
+          src={url}
+          className="w-full h-full border-0"
+          title={`${name} Resume`}
+        />
+      </div>
+    </div>
+  )
+}
+
 export default function AssistantsPage() {
   const supabase = createClient()
   const [submissions, setSubmissions] = useState<any[]>([])
@@ -27,6 +56,7 @@ export default function AssistantsPage() {
   const [statusFilter, setStatusFilter] = useState('ALL')
   const [cities, setCities] = useState<string[]>([])
   const [expanded, setExpanded] = useState<string | null>(null)
+  const [preview, setPreview] = useState<{ url: string; name: string } | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -41,6 +71,13 @@ export default function AssistantsPage() {
   }, [])
 
   useEffect(() => { load() }, [load])
+
+  // Close preview on Escape
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') setPreview(null) }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [])
 
   const updateStatus = async (id: string, status: string) => {
     await supabase.from('assistant_submissions').update({ status }).eq('id', id)
@@ -65,8 +102,21 @@ export default function AssistantsPage() {
 
   const newCount = submissions.filter(s => s.status === 'new').length
 
+  const ResumeBtn = ({ s, compact = false }: { s: any; compact?: boolean }) =>
+    s.resume_url ? (
+      <button
+        onClick={() => setPreview({ url: s.resume_url, name: `${s.first_name} ${s.last_name}` })}
+        className={`flex items-center gap-1.5 text-[10px] tracking-widest uppercase border border-neutral-200 hover:border-black transition-colors ${compact ? 'px-3 py-1.5' : 'px-4 py-2.5'}`}>
+        <FileText size={compact ? 11 : 14} /> Resume
+      </button>
+    ) : null
+
   return (
     <div>
+      {preview && (
+        <ResumePreviewModal url={preview.url} name={preview.name} onClose={() => setPreview(null)} />
+      )}
+
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-light tracking-widest uppercase">Assistant Resumes</h1>
@@ -136,12 +186,7 @@ export default function AssistantsPage() {
               </button>
 
               <div className="flex items-center gap-3 flex-shrink-0">
-                {s.resume_url && (
-                  <a href={s.resume_url} target="_blank" rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 text-[10px] tracking-widest uppercase border border-neutral-200 px-3 py-1.5 hover:border-black transition-colors">
-                    <FileText size={11} /> Resume
-                  </a>
-                )}
+                <ResumeBtn s={s} compact />
 
                 <select value={s.status} onChange={e => updateStatus(s.id, e.target.value)}
                   className={`text-[10px] tracking-widest uppercase border px-2 py-1.5 focus:outline-none cursor-pointer ${STATUS_COLORS[s.status] || ''}`}>
@@ -223,10 +268,7 @@ export default function AssistantsPage() {
                 {s.resume_url && (
                   <div>
                     <p className="text-[10px] tracking-widest uppercase text-neutral-400 mb-2">Resume</p>
-                    <a href={s.resume_url} target="_blank" rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 text-xs border border-neutral-200 px-4 py-2.5 hover:border-black transition-colors">
-                      <FileText size={14} /> Open Resume ↗
-                    </a>
+                    <ResumeBtn s={s} />
                   </div>
                 )}
               </div>
