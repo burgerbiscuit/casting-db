@@ -26,9 +26,9 @@ function ResumePreviewModal({ url, name, onClose }: { url: string; name: string;
           <span className="text-xs tracking-widest uppercase">{name} — Resume</span>
         </div>
         <div className="flex items-center gap-4">
-          <a href={url} target="_blank" rel="noopener noreferrer"
+          <a href={url + '&download=1'} target="_blank" rel="noopener noreferrer"
             className="flex items-center gap-1.5 text-[10px] tracking-widest uppercase text-neutral-400 hover:text-white transition-colors">
-            <ExternalLink size={11} /> Open in new tab
+            <ExternalLink size={11} /> Download
           </a>
           <button onClick={onClose} className="text-neutral-400 hover:text-white transition-colors">
             <X size={18} />
@@ -57,6 +57,10 @@ export default function AssistantsPage() {
   const [cities, setCities] = useState<string[]>([])
   const [expanded, setExpanded] = useState<string | null>(null)
   const [preview, setPreview] = useState<{ url: string; name: string } | null>(null)
+
+  const openResume = (s: any) => {
+    setPreview({ url: `/api/resume-proxy?id=${s.id}`, name: `${s.first_name} ${s.last_name}` })
+  }
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -103,9 +107,9 @@ export default function AssistantsPage() {
   const newCount = submissions.filter(s => s.status === 'new').length
 
   const ResumeBtn = ({ s, compact = false }: { s: any; compact?: boolean }) =>
-    s.resume_url ? (
+    s.resume_storage_path ? (
       <button
-        onClick={() => setPreview({ url: s.resume_url, name: `${s.first_name} ${s.last_name}` })}
+        onClick={() => openResume(s)}
         className={`flex items-center gap-1.5 text-[10px] tracking-widest uppercase border border-neutral-200 hover:border-black transition-colors ${compact ? 'px-3 py-1.5' : 'px-4 py-2.5'}`}>
         <FileText size={compact ? 11 : 14} /> Resume
       </button>
@@ -265,7 +269,7 @@ export default function AssistantsPage() {
                   </div>
                 )}
 
-                {s.resume_url && (
+                {s.resume_storage_path && (
                   <div>
                     <p className="text-[10px] tracking-widest uppercase text-neutral-400 mb-2">Resume</p>
                     <ResumeBtn s={s} />
