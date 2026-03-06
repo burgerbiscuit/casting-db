@@ -31,8 +31,9 @@ export async function POST(req: NextRequest) {
       .from('resumes')
       .upload(path, resumeFile.buffer, { contentType: resumeFile.type || 'application/pdf' })
     if (upErr) return NextResponse.json({ error: 'Resume upload failed: ' + upErr.message }, { status: 500 })
-    const { data: { publicUrl } } = svc.storage.from('resumes').getPublicUrl(path)
-    resume_url = publicUrl
+    // Bucket is private — generate a long-lived signed URL (10 years) for admin access
+    const { data: signedData } = await svc.storage.from('resumes').createSignedUrl(path, 60 * 60 * 24 * 365 * 10)
+    resume_url = signedData?.signedUrl ?? null
     resume_storage_path = path
   }
 
@@ -55,7 +56,7 @@ export async function POST(req: NextRequest) {
     resume_storage_path,
     notes: fields.notes || null,
     opportunity_type: fields.opportunity_type || null,
-    school_credit: fields.school_credit ?? false,
+    school_credit: fields.school_credit === true || fields.school_credit === 'true',
     status: 'new',
   })
 
