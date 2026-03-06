@@ -16,9 +16,11 @@ export default function ShareGate({ presentationId, presentationName }: { presen
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ presentationId, password }),
+      credentials: 'include', // Ensure cookies are sent/received
     })
     if (res.ok) {
-      router.push(`/client/presentations/${presentationId}`)
+      // After auth, reload the page so server can check the new cookie
+      window.location.href = `/share/${presentationId}`
     } else {
       setError('Incorrect password')
       setLoading(false)
