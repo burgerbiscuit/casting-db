@@ -640,26 +640,46 @@ export function PresentationViewer({
       <img src="/logo.jpg" alt="Logo" className="h-5 w-auto" />
     </div>
 
-    {/* BUTTONS BAR: Confirm + Shortlist */}
-    <div className="flex-shrink-0 border-b border-neutral-300 px-8 py-2 flex items-center justify-end">
-      <div className="flex gap-2">
-        <button
-          onClick={() => {
-            const modelName = `${currentModel?.first_name} ${currentModel?.last_name}`
-            const isOfficiallyConfirmed = adminConfirmed[current.model_id] && clientStatus[current.model_id] === "pending_confirmation"
-            const isPending = clientStatus[current.model_id] === "pending_confirmation"
-            if (isOfficiallyConfirmed) return
-            if (isPending) { setUndoConfirmModal({ modelId: current.model_id, modelName }); return }
-            setConfirmModal({ modelId: current.model_id, modelName })
-          }}
-          className={`py-1 px-3 text-[9px] tracking-widest uppercase border transition-colors ${(adminConfirmed[current.model_id] && clientStatus[current.model_id] === "pending_confirmation") ? 'bg-green-600 text-white border-green-600' : 'border-neutral-300 text-neutral-600 hover:border-black'}`}>
-          {(adminConfirmed[current.model_id] && clientStatus[current.model_id] === "pending_confirmation") ? '✓ CONFIRMED' : 'CONFIRM'}
-        </button>
-        
-        <SlideActionsVertical presentationId={presentationId} modelId={current.model_id} clientId={clientId}
-          initialShortlisted={!!shortlists[current.model_id]} initialNotes={shortlistMap[current.model_id]?.notes || ""} initialAuthor={shortlistMap[current.model_id]?.author_name || ''}
-          onShortlistChange={(v) => handleShortlistChange(current.model_id, v)} model={currentModel} projectName={projectName} clientFirstName={clientFirstName} />
-      </div>
+    {/* BUTTONS BAR: Confirm + Shortlist + Release */}
+    <div className="flex-shrink-0 border-b border-neutral-300 px-8 py-2 flex items-center justify-end gap-2">
+      <button
+        onClick={() => {
+          const modelName = `${currentModel?.first_name} ${currentModel?.last_name}`
+          const isOfficiallyConfirmed = adminConfirmed[current.model_id] && clientStatus[current.model_id] === "pending_confirmation"
+          const isPending = clientStatus[current.model_id] === "pending_confirmation"
+          if (isOfficiallyConfirmed) return
+          if (isPending) { setUndoConfirmModal({ modelId: current.model_id, modelName }); return }
+          setConfirmModal({ modelId: current.model_id, modelName })
+        }}
+        className={`py-1 px-3 text-[9px] tracking-widest uppercase border transition-colors ${(adminConfirmed[current.model_id] && clientStatus[current.model_id] === "pending_confirmation") ? 'bg-green-600 text-white border-green-600' : 'border-neutral-300 text-neutral-600 hover:border-black'}`}>
+        {(adminConfirmed[current.model_id] && clientStatus[current.model_id] === "pending_confirmation") ? '✓ CONFIRMED' : 'CONFIRM'}
+      </button>
+      
+      <SlideActionsVertical presentationId={presentationId} modelId={current.model_id} clientId={clientId}
+        initialShortlisted={!!shortlists[current.model_id]} initialNotes={shortlistMap[current.model_id]?.notes || ""} initialAuthor={shortlistMap[current.model_id]?.author_name || ''}
+        onShortlistChange={(v) => handleShortlistChange(current.model_id, v)} model={currentModel} projectName={projectName} clientFirstName={clientFirstName} />
+
+      <button
+        onClick={async () => {
+          const nextState = !releases[current.model_id]
+          setReleases(prev => ({ ...prev, [current.model_id]: nextState }))
+          try {
+            await fetch('/api/shortlist', {
+              method: 'POST',
+              body: JSON.stringify({
+                action: 'toggleRelease',
+                presentationId,
+                modelId: current.model_id,
+              }),
+            })
+          } catch (err) {
+            console.error('Release toggle failed:', err)
+            setReleases(prev => ({ ...prev, [current.model_id]: !nextState }))
+          }
+        }}
+        className={`py-1 px-3 text-[9px] tracking-widest uppercase border transition-colors ${releases[current.model_id] ? 'bg-red-600 text-white border-red-600' : 'border-neutral-300 text-neutral-600 hover:border-black'}`}>
+        {releases[current.model_id] ? '✓ RELEASED' : 'RELEASE'}
+      </button>
     </div>
 
     {/* MODEL INFO BAR: Name + Sizing */}
