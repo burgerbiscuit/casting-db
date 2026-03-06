@@ -633,90 +633,71 @@ export function PresentationViewer({
       })()}
 
       {view === 'slides' && current && currentModel && (
-        <div onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} className="fixed inset-0 bg-white z-40 flex overflow-hidden" style={{height: '100vh', width: '100vw', flexDirection: window.innerHeight < window.innerWidth ? 'row' : 'column', position: 'relative'}}>
+        <div onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} className="fixed inset-0 bg-white z-40 flex flex-col overflow-hidden" style={{height: '100vh'}}>
 
-          {/* Landscape prev button — overlay on photo area */}
-          {window.innerHeight < window.innerWidth && (
+          {/* Header: prev/next + counter + close — fixed height */}
+          <div className="flex-shrink-0 border-b border-neutral-100 px-3 py-2 flex items-center justify-between" style={{height: '44px'}}>
             <button onClick={prev} disabled={slideIndex === 0}
-              className="absolute left-2 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-black disabled:opacity-20 transition-colors z-10">
+              className="text-neutral-400 hover:text-black disabled:opacity-20 transition-colors">
               <ChevronLeft size={14} />
             </button>
-          )}
-
-          {/* Header — portrait only */}
-          {window.innerHeight >= window.innerWidth && (
-            <div className="flex-shrink-0 border-b border-neutral-100 px-3 py-2 flex items-center justify-between" style={{height: '44px'}}>
-              <button onClick={prev} disabled={slideIndex === 0}
-                className="text-neutral-400 hover:text-black disabled:opacity-20 transition-colors">
-                <ChevronLeft size={14} />
-              </button>
-              <span className="text-[10px] text-neutral-400 tracking-widest uppercase">{slideIndex + 1} / {sorted.length}</span>
-              <button onClick={() => setView('grid')} className="text-neutral-400 hover:text-black transition-colors text-sm">✕</button>
-            </div>
-          )}
-
-          {/* Photo section */}
-          <div style={{flex: window.innerHeight < window.innerWidth ? '0 0 48%' : '1', minWidth: 0, minHeight: 0}} className="bg-neutral-200 flex items-center justify-center overflow-hidden p-3 border-neutral-100" style={{borderRight: window.innerHeight < window.innerWidth ? '1px solid #e5e5e5' : 'none'}}>
-            {currentMedia.length === 0 && (
-              <div className="text-neutral-400 text-xs">No photos</div>
-            )}
-            {photoMedia[0] && (
-              <>
-                {photoMedia[0].type === 'video'
-                  ? <video src={photoMedia[0].public_url} className="w-full h-full object-cover" controls />
-                  : <img src={photoMedia[0].public_url} alt={currentModel.first_name} className="w-full h-full object-cover object-top" />}
-              </>
-            )}
+            <span className="text-[10px] text-neutral-400 tracking-widest uppercase">{slideIndex + 1} / {sorted.length}</span>
+            <button onClick={() => setView('grid')} className="text-neutral-400 hover:text-black transition-colors text-sm">✕</button>
           </div>
 
-          {/* Content panel */}
-          <div style={{flex: window.innerHeight < window.innerWidth ? '0 0 52%' : '0', minWidth: 0, minHeight: 0, overflowY: 'hidden'}} className="flex flex-col px-3 py-3 gap-2">
-
-            {/* Landscape header — top of right panel */}
-            {window.innerHeight < window.innerWidth && (
-              <div className="flex-shrink-0 flex items-center justify-between pb-2 border-b border-neutral-100">
-                <span className="text-[9px] text-neutral-400 tracking-widest uppercase">{slideIndex + 1} / {sorted.length}</span>
-                <button onClick={() => setView('grid')} className="text-neutral-400 hover:text-black transition-colors">✕</button>
-              </div>
-            )}
+          {/* Content: fits in remaining space, NO scrolling */}
+          <div className="flex-1 flex flex-col overflow-hidden px-3 py-3 gap-2">
+            {/* Photo — constrain to available space */}
+            <div className="flex-1 min-h-0 bg-neutral-200 flex items-center justify-center overflow-hidden" style={{aspectRatio: '9/11'}}>
+              {currentMedia.length === 0 && (
+                <div className="text-neutral-400 text-xs">No photos</div>
+              )}
+              {photoMedia[0] && (
+                <>
+                  {photoMedia[0].type === 'video'
+                    ? <video src={photoMedia[0].public_url} className="w-full h-full object-cover" controls />
+                    : <img src={photoMedia[0].public_url} alt={currentModel.first_name} className="w-full h-full object-cover object-top" />}
+                </>
+              )}
+            </div>
 
             {/* Name + sizing */}
             <div className="flex-shrink-0">
               <h2 className="text-sm font-light tracking-[0.12em] uppercase mb-0.5 leading-tight">
                 {currentModel.first_name} {currentModel.last_name}
               </h2>
-              <p className="text-[9px] text-neutral-600 tracking-wide leading-tight">
+              <p className="text-[10px] text-neutral-600 tracking-wide leading-tight">
                 {currentModel.primary_city && <>{currentModel.primary_city} · </>}
                 {getSizingParts(current, currentModel).join(' · ')}
               </p>
             </div>
 
-            {/* Links */}
-            <div className="flex-shrink-0 flex gap-1 flex-wrap">
+            {/* Links — compact */}
+            <div className="flex-shrink-0 flex gap-1.5 flex-wrap">
               {current.show_instagram && currentModel.instagram_handle && (
                 <a href={"https://instagram.com/" + currentModel.instagram_handle}
                   target="_blank" rel="noopener noreferrer"
-                  className="text-[8px] tracking-widest uppercase border border-neutral-300 px-1 py-0.5 hover:border-black transition-colors">
-                  Insta ↗
+                  className="text-[9px] tracking-widest uppercase border border-neutral-300 px-1.5 py-0.5 hover:border-black transition-colors">
+                  Instagram ↗
                 </a>
               )}
               {current.show_portfolio && currentModel.portfolio_url && (
                 <a href={currentModel.portfolio_url.startsWith('http') ? currentModel.portfolio_url : 'https://' + currentModel.portfolio_url}
                   target="_blank" rel="noopener noreferrer"
-                  className="text-[8px] tracking-widest uppercase border border-neutral-300 px-1 py-0.5 hover:border-black transition-colors">
-                  Port ↗
+                  className="text-[9px] tracking-widest uppercase border border-neutral-300 px-1.5 py-0.5 hover:border-black transition-colors">
+                  Portfolio ↗
                 </a>
               )}
               {videoMedia.length > 0 && (
                 <button onClick={() => setMediaModal({ url: videoMedia[0].public_url, type: 'video' })}
-                  className="text-[8px] tracking-widest uppercase border border-neutral-300 px-1 py-0.5 hover:border-black transition-colors">
-                  ▶
+                  className="text-[9px] tracking-widest uppercase border border-neutral-300 px-1.5 py-0.5 hover:border-black transition-colors">
+                  ▶ Video ↗
                 </button>
               )}
             </div>
 
-            {/* Action buttons */}
-            <div className="flex-shrink-0 flex flex-col gap-0.5">
+            {/* Action buttons — compact stack */}
+            <div className="flex-shrink-0 flex flex-col gap-1">
               <button
                 onClick={() => {
                   const modelName = `${currentModel?.first_name} ${currentModel?.last_name}`
@@ -726,7 +707,7 @@ export function PresentationViewer({
                   if (isPending) { setUndoConfirmModal({ modelId: current.model_id, modelName }); return }
                   setConfirmModal({ modelId: current.model_id, modelName })
                 }}
-                className={`w-full text-[8px] tracking-widest uppercase border px-1 py-1 transition-colors text-center ${(adminConfirmed[current.model_id] && clientStatus[current.model_id] === "pending_confirmation") ? 'bg-green-600 text-white border-green-600 cursor-default' : (clientStatus[current.model_id] === "pending_confirmation") ? 'bg-amber-400 text-white border-amber-400 hover:bg-amber-500' : 'border-neutral-300 text-neutral-600 hover:border-black hover:text-black'}`}>
+                className={`w-full text-[9px] tracking-widest uppercase border px-2 py-1.5 transition-colors text-center ${(adminConfirmed[current.model_id] && clientStatus[current.model_id] === "pending_confirmation") ? 'bg-green-600 text-white border-green-600 cursor-default' : (clientStatus[current.model_id] === "pending_confirmation") ? 'bg-amber-400 text-white border-amber-400 hover:bg-amber-500' : 'border-neutral-300 text-neutral-600 hover:border-black hover:text-black'}`}>
                 {(adminConfirmed[current.model_id] && clientStatus[current.model_id] === "pending_confirmation") ? '✓' : (clientStatus[current.model_id] === "pending_confirmation") ? '⏳' : 'Confirm'}
               </button>
               <SlideActionsVertical presentationId={presentationId} modelId={current.model_id} clientId={clientId}
@@ -734,16 +715,16 @@ export function PresentationViewer({
                 onShortlistChange={(v) => handleShortlistChange(current.model_id, v)} model={currentModel} projectName={projectName} clientFirstName={clientFirstName} />
               <button
                 onClick={() => handleRelease(current.model_id)}
-                className={`w-full text-[8px] tracking-widest uppercase border px-1 py-1 transition-colors text-center ${releases[current.model_id] ? 'bg-neutral-200 border-neutral-300 text-neutral-600' : 'border-neutral-300 text-neutral-600 hover:border-black'}`}>
-                {releases[current.model_id] ? '✓' : 'Release'}
-              </button>
-              <button onClick={next} disabled={slideIndex === sorted.length - 1}
-                className="w-full flex items-center justify-center gap-0.5 text-[8px] tracking-widest uppercase border px-1 py-1 disabled:opacity-30 hover:border-black transition-colors">
-                Next <ChevronRight size={9} />
+                className={`w-full text-[9px] tracking-widest uppercase border px-2 py-1.5 transition-colors text-center ${releases[current.model_id] ? 'bg-neutral-200 border-neutral-300 text-neutral-600' : 'border-neutral-300 text-neutral-600 hover:border-black'}`}>
+                {releases[current.model_id] ? '✓ Release' : 'Release'}
               </button>
             </div>
 
-
+            {/* Next button footer — flex-shrink-0 ensures it stays visible */}
+            <button onClick={next} disabled={slideIndex === sorted.length - 1}
+              className="flex-shrink-0 w-full flex items-center justify-center gap-1 text-[9px] tracking-widest uppercase border px-2 py-1.5 disabled:opacity-30 hover:border-black transition-colors">
+              Next <ChevronRight size={10} />
+            </button>
           </div>
         </div>
       )}
@@ -945,8 +926,8 @@ function SlideActionsVertical({ presentationId, modelId, clientId, initialShortl
 
   return (
     <button onClick={toggle}
-      className={`w-full text-[8px] tracking-widest uppercase border px-1 py-1 transition-colors text-center flex items-center justify-center gap-0.5 ${shortlisted ? 'bg-black text-white border-black' : 'border-neutral-300 text-neutral-600 hover:border-black'}`}>
-      <Heart size={8} className={shortlisted ? 'fill-white text-white' : ''} />
+      className={`w-full text-[9px] tracking-widest uppercase border px-2 py-1.5 transition-colors text-center flex items-center justify-center gap-1 ${shortlisted ? 'bg-black text-white border-black' : 'border-neutral-300 text-neutral-600 hover:border-black'}`}>
+      <Heart size={10} className={shortlisted ? 'fill-white text-white' : ''} />
       {shortlisted ? '♡' : '♡'}
     </button>
   )
