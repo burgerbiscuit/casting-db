@@ -25,11 +25,13 @@ export function ImageCropper({ src, filename, onDone, onCancel }: Props) {
 
   const onImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
     const { width, height } = e.currentTarget
-    setCrop(centerAspectCrop(width, height, aspect ?? 3/4))
+    const initialCrop = centerAspectCrop(width, height, aspect ?? 3/4)
+    setCrop(initialCrop)
+    setCompletedCrop({ ...initialCrop, unit: 'px' } as PixelCrop)
   }
 
   const getCroppedBlob = useCallback(async () => {
-    if (!imgRef.current || !completedCrop) return
+    if (!imgRef.current || !completedCrop || completedCrop.width === 0 || completedCrop.height === 0) return
     const image = imgRef.current
     const canvas = document.createElement('canvas')
     const scaleX = image.naturalWidth / image.width
