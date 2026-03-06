@@ -304,6 +304,17 @@ export function ProjectPresentationTab({ projectId, presentationId: initialPresI
                 className="flex-1 border-b border-neutral-300 bg-transparent py-1.5 text-xs focus:outline-none focus:border-black placeholder:text-neutral-300" />
               <button type="submit" className="text-neutral-400 hover:text-black transition-colors"><Plus size={14} /></button>
             </form>
+
+            {/* Fill in option space */}
+            <div className="mt-6 pt-6 border-t border-neutral-100">
+              <p className="label mb-3">Additional Options</p>
+              <input
+                type="text"
+                placeholder="Add option..."
+                className="w-full border-b border-neutral-300 bg-transparent py-1.5 text-xs focus:outline-none focus:border-black placeholder:text-neutral-300"
+              />
+              <p className="text-[10px] text-neutral-400 mt-2">Use this space to fill in any additional presentation options or notes.</p>
+            </div>
           </div>
         </div>
 
