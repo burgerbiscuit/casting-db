@@ -635,45 +635,16 @@ export function PresentationViewer({
       {view === 'slides' && current && currentModel && (
         <div onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} className="fixed inset-0 bg-white z-40 flex flex-col overflow-hidden">
 
-          {/* Header — single compact row in landscape, taller in portrait/desktop */}
-          <div className="flex-shrink-0 border-b border-neutral-100">
-            <div className="flex items-center gap-3 px-4 py-2.5">
-              {/* Logo — hidden on mobile landscape to save space */}
-              <img src="/logo.jpg" alt="" className="h-3 w-auto opacity-50 hidden landscape:hidden md:block" />
-              {/* Name + sizing */}
-              <div className="flex-1 min-w-0">
-                <h2 className="text-base md:text-2xl font-light tracking-[0.12em] uppercase truncate">
-                  {currentModel.first_name} {currentModel.last_name}
-                </h2>
-                <p className="text-xs text-neutral-500 tracking-wide truncate">
-                  {getSizingParts(current, currentModel).join(' · ')}
-                </p>
-              </div>
-              {/* Action buttons — always in header, compact */}
-              <button
-                onClick={() => {
-                  const modelName = `${currentModel?.first_name} ${currentModel?.last_name}`
-                  const isOfficiallyConfirmed = adminConfirmed[current.model_id] && clientStatus[current.model_id] === "pending_confirmation"
-                  const isPending = clientStatus[current.model_id] === "pending_confirmation"
-                  if (isOfficiallyConfirmed) return
-                  if (isPending) { setUndoConfirmModal({ modelId: current.model_id, modelName }); return }
-                  setConfirmModal({ modelId: current.model_id, modelName })
-                }}
-                className={`flex-shrink-0 text-xs tracking-widest uppercase border px-3 py-2 transition-colors whitespace-nowrap ${(adminConfirmed[current.model_id] && clientStatus[current.model_id] === "pending_confirmation") ? 'bg-green-600 text-white border-green-600 cursor-default' : (clientStatus[current.model_id] === "pending_confirmation") ? 'bg-amber-400 text-white border-amber-400 hover:bg-amber-500' : 'border-neutral-300 text-neutral-500 hover:border-black hover:text-black'}`}>
-                {(adminConfirmed[current.model_id] && clientStatus[current.model_id] === "pending_confirmation") ? '✓ Confirmed' : (clientStatus[current.model_id] === "pending_confirmation") ? '⏳ Pending ✕' : 'Confirm'}
-              </button>
-              <SlideActions presentationId={presentationId} modelId={current.model_id} clientId={clientId}
-                initialShortlisted={!!shortlists[current.model_id]} initialNotes={shortlistMap[current.model_id]?.notes || ""} initialAuthor={shortlistMap[current.model_id]?.author_name || ''}
-                onShortlistChange={(v) => handleShortlistChange(current.model_id, v)} compact={true} model={currentModel} projectName={projectName} clientFirstName={clientFirstName} />
-              <button onClick={() => setView('grid')} className="flex-shrink-0 text-neutral-400 hover:text-black transition-colors text-lg leading-none">✕</button>
-            </div>
+          {/* Minimal header — just close button */}
+          <div className="flex-shrink-0 border-b border-neutral-100 px-4 py-2">
+            <button onClick={() => setView('grid')} className="text-neutral-400 hover:text-black transition-colors text-lg leading-none">✕</button>
           </div>
 
-          {/* Body: photos left + right panel */}
+          {/* Body: photos left + right panel with name/buttons */}
           <div className="flex flex-1 min-h-0 overflow-hidden">
 
             {/* Photos flush left */}
-            <div className="flex flex-1 min-w-0 gap-2 pt-4 pb-0 pl-0 pr-0 overflow-hidden">
+            <div className="flex flex-1 min-w-0 gap-2 pb-0 pl-4 pr-0 overflow-hidden">
               {currentMedia.length === 0 && (
                 <div className="bg-neutral-200 flex items-center justify-center text-neutral-400 text-xs flex-1">No photos</div>
               )}
@@ -686,17 +657,49 @@ export function PresentationViewer({
               ))}
             </div>
 
-            {/* Right panel: sidebar on desktop, bottom strip on mobile landscape */}
-            <div className={`flex-shrink-0 flex flex-col ${isMobile ? 'w-36 px-3 py-3' : 'w-48 xl:w-56 px-5 py-5'}`}>
-              <div className="flex-1 flex flex-col items-center justify-center space-y-4 text-center">
+            {/* Right panel: name, sizing, buttons, notes, links */}
+            <div className={`flex-shrink-0 flex flex-col border-l border-neutral-100 ${isMobile ? 'w-40 px-3 py-3' : 'w-52 xl:w-64 px-4 py-4'}`}>
+              {/* Name + sizing */}
+              <div className="mb-3 pb-3 border-b border-neutral-100">
+                <h2 className="text-sm md:text-base font-light tracking-[0.12em] uppercase mb-1">
+                  {currentModel.first_name} {currentModel.last_name}
+                </h2>
+                <p className="text-xs text-neutral-500 tracking-wide leading-tight">
+                  {getSizingParts(current, currentModel).join(' · ')}
+                </p>
+              </div>
+
+              {/* Action buttons */}
+              <div className="flex flex-col gap-2 mb-4">
+                <button
+                  onClick={() => {
+                    const modelName = `${currentModel?.first_name} ${currentModel?.last_name}`
+                    const isOfficiallyConfirmed = adminConfirmed[current.model_id] && clientStatus[current.model_id] === "pending_confirmation"
+                    const isPending = clientStatus[current.model_id] === "pending_confirmation"
+                    if (isOfficiallyConfirmed) return
+                    if (isPending) { setUndoConfirmModal({ modelId: current.model_id, modelName }); return }
+                    setConfirmModal({ modelId: current.model_id, modelName })
+                  }}
+                  className={`text-xs tracking-widest uppercase border px-2 py-1.5 transition-colors whitespace-nowrap text-center ${(adminConfirmed[current.model_id] && clientStatus[current.model_id] === "pending_confirmation") ? 'bg-green-600 text-white border-green-600 cursor-default' : (clientStatus[current.model_id] === "pending_confirmation") ? 'bg-amber-400 text-white border-amber-400 hover:bg-amber-500' : 'border-neutral-300 text-neutral-500 hover:border-black hover:text-black'}`}>
+                  {(adminConfirmed[current.model_id] && clientStatus[current.model_id] === "pending_confirmation") ? '✓ Confirmed' : (clientStatus[current.model_id] === "pending_confirmation") ? '⏳ Pending ✕' : 'Confirm'}
+                </button>
+                <div>
+                  <SlideActions presentationId={presentationId} modelId={current.model_id} clientId={clientId}
+                    initialShortlisted={!!shortlists[current.model_id]} initialNotes={shortlistMap[current.model_id]?.notes || ""} initialAuthor={shortlistMap[current.model_id]?.author_name || ''}
+                    onShortlistChange={(v) => handleShortlistChange(current.model_id, v)} compact={true} model={currentModel} projectName={projectName} clientFirstName={clientFirstName} />
+                </div>
+              </div>
+
+              {/* Admin notes / rate / location */}
+              <div className="flex-1 flex flex-col items-center justify-center space-y-3 text-center py-3 border-b border-neutral-100">
                 {current.admin_notes && (
-                  <p className="text-sm text-neutral-700 italic leading-relaxed">{current.admin_notes}</p>
+                  <p className="text-[11px] text-neutral-700 italic leading-relaxed">{current.admin_notes}</p>
                 )}
                 {current.rate && (
-                  <p className="text-base font-medium tracking-wider">{current.rate}</p>
+                  <p className="text-sm font-medium tracking-wider">{current.rate}</p>
                 )}
                 {current.location && (
-                  <p className="text-sm text-neutral-700 tracking-wider">{current.location}</p>
+                  <p className="text-xs text-neutral-700 tracking-wider">{current.location}</p>
                 )}
               </div>
 
