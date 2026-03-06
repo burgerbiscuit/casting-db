@@ -1,5 +1,12 @@
 {
   "framework": "nextjs",
   "buildCommand": "npm run build",
-  "installCommand": "npm install"
+  "installCommand": "npm install",
+  "functions": {
+    "app/api/scout/route.ts": { "maxDuration": 30 },
+    "app/api/assistant-submit/route.ts": { "maxDuration": 30 },
+    "app/api/cast-signin/media/route.ts": { "maxDuration": 30 },
+    "app/api/model-media-upload/route.ts": { "maxDuration": 30 },
+    "app/api/project-files/route.ts": { "maxDuration": 30 }
+  }
 }

@@ -544,11 +544,13 @@ export default function ScoutPage() {
             <div className="flex gap-3">
               {[0,1].map(i => (
                 <label key={i} className="flex-1 aspect-[3/4] border-2 border-dashed border-neutral-200 flex items-center justify-center cursor-pointer hover:border-black transition-colors overflow-hidden">
-                  <input type="file" accept="image/*" className="hidden" onChange={e => {
+                  <input type="file" accept="image/*" className="hidden" onChange={async e => {
                     const file = e.target.files?.[0]
                     if (!file) return
-                    const f = [...selfieFiles]; f[i] = file; setSelfieFiles(f)
-                    const u = [...selfieUrls]; u[i] = URL.createObjectURL(file); setSelfieUrls(u)
+                    const { compressImage } = await import('@/lib/compress-image')
+                    const compressed = await compressImage(file).catch(() => file)
+                    const f = [...selfieFiles]; f[i] = compressed; setSelfieFiles(f)
+                    const u = [...selfieUrls]; u[i] = URL.createObjectURL(compressed); setSelfieUrls(u)
                   }} />
                   {selfieUrls[i] ? <img src={selfieUrls[i]} className="w-full h-full object-cover" alt="" /> : <span className="text-xs text-neutral-300 tracking-widest uppercase">+ Photo {i+1}</span>}
                 </label>

@@ -777,12 +777,13 @@ export default function CastPage({ params }: { params: { slug: string } }) {
                 <div className="flex gap-3">
                   {[0, 1].map(i => (
                     <label key={i} className="flex-1 aspect-[3/4] border-2 border-dashed border-neutral-200 flex items-center justify-center cursor-pointer hover:border-black transition-colors overflow-hidden relative">
-                      <input type="file" accept="image/*" className="hidden" onChange={e => {
+                      <input type="file" accept="image/*" className="hidden" onChange={async e => {
                         const file = e.target.files?.[0]
                         if (!file) return
-                        if (file.size > 8 * 1024 * 1024) { alert('Photo is too large (max 8 MB). Please choose a smaller image.'); return }
-                        const newFiles = [...selfieFiles]; newFiles[i] = file; setSelfieFiles(newFiles)
-                        const newUrls = [...selfiePreviewUrls]; newUrls[i] = URL.createObjectURL(file); setSelfiePreviewUrls(newUrls)
+                        const { compressImage } = await import('@/lib/compress-image')
+                        const compressed = await compressImage(file).catch(() => file)
+                        const newFiles = [...selfieFiles]; newFiles[i] = compressed; setSelfieFiles(newFiles)
+                        const newUrls = [...selfiePreviewUrls]; newUrls[i] = URL.createObjectURL(compressed); setSelfiePreviewUrls(newUrls)
                       }} />
                       {selfiePreviewUrls[i]
                         ? <img src={selfiePreviewUrls[i]} className="w-full h-full object-cover" alt="" />
