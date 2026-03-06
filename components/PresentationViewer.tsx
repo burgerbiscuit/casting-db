@@ -661,6 +661,15 @@ export function PresentationViewer({
           onShortlistChange={(v) => handleShortlistChange(current.model_id, v)} model={currentModel} projectName={projectName} clientFirstName={clientFirstName} />
       </div>
     </div>
+
+    {/* MODEL INFO BAR: Name + Sizing */}
+    <div className="flex-shrink-0 border-b border-neutral-300 px-8 py-3 bg-white">
+      <h2 className="text-sm font-light tracking-[0.15em] uppercase mb-1">{currentModel.first_name} {currentModel.last_name}</h2>
+      <p className="text-[9px] text-neutral-600 tracking-wider">
+        {currentModel.primary_city && <>{currentModel.primary_city} · </>}
+        {getSizingParts(current, currentModel).join(' · ')}
+      </p>
+    </div>
     
     {/* BODY: Photos left + Notes right */}
     <div className="flex-1 flex overflow-hidden" style={{paddingBottom: '48px'}}>
@@ -688,8 +697,31 @@ export function PresentationViewer({
         </div>
       </div>
       
-      {/* RIGHT: Notes + Links */}
-      <div className="flex-shrink-0 border-l border-neutral-300 px-6 py-6 flex flex-col gap-3 overflow-y-auto" style={{width: '160px'}}>
+      {/* RIGHT: Backend fields + Notes + Links */}
+      <div className="flex-shrink-0 border-l border-neutral-300 px-6 py-6 flex flex-col gap-3 overflow-y-auto" style={{width: '180px'}}>
+        {/* Backend fields */}
+        {current.rate && (
+          <div className="text-[8px] border border-neutral-200 p-2 bg-neutral-50">
+            <p className="text-neutral-500 uppercase tracking-wider font-medium mb-1">Rate</p>
+            <p className="text-neutral-700">{current.rate}</p>
+          </div>
+        )}
+        
+        {current.option && (
+          <div className="text-[8px] border border-neutral-200 p-2 bg-neutral-50">
+            <p className="text-neutral-500 uppercase tracking-wider font-medium mb-1">Option</p>
+            <p className="text-neutral-700">{current.option}</p>
+          </div>
+        )}
+        
+        {current.location && (
+          <div className="text-[8px] border border-neutral-200 p-2 bg-neutral-50">
+            <p className="text-neutral-500 uppercase tracking-wider font-medium mb-1">Location</p>
+            <p className="text-neutral-700">{current.location}</p>
+          </div>
+        )}
+
+        {/* Notes textarea */}
         <textarea placeholder="Your notes..." 
           value={shortlistMap[current.model_id]?.notes || ""}
           onChange={(e) => {
