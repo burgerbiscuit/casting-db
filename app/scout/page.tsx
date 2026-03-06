@@ -61,6 +61,8 @@ export default function ScoutPage() {
   const [skillSuggestions, setSkillSuggestions] = useState<string[]>(SKILL_SUGGESTIONS)
   const [selfieFiles, setSelfieFiles] = useState<File[]>([])
   const [selfieUrls, setSelfieUrls] = useState<string[]>([])
+  const [photoErrors, setPhotoErrors] = useState<string[]>(['', ''])
+  const [photoCompressing, setPhotoCompressing] = useState<boolean[]>([false, false])
 
   const [form, setForm] = useState({
     first_name: '', last_name: '', email: '', phone: '',
@@ -540,20 +542,36 @@ export default function ScoutPage() {
           {/* Photos */}
           <div>
             <p className="label mb-2">Photos (Optional)</p>
-            <p className="text-xs text-neutral-400 mb-3">Upload up to 2 photos of yourself.</p>
+            <p className="text-xs text-neutral-400 mb-1">Upload up to 2 photos of yourself.</p>
+            <p className="text-[11px] text-neutral-300 mb-3">Max 8 MB per photo — large images are automatically compressed.</p>
             <div className="flex gap-3">
               {[0,1].map(i => (
-                <label key={i} className="flex-1 aspect-[3/4] border-2 border-dashed border-neutral-200 flex items-center justify-center cursor-pointer hover:border-black transition-colors overflow-hidden">
-                  <input type="file" accept="image/*" className="hidden" onChange={async e => {
-                    const file = e.target.files?.[0]
-                    if (!file) return
-                    const { compressImage } = await import('@/lib/compress-image')
-                    const compressed = await compressImage(file).catch(() => file)
-                    const f = [...selfieFiles]; f[i] = compressed; setSelfieFiles(f)
-                    const u = [...selfieUrls]; u[i] = URL.createObjectURL(compressed); setSelfieUrls(u)
-                  }} />
-                  {selfieUrls[i] ? <img src={selfieUrls[i]} className="w-full h-full object-cover" alt="" /> : <span className="text-xs text-neutral-300 tracking-widest uppercase">+ Photo {i+1}</span>}
-                </label>
+                <div key={i} className="flex-1 flex flex-col gap-1">
+                  <label className={`aspect-[3/4] border-2 border-dashed flex items-center justify-center cursor-pointer hover:border-black transition-colors overflow-hidden relative ${photoErrors[i] ? 'border-red-300' : 'border-neutral-200'}`}>
+                    <input type="file" accept="image/*" className="hidden" onChange={async e => {
+                      const file = e.target.files?.[0]
+                      if (!file) return
+                      // Immediate size check before compression
+                      if (file.size > 20 * 1024 * 1024) {
+                        const errs = [...photoErrors]; errs[i] = `Too large (${(file.size/1024/1024).toFixed(0)} MB). Max 8 MB.`; setPhotoErrors(errs)
+                        return
+                      }
+                      const errs = [...photoErrors]; errs[i] = ''; setPhotoErrors(errs)
+                      const compressing = [...photoCompressing]; compressing[i] = true; setPhotoCompressing(compressing)
+                      const { compressImage } = await import('@/lib/compress-image')
+                      const compressed = await compressImage(file).catch(() => file)
+                      const done = [...photoCompressing]; done[i] = false; setPhotoCompressing(done)
+                      const f = [...selfieFiles]; f[i] = compressed; setSelfieFiles(f)
+                      const u = [...selfieUrls]; u[i] = URL.createObjectURL(compressed); setSelfieUrls(u)
+                    }} />
+                    {photoCompressing[i]
+                      ? <span className="text-[10px] text-neutral-400 tracking-widest uppercase">Compressing…</span>
+                      : selfieUrls[i]
+                        ? <img src={selfieUrls[i]} className="w-full h-full object-cover" alt="" />
+                        : <span className="text-xs text-neutral-300 tracking-widest uppercase">+ Photo {i+1}</span>}
+                  </label>
+                  {photoErrors[i] && <p className="text-[10px] text-red-500">{photoErrors[i]}</p>}
+                </div>
               ))}
             </div>
           </div>

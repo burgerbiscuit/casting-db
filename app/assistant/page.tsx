@@ -22,6 +22,7 @@ export default function AssistantPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [resumeFile, setResumeFile] = useState<File | null>(null)
+  const [resumeError, setResumeError] = useState('')
 
   const [form, setForm] = useState({
     first_name: '', last_name: '', email: '', phone: '',
@@ -45,7 +46,7 @@ export default function AssistantPage() {
     e.preventDefault()
     if (!form.first_name || !form.last_name) { setError('Please enter your name.'); return }
     if (!form.email) { setError('Email is required.'); return }
-    if (resumeFile && resumeFile.size > 10 * 1024 * 1024) { setError('Resume file is too large (max 10 MB). Please compress it and try again.'); return }
+    if (resumeError) { setError(resumeError); return }
     setLoading(true); setError('')
 
     try {
@@ -208,28 +209,39 @@ export default function AssistantPage() {
           {/* Resume Upload */}
           <div>
             <p className="label mb-2">Resume *</p>
-            <p className="text-xs text-neutral-400 mb-3">PDF preferred. Max 10MB.</p>
+            <p className="text-xs text-neutral-400 mb-3">PDF preferred · Max 10 MB</p>
             {resumeFile ? (
-              <div className="flex items-center justify-between border border-neutral-200 px-4 py-3">
+              <div className={`flex items-center justify-between border px-4 py-3 ${resumeError ? 'border-red-300 bg-red-50' : 'border-neutral-200'}`}>
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 bg-neutral-100 flex items-center justify-center text-[10px] tracking-widest uppercase text-neutral-500">
                     {resumeFile.name.split('.').pop()?.toUpperCase()}
                   </div>
                   <div>
                     <p className="text-xs font-medium">{resumeFile.name}</p>
-                    <p className="text-[10px] text-neutral-400">{(resumeFile.size / 1024 / 1024).toFixed(1)} MB</p>
+                    <p className={`text-[10px] ${resumeError ? 'text-red-500 font-medium' : 'text-neutral-400'}`}>
+                      {(resumeFile.size / 1024 / 1024).toFixed(1)} MB
+                      {resumeError && ` — ${resumeError}`}
+                    </p>
                   </div>
                 </div>
-                <button type="button" onClick={() => setResumeFile(null)} className="text-neutral-300 hover:text-red-400 transition-colors">
+                <button type="button" onClick={() => { setResumeFile(null); setResumeError('') }} className="text-neutral-300 hover:text-red-400 transition-colors">
                   <X size={14} />
                 </button>
               </div>
             ) : (
               <label className="flex flex-col items-center justify-center border-2 border-dashed border-neutral-200 p-8 cursor-pointer hover:border-black transition-colors gap-3">
-                <input type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={e => setResumeFile(e.target.files?.[0] || null)} />
+                <input type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={e => {
+                  const file = e.target.files?.[0] || null
+                  setResumeFile(file)
+                  if (file && file.size > 10 * 1024 * 1024) {
+                    setResumeError(`Exceeds 10 MB limit (${(file.size/1024/1024).toFixed(1)} MB) — please compress before uploading`)
+                  } else {
+                    setResumeError('')
+                  }
+                }} />
                 <Upload size={20} className="text-neutral-300" />
                 <span className="text-xs tracking-widest uppercase text-neutral-400">Click to upload resume</span>
-                <span className="text-[10px] text-neutral-300">PDF, DOC, DOCX</span>
+                <span className="text-[10px] text-neutral-300">PDF, DOC, DOCX · Max 10 MB</span>
               </label>
             )}
           </div>

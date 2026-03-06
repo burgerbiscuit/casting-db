@@ -92,6 +92,8 @@ export default function CastPage({ params }: { params: { slug: string } }) {
   const [showBasedInSuggestions, setShowBasedInSuggestions] = useState(false)
   const [selfieFiles, setSelfieFiles] = useState<File[]>([])
   const [selfiePreviewUrls, setSelfiePreviewUrls] = useState<string[]>([])
+  const [photoErrors, setPhotoErrors] = useState<string[]>(['', ''])
+  const [photoCompressing, setPhotoCompressing] = useState<boolean[]>([false, false])
   const [showAgencySuggestions, setShowAgencySuggestions] = useState(false)
   const [showBoardSuggestions, setShowBoardSuggestions] = useState(false)
   const [showAgentNameSuggestions, setShowAgentNameSuggestions] = useState(false)
@@ -773,22 +775,35 @@ export default function CastPage({ params }: { params: { slug: string } }) {
 
               <div className="border-t border-neutral-100 pt-6 space-y-4">
                 <p className="label">Photos (Optional)</p>
-                <p className="text-xs text-neutral-400">Upload up to 2 photos of yourself.</p>
+                <p className="text-xs text-neutral-400 mb-0">Upload up to 2 photos of yourself.</p>
+                <p className="text-[11px] text-neutral-300">Max 8 MB per photo — large images are automatically compressed.</p>
                 <div className="flex gap-3">
                   {[0, 1].map(i => (
-                    <label key={i} className="flex-1 aspect-[3/4] border-2 border-dashed border-neutral-200 flex items-center justify-center cursor-pointer hover:border-black transition-colors overflow-hidden relative">
-                      <input type="file" accept="image/*" className="hidden" onChange={async e => {
-                        const file = e.target.files?.[0]
-                        if (!file) return
-                        const { compressImage } = await import('@/lib/compress-image')
-                        const compressed = await compressImage(file).catch(() => file)
-                        const newFiles = [...selfieFiles]; newFiles[i] = compressed; setSelfieFiles(newFiles)
-                        const newUrls = [...selfiePreviewUrls]; newUrls[i] = URL.createObjectURL(compressed); setSelfiePreviewUrls(newUrls)
-                      }} />
-                      {selfiePreviewUrls[i]
-                        ? <img src={selfiePreviewUrls[i]} className="w-full h-full object-cover" alt="" />
-                        : <span className="text-xs text-neutral-300 tracking-widest uppercase">+ Photo {i + 1}</span>}
-                    </label>
+                    <div key={i} className="flex-1 flex flex-col gap-1">
+                      <label className={`aspect-[3/4] border-2 border-dashed flex items-center justify-center cursor-pointer hover:border-black transition-colors overflow-hidden relative ${photoErrors[i] ? 'border-red-300' : 'border-neutral-200'}`}>
+                        <input type="file" accept="image/*" className="hidden" onChange={async e => {
+                          const file = e.target.files?.[0]
+                          if (!file) return
+                          if (file.size > 20 * 1024 * 1024) {
+                            const errs = [...photoErrors]; errs[i] = `Too large (${(file.size/1024/1024).toFixed(0)} MB). Max 8 MB.`; setPhotoErrors(errs)
+                            return
+                          }
+                          const errs = [...photoErrors]; errs[i] = ''; setPhotoErrors(errs)
+                          const comp = [...photoCompressing]; comp[i] = true; setPhotoCompressing(comp)
+                          const { compressImage } = await import('@/lib/compress-image')
+                          const compressed = await compressImage(file).catch(() => file)
+                          const done = [...photoCompressing]; done[i] = false; setPhotoCompressing(done)
+                          const newFiles = [...selfieFiles]; newFiles[i] = compressed; setSelfieFiles(newFiles)
+                          const newUrls = [...selfiePreviewUrls]; newUrls[i] = URL.createObjectURL(compressed); setSelfiePreviewUrls(newUrls)
+                        }} />
+                        {photoCompressing[i]
+                          ? <span className="text-[10px] text-neutral-400 tracking-widest uppercase">Compressing…</span>
+                          : selfiePreviewUrls[i]
+                            ? <img src={selfiePreviewUrls[i]} className="w-full h-full object-cover" alt="" />
+                            : <span className="text-xs text-neutral-300 tracking-widest uppercase">+ Photo {i + 1}</span>}
+                      </label>
+                      {photoErrors[i] && <p className="text-[10px] text-red-500">{photoErrors[i]}</p>}
+                    </div>
                   ))}
                 </div>
               </div>
