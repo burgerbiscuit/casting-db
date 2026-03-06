@@ -635,9 +635,11 @@ export function PresentationViewer({
 {view === 'slides' && current && currentModel && (
   <div onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} className="fixed inset-0 bg-white z-40 flex flex-col overflow-hidden" style={{height: '100vh'}}>
     
-    {/* TOP BAR: Logo (centered) */}
-    <div className="flex-shrink-0 px-8 py-3 flex items-center justify-center">
+    {/* TOP BAR: Logo (centered) + Exit button (right) */}
+    <div className="flex-shrink-0 px-8 py-3 flex items-center justify-between">
+      <button onClick={() => setView('grid')} className="text-neutral-400 hover:text-black transition-colors text-xs tracking-widest uppercase">← Back</button>
       <img src="/logo.jpg" alt="Logo" className="h-5 w-auto" />
+      <button onClick={() => setView('grid')} className="text-neutral-400 hover:text-black transition-colors">✕</button>
     </div>
 
     {/* MODEL INFO + BUTTONS BAR: Name/Sizing (left) | Confirm + Shortlist + Release (right) */}
