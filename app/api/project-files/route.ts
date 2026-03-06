@@ -1,6 +1,8 @@
 import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 
+export const config = { api: { bodyParser: { sizeLimit: '50mb' } } }
+
 async function assertTeamMember() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()

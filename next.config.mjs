@@ -2,6 +2,9 @@
 const nextConfig = {
   eslint: { ignoreDuringBuilds: true },
   typescript: { ignoreBuildErrors: true },
+  experimental: {
+    serverActions: { bodySizeLimit: '50mb' },
+  },
   headers: async () => [{
     source: '/(.*)',
     headers: [
