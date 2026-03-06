@@ -31,27 +31,43 @@ export function ImageCropper({ src, filename, onDone, onCancel }: Props) {
   }
 
   const getCroppedBlob = useCallback(async () => {
-    if (!imgRef.current || !completedCrop || completedCrop.width === 0 || completedCrop.height === 0) return
-    const image = imgRef.current
-    const canvas = document.createElement('canvas')
-    const scaleX = image.naturalWidth / image.width
-    const scaleY = image.naturalHeight / image.height
-    canvas.width = completedCrop.width * scaleX
-    canvas.height = completedCrop.height * scaleY
-    const ctx = canvas.getContext('2d')!
-    ctx.save()
-    ctx.translate(canvas.width / 2, canvas.height / 2)
-    ctx.rotate((rotate * Math.PI) / 180)
-    ctx.scale(scale, scale)
-    ctx.translate(-canvas.width / 2, -canvas.height / 2)
-    ctx.drawImage(
-      image,
-      completedCrop.x * scaleX, completedCrop.y * scaleY,
-      completedCrop.width * scaleX, completedCrop.height * scaleY,
-      0, 0, canvas.width, canvas.height
-    )
-    ctx.restore()
-    return new Promise<Blob>((resolve) => canvas.toBlob(b => resolve(b!), 'image/jpeg', 0.95))
+    try {
+      if (!imgRef.current || !completedCrop || completedCrop.width === 0 || completedCrop.height === 0) {
+        console.warn('Crop missing:', { imgRef: !!imgRef.current, completedCrop })
+        return null
+      }
+      const image = imgRef.current
+      const canvas = document.createElement('canvas')
+      const scaleX = image.naturalWidth / image.width
+      const scaleY = image.naturalHeight / image.height
+      canvas.width = Math.round(completedCrop.width * scaleX)
+      canvas.height = Math.round(completedCrop.height * scaleY)
+      const ctx = canvas.getContext('2d')
+      if (!ctx) throw new Error('Could not get canvas context')
+      ctx.save()
+      ctx.translate(canvas.width / 2, canvas.height / 2)
+      ctx.rotate((rotate * Math.PI) / 180)
+      ctx.scale(scale, scale)
+      ctx.translate(-canvas.width / 2, -canvas.height / 2)
+      ctx.drawImage(
+        image,
+        completedCrop.x * scaleX, completedCrop.y * scaleY,
+        completedCrop.width * scaleX, completedCrop.height * scaleY,
+        0, 0, canvas.width, canvas.height
+      )
+      ctx.restore()
+      return new Promise<Blob | null>((resolve) => {
+        try {
+          canvas.toBlob(b => resolve(b || null), 'image/jpeg', 0.95)
+        } catch (e) {
+          console.error('toBlob error:', e)
+          resolve(null)
+        }
+      })
+    } catch (e) {
+      console.error('getCroppedBlob error:', e)
+      return null
+    }
   }, [completedCrop, rotate, scale])
 
   const handleDone = async () => {
