@@ -697,21 +697,17 @@ export function PresentationViewer({
       <div className="flex-shrink-0 border-l border-neutral-300 px-6 py-6 flex flex-col gap-3 overflow-y-auto" style={{width: '160px'}}>
         <textarea placeholder="Your notes..." 
           value={shortlistMap[current.model_id]?.notes || ""}
-          onChange={async (e) => {
+          onChange={(e) => {
             const val = e.target.value
-            try {
-              await fetch('/api/shortlist', {
-                method: 'POST',
-                body: JSON.stringify({
-                  action: 'updateNotes',
-                  presentationId,
-                  modelId: current.model_id,
-                  notes: val,
-                }),
-              })
-            } catch (err) {
-              console.error('Save notes failed:', err)
-            }
+            fetch('/api/shortlist', {
+              method: 'POST',
+              body: JSON.stringify({
+                action: 'updateNotes',
+                presentationId,
+                modelId: current.model_id,
+                notes: val,
+              }),
+            }).catch(err => console.error('Save notes failed:', err))
           }}
           className="w-full text-[8px] border border-neutral-300 bg-white p-2 focus:outline-none focus:border-black resize-none placeholder:text-neutral-400" 
           rows={4} />
