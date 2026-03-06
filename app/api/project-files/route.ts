@@ -6,8 +6,12 @@ async function assertTeamMember() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
   const svc = await createServiceClient()
+  // Accept any user who is either a team member OR matches an admin email
   const { data: member } = await svc.from('team_members').select('id').eq('user_id', user.id).single()
-  return member ? user : null
+  if (member) return user
+  // Fallback: accept by email match (handles session/account mismatches)
+  const { data: memberByEmail } = await svc.from('team_members').select('id').eq('email', user.email).single()
+  return memberByEmail ? user : null
 }
 
 // POST — upload one or more files
