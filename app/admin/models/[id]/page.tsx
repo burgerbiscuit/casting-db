@@ -106,6 +106,24 @@ export default function ModelProfile({ params }: { params: { id: string } }) {
   const markReviewed = async (val: boolean) => {
     await supabase.from('models').update({ reviewed: val }).eq('id', model.id)
     setModel((m: any) => ({ ...m, reviewed: val }))
+    
+    // If marking as reviewed, go to next unreviewed model
+    if (val) {
+      const { data: nextModel } = await supabase
+        .from('models')
+        .select('id')
+        .eq('reviewed', false)
+        .order('created_at', { ascending: true })
+        .limit(1)
+        .single()
+      
+      if (nextModel?.id) {
+        router.push(`/admin/models/${nextModel.id}`)
+      } else {
+        // No more unreviewed models — go back to reviews
+        router.push('/admin/reviews')
+      }
+    }
   }
 
   const deleteMedia = async (mediaId: string, storagePath: string) => {
