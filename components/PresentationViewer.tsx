@@ -640,11 +640,11 @@ export function PresentationViewer({
             <button onClick={() => setView('grid')} className="text-neutral-400 hover:text-black transition-colors text-lg leading-none">✕</button>
           </div>
 
-          {/* Body: photos left + right panel with name/buttons */}
-          <div className="flex flex-1 min-h-0 overflow-hidden">
+          {/* Body: photos left + right panel with name/buttons — flex to fill remaining space */}
+          <div className="flex flex-1 min-h-0 overflow-hidden gap-0">
 
-            {/* Photos flush left — constrained height to fit buttons */}
-            <div className="flex flex-1 min-w-0 gap-2 pb-0 pl-4 pr-0 overflow-hidden" style={{maxHeight: 'calc(100vh - 140px)'}}>
+            {/* Photos flush left — take up remaining space */}
+            <div className="flex flex-1 min-w-0 gap-2 pb-0 pl-4 pr-0 overflow-hidden">
               {currentMedia.length === 0 && (
                 <div className="bg-neutral-200 flex items-center justify-center text-neutral-400 text-xs flex-1">No photos</div>
               )}
@@ -657,10 +657,10 @@ export function PresentationViewer({
               ))}
             </div>
 
-            {/* Right panel: name, sizing, buttons, notes, links — scrollable */}
-            <div className={`flex-shrink-0 flex flex-col border-l border-neutral-100 overflow-y-auto min-h-0 ${isMobile ? 'w-40 px-3 py-3' : 'w-52 xl:w-64 px-4 py-4'}`}>
-              {/* Sticky header: Name + sizing + buttons */}
-              <div className="flex-shrink-0 sticky top-0 bg-white pb-3 border-b border-neutral-100 mb-3">
+            {/* Right panel: name, sizing, buttons, notes, links — fixed width, scrollable */}
+            <div className={`flex-shrink-0 flex flex-col border-l border-neutral-100 overflow-y-auto max-h-full ${isMobile ? 'w-40 px-3 py-3' : 'w-52 xl:w-64 px-4 py-4'}`}>
+              {/* Sticky header: Name + sizing + buttons — stays at top */}
+              <div className="flex-shrink-0 sticky top-0 bg-white pb-2 border-b border-neutral-100" style={{zIndex: 10}}>
                 {/* Name + sizing */}
                 <div className="mb-3">
                   <h2 className="text-sm md:text-base font-light tracking-[0.12em] uppercase mb-1">
@@ -672,7 +672,7 @@ export function PresentationViewer({
                 </div>
 
                 {/* Action buttons */}
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-2 w-full">
                   <button
                     onClick={() => {
                       const modelName = `${currentModel?.first_name} ${currentModel?.last_name}`
@@ -682,14 +682,12 @@ export function PresentationViewer({
                       if (isPending) { setUndoConfirmModal({ modelId: current.model_id, modelName }); return }
                       setConfirmModal({ modelId: current.model_id, modelName })
                     }}
-                    className={`text-xs tracking-widest uppercase border px-2 py-1.5 transition-colors whitespace-nowrap text-center ${(adminConfirmed[current.model_id] && clientStatus[current.model_id] === "pending_confirmation") ? 'bg-green-600 text-white border-green-600 cursor-default' : (clientStatus[current.model_id] === "pending_confirmation") ? 'bg-amber-400 text-white border-amber-400 hover:bg-amber-500' : 'border-neutral-300 text-neutral-500 hover:border-black hover:text-black'}`}>
+                    className={`w-full text-xs tracking-widest uppercase border px-2 py-1.5 transition-colors text-center ${(adminConfirmed[current.model_id] && clientStatus[current.model_id] === "pending_confirmation") ? 'bg-green-600 text-white border-green-600 cursor-default' : (clientStatus[current.model_id] === "pending_confirmation") ? 'bg-amber-400 text-white border-amber-400 hover:bg-amber-500' : 'border-neutral-300 text-neutral-500 hover:border-black hover:text-black'}`}>
                     {(adminConfirmed[current.model_id] && clientStatus[current.model_id] === "pending_confirmation") ? '✓ Confirmed' : (clientStatus[current.model_id] === "pending_confirmation") ? '⏳ Pending ✕' : 'Confirm'}
                   </button>
-                  <div>
-                    <SlideActions presentationId={presentationId} modelId={current.model_id} clientId={clientId}
-                      initialShortlisted={!!shortlists[current.model_id]} initialNotes={shortlistMap[current.model_id]?.notes || ""} initialAuthor={shortlistMap[current.model_id]?.author_name || ''}
-                      onShortlistChange={(v) => handleShortlistChange(current.model_id, v)} compact={true} model={currentModel} projectName={projectName} clientFirstName={clientFirstName} />
-                  </div>
+                  <SlideActions presentationId={presentationId} modelId={current.model_id} clientId={clientId}
+                    initialShortlisted={!!shortlists[current.model_id]} initialNotes={shortlistMap[current.model_id]?.notes || ""} initialAuthor={shortlistMap[current.model_id]?.author_name || ''}
+                    onShortlistChange={(v) => handleShortlistChange(current.model_id, v)} compact={true} model={currentModel} projectName={projectName} clientFirstName={clientFirstName} />
                 </div>
               </div>
 
