@@ -635,34 +635,11 @@ export function PresentationViewer({
       {view === 'slides' && current && currentModel && (
         <div onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} className="fixed inset-0 bg-white z-40 flex flex-row overflow-hidden" style={{height: '100vh'}}>
 
-          {/* Left: 2 photos side by side */}
-          <div className="flex-1 flex gap-3 overflow-hidden px-6 py-6 bg-neutral-50 items-center justify-center min-w-0">
-            {/* Photo 1 */}
-            <div className="flex-1 h-full bg-neutral-200 flex items-center justify-center overflow-hidden min-w-0">
-              {photoMedia[0] ? (
-                photoMedia[0].type === 'video'
-                  ? <video src={photoMedia[0].public_url} className="w-full h-full object-cover" controls />
-                  : <img src={photoMedia[0].public_url} alt={currentModel.first_name} className="w-full h-full object-cover object-top" />
-              ) : (
-                <div className="text-neutral-400 text-sm">No photo</div>
-              )}
-            </div>
-
-            {/* Photo 2 */}
-            <div className="flex-1 h-full bg-neutral-200 flex items-center justify-center overflow-hidden min-w-0">
-              {photoMedia[1] ? (
-                photoMedia[1].type === 'video'
-                  ? <video src={photoMedia[1].public_url} className="w-full h-full object-cover" controls />
-                  : <img src={photoMedia[1].public_url} alt={currentModel.first_name} className="w-full h-full object-cover object-top" />
-              ) : null}
-            </div>
-          </div>
-
-          {/* Right sidebar: info + buttons */}
-          <div className="flex-shrink-0 border-l border-neutral-100 px-6 py-6 flex flex-col gap-4 overflow-y-auto" style={{width: '280px'}}>
-            {/* Name + sizing */}
-            <div>
-              <h2 className="text-lg font-light tracking-[0.12em] uppercase mb-2 leading-tight">
+          {/* Left: name/sizing + 2 photos */}
+          <div className="flex-1 flex flex-col overflow-hidden px-6 py-6 bg-neutral-50 min-w-0">
+            {/* Name + sizing at top */}
+            <div className="flex-shrink-0 mb-4 pb-4 border-b border-neutral-200">
+              <h2 className="text-lg font-light tracking-[0.12em] uppercase mb-1 leading-tight">
                 {currentModel.first_name} {currentModel.last_name}
               </h2>
               <p className="text-[10px] text-neutral-600 tracking-wide leading-tight">
@@ -671,6 +648,32 @@ export function PresentationViewer({
               </p>
             </div>
 
+            {/* 2 photos side by side */}
+            <div className="flex-1 flex gap-3 overflow-hidden min-h-0">
+              {/* Photo 1 */}
+              <div className="flex-1 bg-neutral-200 flex items-center justify-center overflow-hidden min-w-0">
+                {photoMedia[0] ? (
+                  photoMedia[0].type === 'video'
+                    ? <video src={photoMedia[0].public_url} className="w-full h-full object-cover" controls />
+                    : <img src={photoMedia[0].public_url} alt={currentModel.first_name} className="w-full h-full object-cover object-top" />
+                ) : (
+                  <div className="text-neutral-400 text-sm">No photo</div>
+                )}
+              </div>
+
+              {/* Photo 2 */}
+              <div className="flex-1 bg-neutral-200 flex items-center justify-center overflow-hidden min-w-0">
+                {photoMedia[1] ? (
+                  photoMedia[1].type === 'video'
+                    ? <video src={photoMedia[1].public_url} className="w-full h-full object-cover" controls />
+                    : <img src={photoMedia[1].public_url} alt={currentModel.first_name} className="w-full h-full object-cover object-top" />
+                ) : null}
+              </div>
+            </div>
+          </div>
+
+          {/* Right sidebar: buttons */}
+          <div className="flex-shrink-0 border-l border-neutral-100 px-6 py-6 flex flex-col gap-4 overflow-y-auto" style={{width: '280px'}}>
             {/* Links */}
             <div className="flex flex-col gap-2">
               {current.show_instagram && currentModel.instagram_handle && (
@@ -694,9 +697,6 @@ export function PresentationViewer({
                 </button>
               )}
             </div>
-
-            {/* Divider */}
-            <div className="border-t border-neutral-200"></div>
 
             {/* Action buttons */}
             <div className="flex flex-col gap-2">
