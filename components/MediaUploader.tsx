@@ -3,6 +3,7 @@ import { useCallback, useState } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { Upload } from 'lucide-react'
 import { ImageCropper } from './ImageCropper'
+import { createClient } from '@/lib/supabase/client'
 
 interface MediaUploaderProps {
   modelId: string
@@ -24,12 +25,29 @@ export function MediaUploader({ modelId, onUploaded, mediaType }: MediaUploaderP
 
   const uploadBlob = async (blob: Blob, filename: string, index: number, total: number) => {
     setProgress(`Uploading ${index + 1} of ${total}...`)
-    const type = mediaType || (blob.type.startsWith('video') ? 'video' : 'photo')
-    const fd = new FormData()
-    fd.append('modelId', modelId)
-    fd.append('mediaType', type)
-    fd.append('file', new File([blob], filename, { type: blob.type }))
-    await fetch('/api/model-media-upload', { method: 'POST', body: fd })
+    const type = mediaType || (blob.type.startsWith('video/') ? 'video' : 'photo')
+    const isVideo = blob.type.startsWith('video/')
+
+    if (isVideo) {
+      // Upload videos directly to Supabase (bypasses Vercel 4.5MB limit)
+      const supabase = createClient()
+      const ext = filename.split('.').pop()?.toLowerCase() || 'mp4'
+      const path = `${modelId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+      const { error: upErr } = await supabase.storage.from('model-media').upload(path, blob, { contentType: blob.type })
+      if (upErr) { console.error('Video upload error:', upErr.message); return }
+      const { data: { publicUrl } } = supabase.storage.from('model-media').getPublicUrl(path)
+      await supabase.from('model_media').insert({
+        model_id: modelId, storage_path: path, public_url: publicUrl,
+        type: 'video', is_visible: true, uploaded_at: new Date().toISOString(),
+      })
+    } else {
+      // Photos go through API (crop flow)
+      const fd = new FormData()
+      fd.append('modelId', modelId)
+      fd.append('mediaType', type)
+      fd.append('file', new File([blob], filename, { type: blob.type }))
+      await fetch('/api/model-media-upload', { method: 'POST', body: fd })
+    }
   }
 
   const onDrop = useCallback(async (files: File[]) => {
