@@ -753,24 +753,8 @@ export function PresentationViewer({
     </div>
   </div>
 )}
-    setNotes(val)
-    try {
-      await fetch('/api/shortlist', {
-        method: 'POST',
-        body: JSON.stringify({
-          action: 'updateNotes',
-          presentationId,
-          modelId,
-          notes: val,
-        }),
-      })
-    } catch (err) {
-      console.error('Save notes failed:', err)
-    }
-  }
 
-
-  if (compact) return (
+    if (compact) return (
     <div className="flex items-center gap-2 relative">
       {toast && (
         <div className="absolute -top-8 right-0 bg-black text-white text-[10px] px-2 py-1 whitespace-nowrap tracking-wider">{toast}</div>
