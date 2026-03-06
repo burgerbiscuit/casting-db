@@ -61,14 +61,20 @@ export function ImageCropper({ src, filename, onDone, onCancel }: Props) {
         try {
           canvas.toBlob(
             (blob) => {
-              if (blob) resolve(blob)
-              else resolve(null)
+              if (blob) {
+                console.log('toBlob success:', blob.size)
+                resolve(blob)
+              } else {
+                console.warn('toBlob returned null')
+                resolve(null)
+              }
             },
             'image/jpeg',
             0.95
           )
         } catch (e) {
-          console.error('toBlob error:', e)
+          console.error('toBlob SecurityError (CORS):', e)
+          // Fall back to original on CORS error
           resolve(null)
         }
       })
@@ -142,7 +148,7 @@ export function ImageCropper({ src, filename, onDone, onCancel }: Props) {
         <div className="flex-1 overflow-auto flex items-center justify-center p-4 bg-neutral-50 min-h-0">
           <ReactCrop crop={crop} onChange={c => setCrop(c)} onComplete={c => setCompletedCrop(c)}
             aspect={aspect} minWidth={50} minHeight={50}>
-            <img ref={imgRef} src={src} alt="Crop" onLoad={onImageLoad}
+            <img ref={imgRef} src={src} alt="Crop" onLoad={onImageLoad} crossOrigin="anonymous"
               style={{ transform: `rotate(${rotate}deg) scale(${scale})`, maxHeight: '50vh', maxWidth: '100%' }} />
           </ReactCrop>
         </div>
