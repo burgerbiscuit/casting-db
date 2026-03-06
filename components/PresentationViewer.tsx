@@ -643,8 +643,8 @@ export function PresentationViewer({
           {/* Body: photos left + right panel with name/buttons — flex to fill remaining space */}
           <div className="flex flex-1 min-h-0 overflow-hidden gap-0">
 
-            {/* Photos flush left — take up remaining space */}
-            <div className="flex flex-1 min-w-0 gap-2 pb-0 pl-4 pr-0 overflow-hidden">
+            {/* Photos flush left — constrained to 50vh max */}
+            <div className="flex flex-1 min-w-0 gap-2 pb-0 pl-4 pr-0 overflow-hidden max-h-[50vh]">
               {currentMedia.length === 0 && (
                 <div className="bg-neutral-200 flex items-center justify-center text-neutral-400 text-xs flex-1">No photos</div>
               )}
