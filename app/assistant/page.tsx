@@ -45,6 +45,7 @@ export default function AssistantPage() {
     e.preventDefault()
     if (!form.first_name || !form.last_name) { setError('Please enter your name.'); return }
     if (!form.email) { setError('Email is required.'); return }
+    if (resumeFile && resumeFile.size > 10 * 1024 * 1024) { setError('Resume file is too large (max 10 MB). Please compress it and try again.'); return }
     setLoading(true); setError('')
 
     try {
@@ -56,8 +57,9 @@ export default function AssistantPage() {
       if (resumeFile) fd.append('resume', resumeFile)
 
       const res = await fetch('/api/assistant-submit', { method: 'POST', body: fd })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Submission failed')
+      const ct = res.headers.get('content-type') || ''
+      const data = ct.includes('application/json') ? await res.json() : {}
+      if (!res.ok) throw new Error(res.status === 413 ? 'Resume is too large. Please compress it and try again.' : data.error || 'Submission failed')
       setStep('done')
     } catch (err: any) {
       setError(err.message || 'Something went wrong. Please try again.')

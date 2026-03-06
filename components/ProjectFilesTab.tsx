@@ -21,13 +21,18 @@ export default function ProjectFilesTab({ projectId, initialFiles }: { projectId
     setUploading(true)
     setError('')
     try {
+      const files = Array.from(fileList)
+      const oversized = files.find(f => f.size > 50 * 1024 * 1024)
+      if (oversized) throw new Error(`"${oversized.name}" exceeds 50 MB limit.`)
+
       const fd = new FormData()
       fd.append('projectId', projectId)
-      Array.from(fileList).forEach(f => fd.append('files', f))
+      files.forEach(f => fd.append('files', f))
 
       const res = await fetch('/api/project-files', { method: 'POST', body: fd })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Upload failed')
+      const ct = res.headers.get('content-type') || ''
+      const data = ct.includes('application/json') ? await res.json() : {}
+      if (!res.ok) throw new Error(res.status === 413 ? 'Files too large for a single upload. Try uploading fewer files at once.' : data.error || 'Upload failed')
       if (data.files?.length) setFiles(prev => [...prev, ...data.files])
       if (data.files?.length < fileList.length) setError('Some files failed to upload.')
     } catch (e: any) {

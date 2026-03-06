@@ -292,6 +292,7 @@ export default function CastPage({ params }: { params: { slug: string } }) {
       if (!modelId) throw new Error('No model ID returned')
 
       for (const file of selfieFiles.filter(Boolean)) {
+        if (file.size > 8 * 1024 * 1024) { console.warn('Skipping oversized photo:', file.name); continue }
         const fd = new FormData()
         fd.append('modelId', modelId)
         fd.append('file', file)
@@ -779,6 +780,7 @@ export default function CastPage({ params }: { params: { slug: string } }) {
                       <input type="file" accept="image/*" className="hidden" onChange={e => {
                         const file = e.target.files?.[0]
                         if (!file) return
+                        if (file.size > 8 * 1024 * 1024) { alert('Photo is too large (max 8 MB). Please choose a smaller image.'); return }
                         const newFiles = [...selfieFiles]; newFiles[i] = file; setSelfieFiles(newFiles)
                         const newUrls = [...selfiePreviewUrls]; newUrls[i] = URL.createObjectURL(file); setSelfiePreviewUrls(newUrls)
                       }} />

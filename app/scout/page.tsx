@@ -130,6 +130,9 @@ export default function ScoutPage() {
 
   const submit = async () => {
     if (!form.first_name || !form.last_name) { setError('Please enter your name.'); return }
+    // Validate file sizes before uploading
+    const oversized = selfieFiles.filter(Boolean).find(f => f.size > 8 * 1024 * 1024)
+    if (oversized) { setError(`"${oversized.name}" is too large (max 8 MB). Please choose a smaller photo.`); return }
     setLoading(true); setError('')
     try {
       // Use FormData so images upload server-side with service key (bypasses storage RLS)
@@ -141,8 +144,9 @@ export default function ScoutPage() {
       selfieFiles.filter(Boolean).forEach(file => fd.append('photos', file))
 
       const res = await fetch('/api/scout', { method: 'POST', body: fd })
-      const json = await res.json()
-      if (!res.ok) throw new Error(json.error || 'Submission failed')
+      const ct = res.headers.get('content-type') || ''
+      const json = ct.includes('application/json') ? await res.json() : {}
+      if (!res.ok) throw new Error(res.status === 413 ? 'Photos are too large. Please reduce file sizes and try again.' : json.error || 'Submission failed')
       setStep('done')
     } catch (e: any) {
       setError(e.message || 'Something went wrong. Please try again.')
