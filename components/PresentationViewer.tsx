@@ -635,120 +635,120 @@ export function PresentationViewer({
       {view === 'slides' && current && currentModel && (
         <div onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} className="fixed inset-0 bg-white z-40 flex flex-col overflow-hidden">
 
-          {/* Minimal header — just close button */}
-          <div className="flex-shrink-0 border-b border-neutral-100 px-4 py-2">
-            <button onClick={() => setView('grid')} className="text-neutral-400 hover:text-black transition-colors text-lg leading-none">✕</button>
-          </div>
-
-          {/* Body: photos left + right panel with name/buttons — flex to fill remaining space */}
-          <div className="flex flex-1 min-h-0 overflow-hidden gap-0">
-
-            {/* Photos flush left — constrained to 50vh max */}
-            <div className="flex flex-1 min-w-0 gap-2 pb-0 pl-4 pr-0 overflow-hidden max-h-[50vh]">
-              {currentMedia.length === 0 && (
-                <div className="bg-neutral-200 flex items-center justify-center text-neutral-400 text-xs flex-1">No photos</div>
-              )}
-              {photoMedia.slice(0, 2).map((m: any, i: number) => (
-                <div key={m.id} className="bg-neutral-200 overflow-hidden flex-1" style={{maxWidth:'calc(50% - 4px)'}}>
-                  {m.type === 'video'
-                    ? <video src={m.public_url} className="w-full h-full object-cover" controls />
-                    : <img src={m.public_url} alt="" className="w-full h-full object-cover object-top" />}
-                </div>
-              ))}
-            </div>
-
-            {/* Right panel: name, sizing, buttons, notes, links — fixed width, scrollable */}
-            <div className={`flex-shrink-0 flex flex-col border-l border-neutral-100 overflow-y-auto max-h-full ${isMobile ? 'w-40 px-3 py-3' : 'w-52 xl:w-64 px-4 py-4'}`}>
-              {/* Sticky header: Name + sizing + buttons — stays at top */}
-              <div className="flex-shrink-0 sticky top-0 bg-white pb-2 border-b border-neutral-100" style={{zIndex: 10}}>
-                {/* Name + sizing */}
-                <div className="mb-3">
-                  <h2 className="text-sm md:text-base font-light tracking-[0.12em] uppercase mb-1">
-                    {currentModel.first_name} {currentModel.last_name}
-                  </h2>
-                  <p className="text-xs text-neutral-500 tracking-wide leading-tight">
-                    {getSizingParts(current, currentModel).join(' · ')}
-                  </p>
-                </div>
-
-                {/* Action buttons */}
-                <div className="flex flex-col gap-2 w-full">
-                  <button
-                    onClick={() => {
-                      const modelName = `${currentModel?.first_name} ${currentModel?.last_name}`
-                      const isOfficiallyConfirmed = adminConfirmed[current.model_id] && clientStatus[current.model_id] === "pending_confirmation"
-                      const isPending = clientStatus[current.model_id] === "pending_confirmation"
-                      if (isOfficiallyConfirmed) return
-                      if (isPending) { setUndoConfirmModal({ modelId: current.model_id, modelName }); return }
-                      setConfirmModal({ modelId: current.model_id, modelName })
-                    }}
-                    className={`w-full text-xs tracking-widest uppercase border px-2 py-1.5 transition-colors text-center ${(adminConfirmed[current.model_id] && clientStatus[current.model_id] === "pending_confirmation") ? 'bg-green-600 text-white border-green-600 cursor-default' : (clientStatus[current.model_id] === "pending_confirmation") ? 'bg-amber-400 text-white border-amber-400 hover:bg-amber-500' : 'border-neutral-300 text-neutral-500 hover:border-black hover:text-black'}`}>
-                    {(adminConfirmed[current.model_id] && clientStatus[current.model_id] === "pending_confirmation") ? '✓ Confirmed' : (clientStatus[current.model_id] === "pending_confirmation") ? '⏳ Pending ✕' : 'Confirm'}
-                  </button>
-                  <SlideActions presentationId={presentationId} modelId={current.model_id} clientId={clientId}
-                    initialShortlisted={!!shortlists[current.model_id]} initialNotes={shortlistMap[current.model_id]?.notes || ""} initialAuthor={shortlistMap[current.model_id]?.author_name || ''}
-                    onShortlistChange={(v) => handleShortlistChange(current.model_id, v)} compact={true} model={currentModel} projectName={projectName} clientFirstName={clientFirstName} />
-                </div>
-              </div>
-
-              {/* Scrollable content below */}
-              {/* Admin notes / rate / location */}
-              <div className="flex-shrink-0 flex flex-col items-center justify-center space-y-3 text-center py-3 border-b border-neutral-100 mb-3">
-                {current.admin_notes && (
-                  <p className="text-[11px] text-neutral-700 italic leading-relaxed">{current.admin_notes}</p>
-                )}
-                {current.rate && (
-                  <p className="text-sm font-medium tracking-wider">{current.rate}</p>
-                )}
-                {current.location && (
-                  <p className="text-xs text-neutral-700 tracking-wider">{current.location}</p>
-                )}
-              </div>
-
-              {/* Client notes + links */}
-              <div className="flex-shrink-0 space-y-3">
-                <textarea
-                  value={clientNotes[current.model_id] || ''}
-                  onChange={e => handleClientNotesChange(current.model_id, e.target.value)}
-                  placeholder="Your notes..."
-                  rows={3}
-                  className="w-full text-sm bg-transparent resize-none focus:outline-none placeholder:text-neutral-300 leading-relaxed border-b border-neutral-200 pb-2"
-                />
-                <div className="space-y-1.5">
-                  {current.show_portfolio && currentModel.portfolio_url && (
-                    <a href={currentModel.portfolio_url.startsWith('http') ? currentModel.portfolio_url : 'https://' + currentModel.portfolio_url}
-                      target="_blank" rel="noopener noreferrer"
-                      className="block text-xs tracking-widest uppercase underline underline-offset-2 hover:opacity-60 transition-opacity">
-                      Portfolio ↗
-                    </a>
-                  )}
-                  {current.show_instagram && currentModel.instagram_handle && (
-                    <a href={"https://instagram.com/" + currentModel.instagram_handle}
-                      target="_blank" rel="noopener noreferrer"
-                      className="block text-xs tracking-widest uppercase underline underline-offset-2 hover:opacity-60 transition-opacity">
-                      Instagram ↗
-                    </a>
-                  )}
-                  {videoMedia.length > 0 && (
-                    <button onClick={() => setMediaModal({ url: videoMedia[0].public_url, type: 'video' })}
-                      className="block text-xs tracking-widest uppercase underline underline-offset-2 hover:opacity-60 transition-opacity">
-                      ▶ Video
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Prev / Next bottom bar */}
-          <div className="flex items-center justify-between px-8 py-3 border-t border-neutral-100 flex-shrink-0">
+          {/* Header: prev/next + counter + close */}
+          <div className="flex-shrink-0 border-b border-neutral-100 px-4 py-3 flex items-center justify-between">
             <button onClick={prev} disabled={slideIndex === 0}
-              className="flex items-center gap-2 text-xs tracking-widest uppercase disabled:opacity-20 hover:opacity-60 transition-opacity">
-              <ChevronLeft size={14} /> Prev
+              className="text-neutral-400 hover:text-black disabled:opacity-20 transition-colors">
+              <ChevronLeft size={16} />
             </button>
-            <span className="text-xs text-neutral-400">{slideIndex + 1} / {sorted.length}</span>
+            <span className="text-xs text-neutral-400 tracking-widest uppercase">{slideIndex + 1} / {sorted.length}</span>
+            <button onClick={() => setView('grid')} className="text-neutral-400 hover:text-black transition-colors">✕</button>
+          </div>
+
+          {/* Main scrollable content */}
+          <div className="flex-1 overflow-y-auto flex flex-col px-4">
+            {/* Photo — sized for visibility */}
+            <div className="w-full bg-neutral-200 flex items-center justify-center overflow-hidden my-4" style={{aspectRatio: '9/11', maxHeight: '60vh'}}>
+              {currentMedia.length === 0 && (
+                <div className="text-neutral-400 text-xs">No photos</div>
+              )}
+              {photoMedia[0] && (
+                <>
+                  {photoMedia[0].type === 'video'
+                    ? <video src={photoMedia[0].public_url} className="w-full h-full object-cover" controls />
+                    : <img src={photoMedia[0].public_url} alt={currentModel.first_name} className="w-full h-full object-cover object-top" />}
+                </>
+              )}
+            </div>
+
+            {/* Name + sizing */}
+            <div className="mb-4">
+              <h2 className="text-xl font-light tracking-[0.12em] uppercase mb-2">
+                {currentModel.first_name} {currentModel.last_name}
+              </h2>
+              <p className="text-sm text-neutral-600 tracking-wide space-y-1">
+                {currentModel.primary_city && <div>{currentModel.primary_city}</div>}
+                <div>{getSizingParts(current, currentModel).join(' · ')}</div>
+              </p>
+            </div>
+
+            {/* Links */}
+            <div className="flex gap-3 mb-4 flex-wrap">
+              {current.show_instagram && currentModel.instagram_handle && (
+                <a href={"https://instagram.com/" + currentModel.instagram_handle}
+                  target="_blank" rel="noopener noreferrer"
+                  className="text-xs tracking-widest uppercase border border-neutral-300 px-3 py-1.5 hover:border-black transition-colors">
+                  Instagram ↗
+                </a>
+              )}
+              {current.show_portfolio && currentModel.portfolio_url && (
+                <a href={currentModel.portfolio_url.startsWith('http') ? currentModel.portfolio_url : 'https://' + currentModel.portfolio_url}
+                  target="_blank" rel="noopener noreferrer"
+                  className="text-xs tracking-widest uppercase border border-neutral-300 px-3 py-1.5 hover:border-black transition-colors">
+                  Portfolio ↗
+                </a>
+              )}
+              {videoMedia.length > 0 && (
+                <button onClick={() => setMediaModal({ url: videoMedia[0].public_url, type: 'video' })}
+                  className="text-xs tracking-widest uppercase border border-neutral-300 px-3 py-1.5 hover:border-black transition-colors">
+                  ▶ Video ↗
+                </button>
+              )}
+            </div>
+
+            {/* Action buttons */}
+            <div className="space-y-2 mb-4">
+              <button
+                onClick={() => {
+                  const modelName = `${currentModel?.first_name} ${currentModel?.last_name}`
+                  const isOfficiallyConfirmed = adminConfirmed[current.model_id] && clientStatus[current.model_id] === "pending_confirmation"
+                  const isPending = clientStatus[current.model_id] === "pending_confirmation"
+                  if (isOfficiallyConfirmed) return
+                  if (isPending) { setUndoConfirmModal({ modelId: current.model_id, modelName }); return }
+                  setConfirmModal({ modelId: current.model_id, modelName })
+                }}
+                className={`w-full text-xs tracking-widest uppercase border px-4 py-3 transition-colors text-center ${(adminConfirmed[current.model_id] && clientStatus[current.model_id] === "pending_confirmation") ? 'bg-green-600 text-white border-green-600 cursor-default' : (clientStatus[current.model_id] === "pending_confirmation") ? 'bg-amber-400 text-white border-amber-400 hover:bg-amber-500' : 'border-neutral-300 text-neutral-600 hover:border-black hover:text-black'}`}>
+                {(adminConfirmed[current.model_id] && clientStatus[current.model_id] === "pending_confirmation") ? '✓ Officially Confirmed' : (clientStatus[current.model_id] === "pending_confirmation") ? '⏳ Pending Confirmation' : 'Request Confirmation'}
+              </button>
+              <SlideActionsVertical presentationId={presentationId} modelId={current.model_id} clientId={clientId}
+                initialShortlisted={!!shortlists[current.model_id]} initialNotes={shortlistMap[current.model_id]?.notes || ""} initialAuthor={shortlistMap[current.model_id]?.author_name || ''}
+                onShortlistChange={(v) => handleShortlistChange(current.model_id, v)} model={currentModel} projectName={projectName} clientFirstName={clientFirstName} />
+              <button
+                onClick={() => handleRelease(current.model_id)}
+                className={`w-full text-xs tracking-widest uppercase border px-4 py-3 transition-colors text-center ${releases[current.model_id] ? 'bg-neutral-200 border-neutral-300 text-neutral-600' : 'border-neutral-300 text-neutral-600 hover:border-black'}`}>
+                {releases[current.model_id] ? '✓ OK to Release' : 'OK to Release'}
+              </button>
+            </div>
+
+            {/* Admin notes + rate + location */}
+            <div className="text-center space-y-2 py-4 border-t border-neutral-100">
+              {current.admin_notes && (
+                <p className="text-xs text-neutral-600 italic">{current.admin_notes}</p>
+              )}
+              {current.rate && (
+                <p className="text-sm font-medium">{current.rate}</p>
+              )}
+              {current.location && (
+                <p className="text-xs text-neutral-600">{current.location}</p>
+              )}
+            </div>
+
+            {/* Client notes */}
+            <div className="pb-4">
+              <textarea
+                value={clientNotes[current.model_id] || ''}
+                onChange={e => handleClientNotesChange(current.model_id, e.target.value)}
+                placeholder="Your notes..."
+                rows={4}
+                className="w-full text-sm bg-transparent resize-none focus:outline-none placeholder:text-neutral-300 leading-relaxed border border-neutral-200 p-3"
+              />
+            </div>
+          </div>
+
+          {/* Next button footer */}
+          <div className="flex-shrink-0 border-t border-neutral-100 px-4 py-3">
             <button onClick={next} disabled={slideIndex === sorted.length - 1}
-              className="flex items-center gap-2 text-xs tracking-widest uppercase disabled:opacity-20 hover:opacity-60 transition-opacity">
+              className="w-full flex items-center justify-center gap-2 text-xs tracking-widest uppercase border px-4 py-3 disabled:opacity-30 hover:border-black transition-colors">
               Next <ChevronRight size={14} />
             </button>
           </div>
@@ -897,5 +897,64 @@ function SlideActions({ presentationId, modelId, clientId, initialShortlisted, i
       <textarea value={notes} onChange={e => saveNotes(e.target.value)} placeholder="Your notes..." 
         rows={2} className="w-full text-sm border-b border-neutral-200 bg-transparent py-2 focus:outline-none focus:border-black resize-none placeholder:text-neutral-300" />
     </div>
+  )
+}
+
+function SlideActionsVertical({ presentationId, modelId, clientId, initialShortlisted, initialNotes, initialAuthor, onShortlistChange, model, projectName, clientFirstName }: {
+  presentationId: string, modelId: string, clientId: string, initialShortlisted: boolean, initialNotes: string, initialAuthor?: string, onShortlistChange?: (v: boolean) => void, model?: any, projectName?: string, clientFirstName?: string
+}) {
+  const [shortlisted, setShortlisted] = useState(initialShortlisted)
+  const [notes, setNotes] = useState(initialNotes)
+  const [toast, setToast] = useState<string | null>(null)
+
+  const showToast = (msg: string) => {
+    setToast(msg)
+    setTimeout(() => setToast(null), 3000)
+  }
+
+  const toggle = async () => {
+    const next = !shortlisted
+    setShortlisted(next)
+    onShortlistChange?.(next)
+    try {
+      await fetch('/api/shortlist', {
+        method: 'POST',
+        body: JSON.stringify({
+          action: 'toggle',
+          presentationId,
+          modelId,
+          notes,
+        }),
+      })
+    } catch (err) {
+      console.error('Toggle failed:', err)
+      setShortlisted(!next)
+      onShortlistChange?.(!next)
+    }
+  }
+
+  const saveNotes = async (val: string) => {
+    setNotes(val)
+    try {
+      await fetch('/api/shortlist', {
+        method: 'POST',
+        body: JSON.stringify({
+          action: 'updateNotes',
+          presentationId,
+          modelId,
+          notes: val,
+        }),
+      })
+    } catch (err) {
+      console.error('Save notes failed:', err)
+    }
+  }
+
+  return (
+    <button onClick={toggle}
+      className={`w-full text-xs tracking-widest uppercase border px-4 py-3 transition-colors text-center flex items-center justify-center gap-2 ${shortlisted ? 'bg-black text-white border-black' : 'border-neutral-300 text-neutral-600 hover:border-black'}`}>
+      <Heart size={14} className={shortlisted ? 'fill-white text-white' : ''} />
+      {shortlisted ? '♡ Shortlist' : '♡ Shortlist'}
+    </button>
   )
 }
