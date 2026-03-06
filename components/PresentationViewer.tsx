@@ -633,10 +633,10 @@ export function PresentationViewer({
       })()}
 
       {view === 'slides' && current && currentModel && (
-        <div onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} className="fixed inset-0 bg-white z-40 flex overflow-hidden" style={{height: '100vh', width: '100vw', flexDirection: window.innerHeight < window.innerWidth ? 'row' : 'column', position: 'relative'}}>
+        <div onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} className="fixed inset-0 bg-white z-40 flex overflow-hidden" style={{height: '100vh', width: '100vw', flexDirection: isLandscape ? 'row' : 'column', position: 'relative'}}>
 
           {/* Landscape prev button — overlay on photo area */}
-          {window.innerHeight < window.innerWidth && (
+          {isLandscape && (
             <button onClick={prev} disabled={slideIndex === 0}
               className="absolute left-2 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-black disabled:opacity-20 transition-colors z-10">
               <ChevronLeft size={14} />
@@ -644,7 +644,7 @@ export function PresentationViewer({
           )}
 
           {/* Header — portrait only */}
-          {window.innerHeight >= window.innerWidth && (
+          {!isLandscape && (
             <div className="flex-shrink-0 border-b border-neutral-100 px-3 py-2 flex items-center justify-between" style={{height: '44px'}}>
               <button onClick={prev} disabled={slideIndex === 0}
                 className="text-neutral-400 hover:text-black disabled:opacity-20 transition-colors">
@@ -656,7 +656,7 @@ export function PresentationViewer({
           )}
 
           {/* Photo section */}
-          <div style={{flex: window.innerHeight < window.innerWidth ? '0 0 48%' : '1', minWidth: 0, minHeight: 0}} className="bg-neutral-200 flex items-center justify-center overflow-hidden p-3 border-neutral-100" style={{borderRight: window.innerHeight < window.innerWidth ? '1px solid #e5e5e5' : 'none'}}>
+          <div style={{flex: isLandscape ? '0 0 48%' : '1', minWidth: 0, minHeight: 0}} className="bg-neutral-200 flex items-center justify-center overflow-hidden p-3 border-neutral-100" style={{borderRight: isLandscape ? '1px solid #e5e5e5' : 'none'}}>
             {currentMedia.length === 0 && (
               <div className="text-neutral-400 text-xs">No photos</div>
             )}
@@ -670,10 +670,10 @@ export function PresentationViewer({
           </div>
 
           {/* Content panel */}
-          <div style={{flex: window.innerHeight < window.innerWidth ? '0 0 52%' : '0', minWidth: 0, minHeight: 0, overflowY: 'hidden'}} className="flex flex-col px-3 py-3 gap-2">
+          <div style={{flex: isLandscape ? '0 0 52%' : '0', minWidth: 0, minHeight: 0, overflowY: 'hidden'}} className="flex flex-col px-3 py-3 gap-2">
 
             {/* Landscape header — top of right panel */}
-            {window.innerHeight < window.innerWidth && (
+            {isLandscape && (
               <div className="flex-shrink-0 flex items-center justify-between pb-2 border-b border-neutral-100">
                 <span className="text-[9px] text-neutral-400 tracking-widest uppercase">{slideIndex + 1} / {sorted.length}</span>
                 <button onClick={() => setView('grid')} className="text-neutral-400 hover:text-black transition-colors">✕</button>
