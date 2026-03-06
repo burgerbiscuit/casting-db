@@ -669,19 +669,10 @@ export function PresentationViewer({
       </div>
     </div>
     
-    {/* BODY: 3 columns */}
+    {/* BODY: 2 columns (photos + notes) */}
     <div className="flex-1 flex overflow-hidden" style={{paddingBottom: '48px'}}>
       
-      {/* LEFT COLUMN: Name + Sizing */}
-      <div className="flex-shrink-0 border-r border-neutral-200 px-4 py-6 flex flex-col" style={{width: '180px'}}>
-        <h2 className="text-sm font-light tracking-[0.12em] uppercase mb-2 leading-tight">{currentModel.first_name} {currentModel.last_name}</h2>
-        <p className="text-[8px] text-neutral-600 tracking-wider leading-relaxed">
-          {currentModel.primary_city && <>{currentModel.primary_city} · </>}
-          {getSizingParts(current, currentModel).join(' · ')}
-        </p>
-      </div>
-      
-      {/* CENTER: 2 Photos */}
+      {/* LEFT: 2 Photos (expanded) */}
       <div className="flex-1 flex gap-4 overflow-hidden px-6 py-6 bg-white min-w-0">
         {/* Photo 1 */}
         <div className="flex-1 bg-neutral-200 flex items-center justify-center overflow-hidden">
@@ -704,7 +695,7 @@ export function PresentationViewer({
         </div>
       </div>
       
-      {/* RIGHT COLUMN: Notes + Links */}
+      {/* RIGHT: Notes + Links */}
       <div className="flex-shrink-0 border-l border-neutral-200 px-4 py-6 flex flex-col gap-3 overflow-y-auto" style={{width: '160px'}}>
         <textarea placeholder="Your notes..." 
           className="w-full text-[8px] border border-neutral-300 bg-white p-2 focus:outline-none focus:border-black resize-none placeholder:text-neutral-400" 
