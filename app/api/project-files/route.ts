@@ -1,7 +1,7 @@
 import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 
-export const config = { api: { bodyParser: { sizeLimit: '50mb' } } }
+export const maxDuration = 60
 
 async function assertTeamMember() {
   const supabase = await createClient()
