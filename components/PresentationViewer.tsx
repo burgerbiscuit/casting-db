@@ -632,222 +632,125 @@ export function PresentationViewer({
         )
       })()}
 
-      {view === 'slides' && current && currentModel && (
-        <div onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} className="fixed inset-0 bg-white z-40 flex flex-col overflow-hidden" style={{height: '100vh'}}>
-
-          {/* Top bar: logo + name/sizing + action buttons */}
-          <div className="flex-shrink-0 border-b border-neutral-100 px-6 py-3 flex items-center gap-4">
-            <img src="/logo.jpg" alt="Logo" className="h-8 w-auto" />
-            <div className="flex-1">
-              <h2 className="text-base font-light tracking-[0.12em] uppercase mb-0.5 leading-tight">
-                {currentModel.first_name} {currentModel.last_name}
-              </h2>
-              <p className="text-[9px] text-neutral-600 tracking-wide leading-tight">
-                {currentModel.primary_city && <>{currentModel.primary_city} · </>}
-                {getSizingParts(current, currentModel).join(' · ')}
-              </p>
-            </div>
-            
-            {/* Top right: confirm + shortlist buttons */}
-            <div className="flex gap-2 flex-shrink-0">
-              <button
-                onClick={() => {
-                  const modelName = `${currentModel?.first_name} ${currentModel?.last_name}`
-                  const isOfficiallyConfirmed = adminConfirmed[current.model_id] && clientStatus[current.model_id] === "pending_confirmation"
-                  const isPending = clientStatus[current.model_id] === "pending_confirmation"
-                  if (isOfficiallyConfirmed) return
-                  if (isPending) { setUndoConfirmModal({ modelId: current.model_id, modelName }); return }
-                  setConfirmModal({ modelId: current.model_id, modelName })
-                }}
-                className={`py-1 px-3 text-[9px] tracking-widest uppercase border transition-colors ${(adminConfirmed[current.model_id] && clientStatus[current.model_id] === "pending_confirmation") ? 'bg-green-600 text-white border-green-600 cursor-default' : (clientStatus[current.model_id] === "pending_confirmation") ? 'bg-amber-400 text-white border-amber-400 hover:bg-amber-500' : 'border-neutral-300 text-neutral-600 hover:border-black hover:text-black'}`}>
-                {(adminConfirmed[current.model_id] && clientStatus[current.model_id] === "pending_confirmation") ? '✓ CONFIRMED' : (clientStatus[current.model_id] === "pending_confirmation") ? '⏳ PENDING' : 'CONFIRM'}
-              </button>
-              
-              <SlideActionsVertical presentationId={presentationId} modelId={current.model_id} clientId={clientId}
-                initialShortlisted={!!shortlists[current.model_id]} initialNotes={shortlistMap[current.model_id]?.notes || ""} initialAuthor={shortlistMap[current.model_id]?.author_name || ''}
-                onShortlistChange={(v) => handleShortlistChange(current.model_id, v)} model={currentModel} projectName={projectName} clientFirstName={clientFirstName} />
-            </div>
-          </div>
-
-          {/* Main content: photos left, sidebar right */}
-          <div className="flex-1 flex overflow-hidden" style={{paddingBottom: '44px'}}>
-            {/* Left: 2 photos side by side */}
-            <div className="flex-1 flex gap-3 overflow-hidden px-6 py-6 bg-neutral-50 min-w-0">
-            {/* Name + sizing at top */}
-            <div className="flex-shrink-0 mb-4 pb-4 border-b border-neutral-200">
-              <h2 className="text-lg font-light tracking-[0.12em] uppercase mb-1 leading-tight">
-                {currentModel.first_name} {currentModel.last_name}
-              </h2>
-              <p className="text-[10px] text-neutral-600 tracking-wide leading-tight">
-                {currentModel.primary_city && <>{currentModel.primary_city} · </>}
-                {getSizingParts(current, currentModel).join(' · ')}
-              </p>
-            </div>
-
-            {/* 2 photos side by side */}
-            <div className="flex-1 flex gap-3 overflow-hidden min-h-0">
-              {/* Photo 1 */}
-              <div className="flex-1 bg-neutral-200 flex items-center justify-center overflow-hidden min-w-0">
-                {photoMedia[0] ? (
-                  photoMedia[0].type === 'video'
-                    ? <video src={photoMedia[0].public_url} className="w-full h-full object-cover" controls />
-                    : <img src={photoMedia[0].public_url} alt={currentModel.first_name} className="w-full h-full object-cover object-top" />
-                ) : (
-                  <div className="text-neutral-400 text-sm">No photo</div>
-                )}
-              </div>
-
-              {/* Photo 2 */}
-              <div className="flex-1 bg-neutral-200 flex items-center justify-center overflow-hidden min-w-0">
-                {photoMedia[1] ? (
-                  photoMedia[1].type === 'video'
-                    ? <video src={photoMedia[1].public_url} className="w-full h-full object-cover" controls />
-                    : <img src={photoMedia[1].public_url} alt={currentModel.first_name} className="w-full h-full object-cover object-top" />
-                ) : null}
-              </div>
-            </div>
-          </div>
-
-            {/* Right sidebar: notes + links */}
-            <div className="flex-shrink-0 border-l border-neutral-100 px-4 py-6 flex flex-col gap-3 overflow-y-auto" style={{width: '160px'}}>
-              {/* Notes placeholder */}
-              <textarea placeholder="Your notes..." 
-                className="w-full text-[8px] border border-neutral-300 bg-white p-2 focus:outline-none focus:border-black resize-none placeholder:text-neutral-400" 
-                rows={3} />
-              
-              {/* Links */}
-              {current.show_portfolio && currentModel.portfolio_url && (
-                <a href={currentModel.portfolio_url.startsWith('http') ? currentModel.portfolio_url : 'https://' + currentModel.portfolio_url}
-                  target="_blank" rel="noopener noreferrer"
-                  className="text-[8px] tracking-widest uppercase border border-neutral-300 px-2 py-1 hover:border-black transition-colors text-center">
-                  PORTFOLIO ↗
-                </a>
-              )}
-              {current.show_instagram && currentModel.instagram_handle && (
-                <a href={"https://instagram.com/" + currentModel.instagram_handle}
-                  target="_blank" rel="noopener noreferrer"
-                  className="text-[8px] tracking-widest uppercase border border-neutral-300 px-2 py-1 hover:border-black transition-colors text-center">
-                  INSTAGRAM ↗
-                </a>
-              )}
-              {videoMedia.length > 0 && (
-                <button onClick={() => setMediaModal({ url: videoMedia[0].public_url, type: 'video' })}
-                  className="text-[8px] tracking-widest uppercase border border-neutral-300 px-2 py-1 hover:border-black transition-colors text-center">
-                  ▶ VIDEO
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Bottom navigation bar */}
-          <div className="fixed bottom-0 left-0 right-0 border-t border-neutral-100 px-6 py-2 bg-white flex items-center justify-between" style={{height: '44px', zIndex: 50}}>
-            <div className="flex gap-2">
-              <button onClick={prev} disabled={slideIndex === 0}
-                className="py-1 px-2 text-neutral-400 hover:text-black disabled:opacity-20 transition-colors border border-neutral-300 text-[9px] tracking-widest uppercase">
-                PREV
-              </button>
-
-              <div className="px-2 py-1 text-center text-[9px] text-neutral-400 tracking-widest uppercase border border-neutral-300">
-                {slideIndex + 1} / {sorted.length}
-              </div>
-            </div>
-
-            <button onClick={next} disabled={slideIndex === sorted.length - 1}
-              className="py-1 px-2 text-neutral-400 hover:text-black disabled:opacity-20 transition-colors border border-neutral-300 text-[9px] tracking-widest uppercase ml-auto">
-              NEXT
-            </button>
-          </div>
-        </div>
-      )}
-
-      {mediaModal && (
-        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-8">
-          <button onClick={() => setMediaModal(null)} className="absolute top-4 right-4 text-white hover:opacity-60">
-            <X size={24} />
-          </button>
-          {mediaModal.type === 'video'
-            ? <video src={mediaModal.url} controls autoPlay className="max-w-full max-h-full" />
-            : <img src={mediaModal.url} alt="" className="max-w-full max-h-full object-contain" />}
-        </div>
-      )}
-
-      {/* Confirm talent modal */}
-      {confirmModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-6">
-          <div className="bg-white max-w-sm w-full p-8">
-            <h3 className="text-sm tracking-widest uppercase font-medium mb-2">Confirm Talent</h3>
-            <p className="text-sm text-neutral-600 mb-6">
-              Request confirmation for <strong>{confirmModal.modelName}</strong>? Your casting director will be notified.
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => { handleConfirm(confirmModal.modelId); setConfirmModal(null) }}
-                className="flex-1 py-3 text-xs tracking-widest uppercase bg-black text-white hover:bg-neutral-800 transition-colors">
-                Yes, Confirm
-              </button>
-              <button
-                onClick={() => setConfirmModal(null)}
-                className="flex-1 py-3 text-xs tracking-widest uppercase border border-neutral-300 hover:border-black transition-colors">
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Undo confirmation modal */}
-      {undoConfirmModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-6">
-          <div className="bg-white max-w-sm w-full p-8">
-            <h3 className="text-sm tracking-widest uppercase font-medium mb-2">Undo Confirmation</h3>
-            <p className="text-sm text-neutral-600 mb-6">
-              Cancel the confirmation request for <strong>{undoConfirmModal.modelName}</strong>?
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => { handleUndoConfirm(undoConfirmModal.modelId); setUndoConfirmModal(null) }}
-                className="flex-1 py-3 text-xs tracking-widest uppercase bg-black text-white hover:bg-neutral-800 transition-colors">
-                Yes, Undo
-              </button>
-              <button
-                onClick={() => setUndoConfirmModal(null)}
-                className="flex-1 py-3 text-xs tracking-widest uppercase border border-neutral-300 hover:border-black transition-colors">
-                Keep
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+{view === 'slides' && current && currentModel && (
+  <div onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} className="fixed inset-0 bg-white z-40 flex flex-col overflow-hidden" style={{height: '100vh'}}>
+    
+    {/* TOP BAR: Logo | Name/Sizing | Buttons */}
+    <div className="flex-shrink-0 border-b border-neutral-200 px-6 py-4 flex items-center gap-6">
+      <img src="/logo.jpg" alt="Logo" className="h-6 w-auto" />
+      
+      {/* Center: Name + Sizing */}
+      <div className="flex-1 text-center">
+        <h1 className="text-lg font-light tracking-[0.15em] uppercase mb-0.5">{currentModel.first_name} {currentModel.last_name}</h1>
+        <p className="text-[9px] text-neutral-600 tracking-wider">
+          {currentModel.primary_city && <>{currentModel.primary_city} · </>}
+          {getSizingParts(current, currentModel).join(' · ')}
+        </p>
+      </div>
+      
+      {/* Right: Buttons */}
+      <div className="flex gap-3 flex-shrink-0">
+        <button
+          onClick={() => {
+            const modelName = `${currentModel?.first_name} ${currentModel?.last_name}`
+            const isOfficiallyConfirmed = adminConfirmed[current.model_id] && clientStatus[current.model_id] === "pending_confirmation"
+            const isPending = clientStatus[current.model_id] === "pending_confirmation"
+            if (isOfficiallyConfirmed) return
+            if (isPending) { setUndoConfirmModal({ modelId: current.model_id, modelName }); return }
+            setConfirmModal({ modelId: current.model_id, modelName })
+          }}
+          className={`py-1 px-3 text-[9px] tracking-widest uppercase border ${(adminConfirmed[current.model_id] && clientStatus[current.model_id] === "pending_confirmation") ? 'bg-black text-white border-black' : 'border-neutral-300 text-neutral-600 hover:border-black'}`}>
+          CONFIRM
+        </button>
+        
+        <SlideActionsVertical presentationId={presentationId} modelId={current.model_id} clientId={clientId}
+          initialShortlisted={!!shortlists[current.model_id]} initialNotes={shortlistMap[current.model_id]?.notes || ""} initialAuthor={shortlistMap[current.model_id]?.author_name || ''}
+          onShortlistChange={(v) => handleShortlistChange(current.model_id, v)} model={currentModel} projectName={projectName} clientFirstName={clientFirstName} />
+      </div>
     </div>
-  )
-}
-
-function SlideActions({ presentationId, modelId, clientId, initialShortlisted, initialNotes, initialAuthor, onShortlistChange, compact, model, projectName, clientFirstName }: {
-  presentationId: string, modelId: string, clientId: string, initialShortlisted: boolean, initialNotes: string, initialAuthor?: string, onShortlistChange?: (v: boolean) => void, compact?: boolean, model?: any, projectName?: string, clientFirstName?: string
-}) {
-  const [shortlisted, setShortlisted] = useState(initialShortlisted)
-  const [notes, setNotes] = useState(initialNotes)
-  const [toast, setToast] = useState<string | null>(null)
-
-  const showToast = (msg: string) => {
-    setToast(msg)
-    setTimeout(() => setToast(null), 3000)
-  }
-
-  const toggle = async () => {
-    const next = !shortlisted
-    setShortlisted(next)
-    onShortlistChange?.(next)
-    try {
-      await fetch('/api/shortlist', {
-        method: 'POST',
-        body: JSON.stringify({
-          action: 'toggle',
-          presentationId,
-          modelId,
-          notes,
-        }),
-      })
+    
+    {/* BODY: 3 columns */}
+    <div className="flex-1 flex overflow-hidden" style={{paddingBottom: '48px'}}>
+      
+      {/* LEFT COLUMN: Name + Sizing */}
+      <div className="flex-shrink-0 border-r border-neutral-200 px-4 py-6 flex flex-col" style={{width: '180px'}}>
+        <h2 className="text-sm font-light tracking-[0.12em] uppercase mb-2 leading-tight">{currentModel.first_name} {currentModel.last_name}</h2>
+        <p className="text-[8px] text-neutral-600 tracking-wider leading-relaxed">
+          {currentModel.primary_city && <>{currentModel.primary_city} · </>}
+          {getSizingParts(current, currentModel).join(' · ')}
+        </p>
+      </div>
+      
+      {/* CENTER: 2 Photos */}
+      <div className="flex-1 flex gap-4 overflow-hidden px-6 py-6 bg-white min-w-0">
+        {/* Photo 1 */}
+        <div className="flex-1 bg-neutral-200 flex items-center justify-center overflow-hidden">
+          {photoMedia[0] ? (
+            photoMedia[0].type === 'video'
+              ? <video src={photoMedia[0].public_url} className="w-full h-full object-cover" controls />
+              : <img src={photoMedia[0].public_url} alt={currentModel.first_name} className="w-full h-full object-cover object-top" />
+          ) : (
+            <div className="text-neutral-400 text-sm">No photo</div>
+          )}
+        </div>
+        
+        {/* Photo 2 */}
+        <div className="flex-1 bg-neutral-200 flex items-center justify-center overflow-hidden">
+          {photoMedia[1] ? (
+            photoMedia[1].type === 'video'
+              ? <video src={photoMedia[1].public_url} className="w-full h-full object-cover" controls />
+              : <img src={photoMedia[1].public_url} alt={currentModel.first_name} className="w-full h-full object-cover object-top" />
+          ) : null}
+        </div>
+      </div>
+      
+      {/* RIGHT COLUMN: Notes + Links */}
+      <div className="flex-shrink-0 border-l border-neutral-200 px-4 py-6 flex flex-col gap-3 overflow-y-auto" style={{width: '160px'}}>
+        <textarea placeholder="Your notes..." 
+          className="w-full text-[8px] border border-neutral-300 bg-white p-2 focus:outline-none focus:border-black resize-none placeholder:text-neutral-400" 
+          rows={4} />
+        
+        {current.show_portfolio && currentModel.portfolio_url && (
+          <a href={currentModel.portfolio_url.startsWith('http') ? currentModel.portfolio_url : 'https://' + currentModel.portfolio_url}
+            target="_blank" rel="noopener noreferrer"
+            className="text-[8px] tracking-widest uppercase border border-neutral-300 px-2 py-1 hover:border-black transition-colors text-center">
+            PORTFOLIO ↗
+          </a>
+        )}
+        
+        {current.show_instagram && currentModel.instagram_handle && (
+          <a href={"https://instagram.com/" + currentModel.instagram_handle}
+            target="_blank" rel="noopener noreferrer"
+            className="text-[8px] tracking-widest uppercase border border-neutral-300 px-2 py-1 hover:border-black transition-colors text-center">
+            INSTAGRAM ↗
+          </a>
+        )}
+        
+        {videoMedia.length > 0 && (
+          <button onClick={() => setMediaModal({ url: videoMedia[0].public_url, type: 'video' })}
+            className="text-[8px] tracking-widest uppercase border border-neutral-300 px-2 py-1 hover:border-black transition-colors text-center">
+            ▶ VIDEO
+          </button>
+        )}
+      </div>
+    </div>
+    
+    {/* BOTTOM BAR: Navigation */}
+    <div className="fixed bottom-0 left-0 right-0 border-t border-neutral-200 px-6 py-2 bg-white flex items-center justify-between" style={{height: '48px', zIndex: 50}}>
+      <button onClick={prev} disabled={slideIndex === 0}
+        className="py-1 px-3 text-neutral-400 hover:text-black disabled:opacity-20 transition-colors border border-neutral-300 text-[9px] tracking-widest uppercase">
+        PREV
+      </button>
+      
+      <div className="text-[9px] text-neutral-400 tracking-widest uppercase">{slideIndex + 1} / {sorted.length}</div>
+      
+      <button onClick={next} disabled={slideIndex === sorted.length - 1}
+        className="py-1 px-3 text-neutral-400 hover:text-black disabled:opacity-20 transition-colors border border-neutral-300 text-[9px] tracking-widest uppercase">
+        NEXT
+      </button>
+    </div>
+  </div>
+)}
     } catch (err) {
       console.error('Toggle failed:', err)
       setShortlisted(!next)
