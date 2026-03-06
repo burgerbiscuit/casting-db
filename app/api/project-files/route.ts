@@ -53,16 +53,16 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ ok: true, files: uploaded })
 }
 
-// DELETE — remove a file
+// DELETE — remove a file (project_files or model_media)
 export async function DELETE(req: NextRequest) {
   const user = await assertTeamMember()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { fileId, storagePath } = await req.json()
+  const { fileId, storagePath, bucket = 'model-media', table = 'project_files' } = await req.json()
   const svc = await createServiceClient()
 
-  await svc.storage.from('model-media').remove([storagePath])
-  await svc.from('project_files').delete().eq('id', fileId)
+  if (storagePath) await svc.storage.from(bucket).remove([storagePath])
+  if (fileId) await svc.from(table).delete().eq('id', fileId)
 
   return NextResponse.json({ ok: true })
 }

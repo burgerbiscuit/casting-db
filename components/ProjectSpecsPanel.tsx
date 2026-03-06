@@ -35,22 +35,20 @@ export default function ProjectSpecsPanel({ project }: { project: any }) {
   const uploadMoodboard = async (files: FileList | null) => {
     if (!files) return
     setUploading(true)
-    for (const file of Array.from(files)) {
-      const ext = file.name.split('.').pop() || 'jpg'
-      const path = `projects/${project.id}/moodboard/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
-      const { error: upErr } = await supabase.storage.from('project-files').upload(path, file)
-      if (!upErr) {
-        const { data: { publicUrl } } = supabase.storage.from('project-files').getPublicUrl(path)
-        await supabase.from('project_files').insert({ project_id: project.id, name: file.name, file_type: 'moodboard', public_url: publicUrl, storage_path: path })
-      }
-    }
+    const fd = new FormData()
+    fd.append('projectId', project.id)
+    Array.from(files).forEach(f => fd.append('files', f))
+    await fetch('/api/project-files', { method: 'POST', body: fd })
     setUploading(false)
     loadMoodboards()
   }
 
   const deleteMoodboard = async (id: string, storagePath: string) => {
-    await supabase.storage.from('project-files').remove([storagePath])
-    await supabase.from('project_files').delete().eq('id', id)
+    await fetch('/api/project-files', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fileId: id, storagePath, bucket: 'model-media', table: 'project_files' }),
+    })
     loadMoodboards()
   }
 

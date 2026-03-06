@@ -76,12 +76,12 @@ export default function ModelProfile({ params }: { params: { id: string } }) {
 
   const handleCropSave = async (blob: Blob, filename: string) => {
     if (!cropTarget) return
-    const supabase = createClient()
-    const ext = 'jpg'
-    const path = cropTarget.storagePath.replace(/\.[^.]+$/, '') + '_cropped.' + ext
-    await supabase.storage.from('model-media').upload(path, blob, { contentType: 'image/jpeg', upsert: true })
-    const { data: { publicUrl } } = supabase.storage.from('model-media').getPublicUrl(path)
-    await supabase.from('model_media').update({ public_url: publicUrl, storage_path: path }).eq('id', cropTarget.id)
+    const fd = new FormData()
+    fd.append('modelId', params.id)
+    fd.append('mediaType', 'photo')
+    fd.append('mediaId', cropTarget.id)
+    fd.append('file', new File([blob], filename || 'cropped.jpg', { type: 'image/jpeg' }))
+    await fetch('/api/model-media-upload', { method: 'POST', body: fd })
     setCropTarget(null)
     loadMedia()
   }
@@ -109,8 +109,11 @@ export default function ModelProfile({ params }: { params: { id: string } }) {
   }
 
   const deleteMedia = async (mediaId: string, storagePath: string) => {
-    await supabase.storage.from('model-media').remove([storagePath])
-    await supabase.from('model_media').delete().eq('id', mediaId)
+    await fetch('/api/project-files', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fileId: mediaId, storagePath, bucket: 'model-media', table: 'model_media' }),
+    })
     loadMedia()
   }
 

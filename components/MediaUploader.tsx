@@ -1,7 +1,6 @@
 'use client'
 import { useCallback, useState } from 'react'
 import { useDropzone } from 'react-dropzone'
-import { createClient } from '@/lib/supabase/client'
 import { Upload } from 'lucide-react'
 import { ImageCropper } from './ImageCropper'
 
@@ -18,7 +17,6 @@ interface PendingFile {
 }
 
 export function MediaUploader({ modelId, onUploaded, mediaType }: MediaUploaderProps) {
-  const supabase = createClient()
   const [uploading, setUploading] = useState(false)
   const [progress, setProgress] = useState<string>('')
   const [cropQueue, setCropQueue] = useState<PendingFile[]>([])
@@ -26,14 +24,12 @@ export function MediaUploader({ modelId, onUploaded, mediaType }: MediaUploaderP
 
   const uploadBlob = async (blob: Blob, filename: string, index: number, total: number) => {
     setProgress(`Uploading ${index + 1} of ${total}...`)
-    const ext = filename.split('.').pop() || 'jpg'
-    const path = `${modelId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
     const type = mediaType || (blob.type.startsWith('video') ? 'video' : 'photo')
-    const { error } = await supabase.storage.from('model-media').upload(path, blob, { contentType: blob.type })
-    if (!error) {
-      const { data: { publicUrl } } = supabase.storage.from('model-media').getPublicUrl(path)
-      await supabase.from('model_media').insert({ model_id: modelId, storage_path: path, public_url: publicUrl, type, uploaded_at: new Date().toISOString() })
-    }
+    const fd = new FormData()
+    fd.append('modelId', modelId)
+    fd.append('mediaType', type)
+    fd.append('file', new File([blob], filename, { type: blob.type }))
+    await fetch('/api/model-media-upload', { method: 'POST', body: fd })
   }
 
   const onDrop = useCallback(async (files: File[]) => {

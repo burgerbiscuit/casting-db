@@ -291,18 +291,11 @@ export default function CastPage({ params }: { params: { slug: string } }) {
       const modelId = result.modelId
       if (!modelId) throw new Error('No model ID returned')
 
-      for (const file of selfieFiles) {
-        const ext = file.name.split('.').pop() || 'jpg'
-        const storagePath = modelId + '/' + Date.now() + '-' + Math.random().toString(36).slice(2) + '.' + ext
-        const { error: upErr } = await supabase.storage.from('model-media').upload(storagePath, file)
-        if (!upErr) {
-          const { data: { publicUrl } } = supabase.storage.from('model-media').getPublicUrl(storagePath)
-          await fetch('/api/cast-signin/media', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ modelId, storagePath, publicUrl }),
-          })
-        }
+      for (const file of selfieFiles.filter(Boolean)) {
+        const fd = new FormData()
+        fd.append('modelId', modelId)
+        fd.append('file', file)
+        await fetch('/api/cast-signin/media', { method: 'POST', body: fd })
       }
       for (const relId of relatedModels) {
         await supabase.from('model_relationships').insert({

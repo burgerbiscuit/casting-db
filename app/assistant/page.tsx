@@ -48,42 +48,16 @@ export default function AssistantPage() {
     setLoading(true); setError('')
 
     try {
-      let resume_url = null
-      let resume_storage_path = null
-
-      if (resumeFile) {
-        const ext = resumeFile.name.split('.').pop() || 'pdf'
-        const path = `assistants/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
-        const { error: upErr } = await supabase.storage.from('resumes').upload(path, resumeFile)
-        if (upErr) throw new Error('Resume upload failed: ' + upErr.message)
-        const { data: { publicUrl } } = supabase.storage.from('resumes').getPublicUrl(path)
-        resume_url = publicUrl
-        resume_storage_path = path
-      }
-
-      const { error: dbErr } = await supabase.from('assistant_submissions').insert({
-        first_name: form.first_name,
-        last_name: form.last_name,
-        email: form.email,
-        phone: form.phone || null,
-        city: form.city || null,
-        country: form.country || null,
-        based_in: [form.city, form.country].filter(Boolean).join(', ') || null,
-        experience_level: form.experience_level || null,
-        years_experience: form.years_experience ? parseInt(form.years_experience) : null,
-        languages: form.languages.length ? form.languages : null,
-        skills: form.skills.length ? form.skills : null,
-        software: form.software.length ? form.software : null,
-        instagram_handle: form.instagram_handle || null,
-        website_url: form.website_url || null,
-        resume_url,
-        resume_storage_path,
-        notes: form.notes || null,
-        opportunity_type: form.opportunity_type || null,
-        school_credit: form.school_credit,
-        status: 'new',
+      const fd = new FormData()
+      Object.entries(form).forEach(([k, v]) => {
+        if (Array.isArray(v)) fd.append(k, JSON.stringify(v))
+        else fd.append(k, String(v ?? ''))
       })
-      if (dbErr) throw new Error(dbErr.message)
+      if (resumeFile) fd.append('resume', resumeFile)
+
+      const res = await fetch('/api/assistant-submit', { method: 'POST', body: fd })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Submission failed')
       setStep('done')
     } catch (err: any) {
       setError(err.message || 'Something went wrong. Please try again.')

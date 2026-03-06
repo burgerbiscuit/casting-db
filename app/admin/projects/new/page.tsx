@@ -63,21 +63,12 @@ export default function NewProject() {
     // Auto-create presentation
     await supabase.from('presentations').insert({ project_id: proj.id, name: proj.name, is_published: false })
 
-    // Upload moodboard images
-    for (const file of moodboardFiles) {
-      const ext = file.name.split('.').pop() || 'jpg'
-      const path = `projects/${proj.id}/moodboard/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
-      const { error: upErr } = await supabase.storage.from('project-files').upload(path, file)
-      if (!upErr) {
-        const { data: { publicUrl } } = supabase.storage.from('project-files').getPublicUrl(path)
-        await supabase.from('project_files').insert({
-          project_id: proj.id,
-          name: file.name,
-          file_type: 'moodboard',
-          public_url: publicUrl,
-          storage_path: path,
-        })
-      }
+    // Upload moodboard images via service-key API
+    if (moodboardFiles.length > 0) {
+      const fd = new FormData()
+      fd.append('projectId', proj.id)
+      moodboardFiles.forEach(f => fd.append('files', f))
+      await fetch('/api/project-files', { method: 'POST', body: fd })
     }
 
     router.push(`/admin/projects/${proj.id}`)
