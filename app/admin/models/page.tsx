@@ -31,7 +31,7 @@ export default function ModelsPage() {
       .order('last_name', { ascending: true }).order('first_name', { ascending: true })
       .limit(300)
 
-    if (search) query = query.or(`first_name.ilike.%${search}%,last_name.ilike.%${search}%`)
+    if (search) query = query.or(`first_name.ilike.%${search}%,last_name.ilike.%${search}%,agency.ilike.%${search}%,ethnicity_broad.ilike.%${search}%,ethnicity_specific.ilike.%${search}%,based_in.ilike.%${search}%`)
     if (agency) query = query.ilike('agency', `%${agency}%`)
     if (heightFt) query = query.eq('height_ft', parseInt(heightFt))
     if (city) query = query.ilike('based_in', `%${city}%`)
