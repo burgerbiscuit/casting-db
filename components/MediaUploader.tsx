@@ -57,7 +57,7 @@ export function MediaUploader({ modelId, onUploaded, mediaType }: MediaUploaderP
       setCropQueue(queue)
       setPendingUploads([])
     }
-  }, [modelId, supabase, onUploaded])
+  }, [modelId, onUploaded])
 
   const handleCropDone = async (blob: Blob, filename: string) => {
     const remaining = cropQueue.slice(1)
