@@ -29,7 +29,6 @@ export default function ModelsPage() {
       .from('models')
       .select('id, first_name, last_name, agency, height_ft, height_in, based_in, gender, date_of_birth, skills, hobbies, reviewed, notes, created_at, ethnicity_broad, ethnicity_specific')
       .order('last_name', { ascending: true }).order('first_name', { ascending: true })
-      .limit(300)
 
     if (search) query = query.or(`first_name.ilike.%${search}%,last_name.ilike.%${search}%,agency.ilike.%${search}%,ethnicity_broad.ilike.%${search}%,ethnicity_specific.ilike.%${search}%,based_in.ilike.%${search}%`)
     if (agency) query = query.ilike('agency', `%${agency}%`)
