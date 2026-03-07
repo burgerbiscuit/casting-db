@@ -65,9 +65,10 @@ export default function ModelsPage() {
 
     const enriched = filtered.map(m => ({ ...m, photo: photoMap.get(m.id) || null }))
     const pending = enriched.filter(m => !m.reviewed)
-    // Sort: models with MISSING PROJECT flag bubble to top
-    pending.sort((a, b) => (b.notes?.includes('MISSING PROJECT') ? 1 : 0) - (a.notes?.includes('MISSING PROJECT') ? 1 : 0))
+    // Sort pending by newest submission first (most recent created_at)
+    pending.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
     setPending(pending)
+    // Reviewed/approved stay alphabetically sorted (already sorted by DB query)
     setReviewed(enriched.filter(m => m.reviewed))
     setLoading(false)
   }, [search, agency, heightFt, city, keyword, gender, ageMin, ageMax])
