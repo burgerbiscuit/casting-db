@@ -96,6 +96,7 @@ export function ImageCropper({ src, filename, onDone, onCancel }: Props) {
         console.log('Crop returned null, falling back to original')
         onDone(await fetch(src).then(r => r.blob()), filename)
       }
+      setProcessing(false)
     } catch (e) {
       console.error('Crop error:', e)
       alert('Failed to crop image. Try refreshing and trying again.')
