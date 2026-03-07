@@ -172,10 +172,12 @@ export default function ScoutPage() {
           <h2 className="text-2xl font-light tracking-widest uppercase mb-4">Thank You</h2>
           <p className="text-sm text-neutral-500 mb-8">Your submission has been received. We'll be in touch if there's a fit.</p>
           <div className="space-y-4">
-            <a href="https://www.instagram.com/tashatongpreecha" target="_blank" rel="noopener noreferrer"
-              className="block text-sm tracking-widest uppercase underline underline-offset-4 hover:opacity-60 transition-opacity">
-              Follow @tashatongpreecha on Instagram
-            </a>
+            <p className="text-sm">
+              Please <a href="https://www.instagram.com/tashatongpreecha" target="_blank" rel="noopener noreferrer"
+                className="text-xs tracking-widest uppercase underline underline-offset-2 hover:opacity-60 transition-opacity">
+                follow @tashatongpreecha on instagram for updates on castings
+              </a>
+            </p>
             <a href="https://www.tashatongpreecha.com" target="_blank" rel="noopener noreferrer"
               className="block text-sm tracking-widest uppercase text-neutral-400 hover:text-black transition-colors">
               ← Back to Website
