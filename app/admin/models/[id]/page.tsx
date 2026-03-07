@@ -167,6 +167,12 @@ export default function ModelProfile({ params }: { params: { id: string } }) {
             {model.first_name} {model.last_name}
           </h1>
           {model.agency && <p className="text-sm text-neutral-400">{model.agency}</p>}
+          {model.instagram_handle && (
+            <a href={`https://instagram.com/${model.instagram_handle.replace('@', '')}`} target="_blank" rel="noopener noreferrer"
+              className="text-sm text-blue-600 hover:text-blue-800 hover:underline">
+              @{model.instagram_handle.replace('@', '')}
+            </a>
+          )}
         </div>
         <div className="flex items-center gap-3">
           {!model.reviewed ? (
