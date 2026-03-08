@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
+import { cleanInstagramHandle } from '@/lib/instagram-utils'
 
 const esc = (s = '') => (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
 
@@ -39,7 +40,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
         <div class="name">${esc(m?.first_name)} ${esc(m?.last_name)}</div>
         ${m?.agency ? `<div class="sub">${esc(m.agency)}</div>` : ''}
         ${sizing ? `<div class="sizing">${esc(sizing)}</div>` : ''}
-        ${m?.instagram_handle ? `<div class="sizing">@${esc(m.instagram_handle)}</div>` : ''}
+        ${m?.instagram_handle ? `<div class="sizing">@${esc(cleanInstagramHandle(m.instagram_handle))}</div>` : ''}
         ${m?.tiktok_handle ? `<div class="sizing">TT: @${esc(m.tiktok_handle)}</div>` : ''}
         <div class="link"><a href="https://cast.tashatongpreecha.com/admin/models/${esc(m?.id)}">View Profile ↗</a></div>
       </div>

@@ -119,8 +119,18 @@ export function ModelCard({ presentationModel, model, media, presentationId, cli
         {presentationModel.show_instagram && model.instagram_handle && (
           <div className="text-xs text-neutral-700 mb-2">
             {(() => {
-              // Clean Instagram handle: remove leading @ symbols
-              const cleanHandle = model.instagram_handle.replace(/^@+/, '');
+              // Import utilities for Instagram handle cleaning
+              const cleanHandle = model.instagram_handle
+                .trim()
+                .replace(/^https?:\/\//, '')
+                .replace(/^(www\.)?instagram\.com\//, '')
+                .replace(/^@+\s*/, '')
+                .replace(/\/$/, '')
+                .split('?')[0]
+                .trim();
+              
+              if (!cleanHandle) return null;
+              
               return (
                 <>
                   <a href={`https://instagram.com/${cleanHandle}`} target="_blank" rel="noopener noreferrer"

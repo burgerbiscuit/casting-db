@@ -1,9 +1,15 @@
 import { createServiceClient } from '@/lib/supabase/server'
+import { cleanInstagramHandle } from '@/lib/instagram-utils'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(req: NextRequest) {
   const body = await req.json()
   const { modelData, projectId, modelId: existingModelId, isReturning, selfieBase64Files } = body
+
+  // Clean Instagram handle before saving
+  if (modelData?.instagram_handle) {
+    modelData.instagram_handle = cleanInstagramHandle(modelData.instagram_handle)
+  }
 
   const supabase = await createServiceClient()
 

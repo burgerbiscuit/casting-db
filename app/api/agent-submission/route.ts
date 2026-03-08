@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
+import { cleanInstagramHandle } from '@/lib/instagram-utils'
 
 
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
@@ -41,7 +42,7 @@ export async function POST(req: NextRequest) {
     phone: body.phone || null,
     city: body.city || null,
     boards: body.boards || null,
-    instagram: body.instagram || null,
+    instagram: cleanInstagramHandle(body.instagram),
     website: body.website || null,
     notes: body.notes || null,
     reviewed: false,

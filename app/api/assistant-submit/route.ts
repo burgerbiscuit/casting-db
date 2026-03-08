@@ -1,4 +1,5 @@
 import { createServiceClient } from '@/lib/supabase/server'
+import { cleanInstagramHandle } from '@/lib/instagram-utils'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(req: NextRequest) {
@@ -50,7 +51,7 @@ export async function POST(req: NextRequest) {
     languages: Array.isArray(fields.languages) && fields.languages.length ? fields.languages : null,
     skills: Array.isArray(fields.skills) && fields.skills.length ? fields.skills : null,
     software: Array.isArray(fields.software) && fields.software.length ? fields.software : null,
-    instagram_handle: fields.instagram_handle || null,
+    instagram_handle: cleanInstagramHandle(fields.instagram_handle),
     website_url: fields.website_url || null,
     resume_url,
     resume_storage_path,

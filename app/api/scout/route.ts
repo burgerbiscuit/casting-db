@@ -1,4 +1,5 @@
 import { createServiceClient } from '@/lib/supabase/server'
+import { cleanInstagramHandle } from '@/lib/instagram-utils'
 import { NextRequest, NextResponse } from 'next/server'
 
 // Scout submissions create a model in the general database only — NOT linked to any project.
@@ -74,7 +75,7 @@ export async function POST(req: NextRequest) {
     phone: body.phone || null,
     gender: body.gender || null,
     date_of_birth: body.date_of_birth || null,
-    instagram_handle: body.instagram_handle || null,
+    instagram_handle: cleanInstagramHandle(body.instagram_handle),
     tiktok_handle: body.tiktok_handle || null,
     portfolio_url: body.portfolio_url || null,
     website_url: body.website_url || null,

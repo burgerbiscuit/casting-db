@@ -1,4 +1,5 @@
 import { createClient, createServiceClient } from '@/lib/supabase/server'
+import { getInstagramUrl, cleanInstagramHandle } from '@/lib/instagram-utils'
 import { NextRequest, NextResponse } from 'next/server'
 
 const esc = (s = '') => (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')
@@ -99,8 +100,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       const photo2 = media.find((med: any) => med.is_pdf_secondary) || media[1]
       const sizing = getSizing(m)
 
-      const igHandle = m.instagram_handle ? m.instagram_handle.replace('@','') : ''
-      const igUrl = igHandle ? `https://www.instagram.com/${igHandle}/` : ''
+      const igUrl = getInstagramUrl(m.instagram_handle) || ''
       const portfolioRaw = pm.show_portfolio && m.portfolio_url ? toUrl(m.portfolio_url) : ''
 
       const infoItems: string[] = []
