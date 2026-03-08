@@ -28,9 +28,15 @@ export async function POST(req: NextRequest) {
       // Crop update — overwrite existing record
       await svc.from('model_media').update({ public_url: publicUrl, storage_path: path }).eq('id', mediaId)
     } else {
+      // Check if this model already has a primary photo — if not, make this one primary
+      const { data: existing } = await svc.from('model_media')
+        .select('id').eq('model_id', modelId).eq('is_pdf_primary', true).limit(1)
+      const isPrimary = !existing || existing.length === 0
+
       await svc.from('model_media').insert({
         model_id: modelId, storage_path: path, public_url: publicUrl,
         type: mediaType, is_visible: true, uploaded_at: new Date().toISOString(),
+        is_pdf_primary: isPrimary,
       })
     }
   }
