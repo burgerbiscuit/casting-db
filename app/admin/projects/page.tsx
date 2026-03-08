@@ -48,7 +48,7 @@ export default function ProjectsPage() {
     return (
       <div className="flex items-center justify-between py-4 group">
         <div>
-          <span className="text-sm font-medium">{p.name}</span>
+          <span className="text-sm font-medium uppercase">{p.name}</span>
           {p.shoot_date && (
             <span className="ml-3 text-xs text-neutral-400">
               {new Date(p.shoot_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
