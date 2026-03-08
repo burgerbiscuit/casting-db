@@ -17,7 +17,7 @@ const EXP_LABEL: Record<string, string> = {
   director: 'Director (10yr+)',
 }
 
-function ResumePreviewModal({ url, name, onClose }: { url: string; name: string; onClose: () => void }) {
+function ResumePreviewModal({ url, downloadUrl, name, onClose }: { url: string; downloadUrl: string; name: string; onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-black/80" onClick={onClose}>
       <div className="flex items-center justify-between px-6 py-3 bg-black text-white flex-shrink-0" onClick={e => e.stopPropagation()}>
@@ -26,7 +26,7 @@ function ResumePreviewModal({ url, name, onClose }: { url: string; name: string;
           <span className="text-xs tracking-widest uppercase">{name} — Resume</span>
         </div>
         <div className="flex items-center gap-4">
-          <a href={url + '&download=1'} target="_blank" rel="noopener noreferrer"
+          <a href={downloadUrl} target="_blank" rel="noopener noreferrer"
             className="flex items-center gap-1.5 text-[10px] tracking-widest uppercase text-neutral-400 hover:text-white transition-colors">
             <ExternalLink size={11} /> Download
           </a>
@@ -59,7 +59,13 @@ export default function AssistantsPage() {
   const [preview, setPreview] = useState<{ url: string; name: string } | null>(null)
 
   const openResume = (s: any) => {
-    setPreview({ url: `/api/resume-proxy?id=${s.id}`, name: `${s.first_name} ${s.last_name}` })
+    const proxyUrl = `/api/resume-proxy?id=${s.id}`
+    // For .docx files, use Google Docs Viewer; for PDFs use iframe directly
+    const isDocx = s.resume_storage_path?.endsWith('.docx') || s.resume_storage_path?.endsWith('.doc')
+    const viewUrl = isDocx
+      ? `https://docs.google.com/viewer?url=${encodeURIComponent(window.location.origin + proxyUrl)}&embedded=true`
+      : proxyUrl
+    setPreview({ url: viewUrl, name: `${s.first_name} ${s.last_name}`, downloadUrl: proxyUrl })
   }
 
   const load = useCallback(async () => {
@@ -118,7 +124,7 @@ export default function AssistantsPage() {
   return (
     <div>
       {preview && (
-        <ResumePreviewModal url={preview.url} name={preview.name} onClose={() => setPreview(null)} />
+        <ResumePreviewModal url={preview.url} downloadUrl={(preview as any).downloadUrl || preview.url} name={preview.name} onClose={() => setPreview(null)} />
       )}
 
       <div className="flex items-center justify-between mb-8">
