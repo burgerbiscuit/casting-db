@@ -163,7 +163,10 @@ export default function ModelProfile({ params }: { params: { id: string } }) {
     <div>
       <div className="flex items-center justify-between mb-10">
         <div>
-          <Link href="/admin/models" className="label hover:text-black">← Models</Link>
+          <div className="flex gap-4 mb-2">
+            <Link href="/admin/models" className="label hover:text-black">← Models</Link>
+            <Link href="/admin/trash" className="label text-neutral-400 hover:text-black">🗑️ Trash</Link>
+          </div>
           <h1 className="text-2xl font-light tracking-widest uppercase mt-2">
             {model.first_name} {model.last_name}
           </h1>

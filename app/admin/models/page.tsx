@@ -114,7 +114,12 @@ export default function ModelsPage() {
     <div>
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-light tracking-widest uppercase">Models</h1>
-        <span className="text-xs text-neutral-400">{total} shown</span>
+        <div className="flex items-center gap-4">
+          <Link href="/admin/trash" className="text-xs text-neutral-500 hover:text-black transition-colors tracking-widest uppercase">
+            🗑️ Trash
+          </Link>
+          <span className="text-xs text-neutral-400">{total} shown</span>
+        </div>
       </div>
 
       {/* Search bar */}
