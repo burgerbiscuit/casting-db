@@ -96,10 +96,11 @@ export default function ModelProfile({ params }: { params: { id: string } }) {
   }
 
   const deleteModel = async () => {
-    await supabase.from('presentation_models').delete().eq('model_id', model.id)
-    await supabase.from('project_models').delete().eq('model_id', model.id)
-    await supabase.from('model_media').delete().eq('model_id', model.id)
-    await supabase.from('models').delete().eq('id', model.id)
+    // Soft-delete: move to trash for 30-day recovery window
+    await supabase.from('models').update({
+      is_deleted: true,
+      deleted_at: new Date().toISOString(),
+    }).eq('id', model.id)
     router.push('/admin/models')
   }
 
