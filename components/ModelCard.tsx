@@ -118,9 +118,17 @@ export function ModelCard({ presentationModel, model, media, presentationId, cli
 
         {presentationModel.show_instagram && model.instagram_handle && (
           <div className="text-xs text-neutral-700 mb-2">
-            <a href={`https://instagram.com/${model.instagram_handle}`} target="_blank" rel="noopener noreferrer"
-              className="hover:text-black underline">@{model.instagram_handle}</a>
-            {igData?.follower_count && <span className="ml-1 text-neutral-400">· {formatFollowers(igData.follower_count)} followers</span>}
+            {(() => {
+              // Clean Instagram handle: remove leading @ symbols
+              const cleanHandle = model.instagram_handle.replace(/^@+/, '');
+              return (
+                <>
+                  <a href={`https://instagram.com/${cleanHandle}`} target="_blank" rel="noopener noreferrer"
+                    className="hover:text-black underline">@{cleanHandle}</a>
+                  {igData?.follower_count && <span className="ml-1 text-neutral-400">· {formatFollowers(igData.follower_count)} followers</span>}
+                </>
+              );
+            })()}
           </div>
         )}
 
