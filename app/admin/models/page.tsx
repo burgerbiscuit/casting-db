@@ -58,7 +58,7 @@ export default function ModelsPage() {
 
     const { data: media } = await supabase
       .from('model_media').select('model_id, public_url, is_pdf_primary, display_order')
-      .in('model_id', ids).eq('is_visible', true).order('display_order', { ascending: true })
+      .in('model_id', ids).eq('is_visible', true)
 
     // Build maps: track lowest display_order (first uploaded) and PDF 1 image
     const firstImageMap = new Map<string, { url: string, order: number }>()
