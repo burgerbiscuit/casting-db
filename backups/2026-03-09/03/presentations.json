@@ -1,0 +1,74 @@
+[
+  {
+    "id": "58ae74bc-2ea6-4cb9-a9b5-619c6dd87865",
+    "project_id": "a0427015-3a4f-4c2a-bd0b-975b1a703a4a",
+    "name": "DARIA SHOOT",
+    "is_published": false,
+    "created_at": "2026-03-02T22:39:02.376598+00:00",
+    "chart_approved": false,
+    "share_password": null
+  },
+  {
+    "id": "60e090db-f900-4500-9859-856ee382569a",
+    "project_id": "7539e334-c3f1-4caf-a931-3b2f4929d78f",
+    "name": "DEMO",
+    "is_published": true,
+    "created_at": "2026-03-04T17:10:53.748663+00:00",
+    "chart_approved": true,
+    "share_password": "hellodemo"
+  },
+  {
+    "id": "e9e0614c-cb6e-4f7c-87d5-3694c324d8de",
+    "project_id": "7539e334-c3f1-4caf-a931-3b2f4929d78f",
+    "name": "DEMO - MODELS",
+    "is_published": false,
+    "created_at": "2026-03-04T20:14:26.741989+00:00",
+    "chart_approved": false,
+    "share_password": "hellodemo"
+  },
+  {
+    "id": "4e498586-c025-40c0-87a1-7d8213421c33",
+    "project_id": "0c52c947-8010-4843-bd37-fe6f9035a803",
+    "name": "L'OFFICIEL USA JUNE 2025 ISSUE",
+    "is_published": false,
+    "created_at": "2026-03-05T15:45:56.05134+00:00",
+    "chart_approved": false,
+    "share_password": null
+  },
+  {
+    "id": "bf39c697-e9e2-4fa4-89be-575f94879300",
+    "project_id": "15c0f136-21d5-4322-af31-c3fcb1bc67b9",
+    "name": "A PART PUBLICATIONS MAY 2026 ISSUE",
+    "is_published": false,
+    "created_at": "2026-03-05T15:50:34.980932+00:00",
+    "chart_approved": false,
+    "share_password": null
+  },
+  {
+    "id": "296c9d72-e057-4ba6-beb0-1dde15ccdc75",
+    "project_id": "29b0c579-b2c0-4619-90ff-4945c148c8bd",
+    "name": "ICON X CHANEL 20TH ANNIVERSARY COVER",
+    "is_published": false,
+    "created_at": "2026-03-06T15:54:35.658893+00:00",
+    "chart_approved": false,
+    "share_password": null
+  },
+  {
+    "id": "bbf36a9c-78a8-4a88-8a57-8f992f41a6e0",
+    "project_id": "f7810eae-e490-4a08-bdb7-c7933f9e9006",
+    "name": "WALKING ON WATER / FEB 27-29 2026",
+    "is_published": false,
+    "created_at": "2026-03-02T18:34:47.114582+00:00",
+    "chart_approved": false,
+    "share_password": "water"
+  },
+  {
+    "id": "8e5e3d04-f90d-4ba1-8a97-e300afc6b630",
+    "project_id": "120bf745-09fa-4f6a-8d54-e2ef5284636b",
+    "name": "Tender Moments for Calloused Hands",
+    "is_published": false,
+    "created_at": "2026-03-07T20:51:27.240375+00:00",
+    "chart_approved": false,
+    "share_password": null
+  }
+]

@@ -1,0 +1,134 @@
+[
+  {
+    "id": "91baa2b1-5493-4e7e-b491-72f98f7c83e0",
+    "presentation_id": "e9e0614c-cb6e-4f7c-87d5-3694c324d8de",
+    "model_id": "f79d9483-72f3-4eba-9c41-f779a8a78004",
+    "client_id": "328944d5-bf72-424d-874b-8f21b363464a",
+    "notes": null,
+    "created_at": "2026-03-05T05:12:27.48616+00:00",
+    "status": "pending_confirmation",
+    "author_name": null,
+    "is_released": false
+  },
+  {
+    "id": "11d30068-d9d7-4f67-aef2-470d0607b949",
+    "presentation_id": "e9e0614c-cb6e-4f7c-87d5-3694c324d8de",
+    "model_id": "93845216-e632-446b-89a8-26b218623854",
+    "client_id": "328944d5-bf72-424d-874b-8f21b363464a",
+    "notes": null,
+    "created_at": "2026-03-05T05:12:43.19875+00:00",
+    "status": "pending_confirmation",
+    "author_name": null,
+    "is_released": false
+  },
+  {
+    "id": "a598027c-d6d7-49ec-ad84-e0f2ebfea301",
+    "presentation_id": "e9e0614c-cb6e-4f7c-87d5-3694c324d8de",
+    "model_id": "f6230ac6-0d65-4bfa-8af1-97a60f3b92f0",
+    "client_id": "328944d5-bf72-424d-874b-8f21b363464a",
+    "notes": null,
+    "created_at": "2026-03-05T05:13:06.593618+00:00",
+    "status": "pending_confirmation",
+    "author_name": null,
+    "is_released": false
+  },
+  {
+    "id": "a2e7c544-e865-4217-8d36-3fc1855744d9",
+    "presentation_id": "e9e0614c-cb6e-4f7c-87d5-3694c324d8de",
+    "model_id": "abd358ac-1d4b-4b18-bf95-b978309d1b34",
+    "client_id": "328944d5-bf72-424d-874b-8f21b363464a",
+    "notes": null,
+    "created_at": "2026-03-05T05:13:12.470186+00:00",
+    "status": "pending_confirmation",
+    "author_name": null,
+    "is_released": false
+  },
+  {
+    "id": "218eaa2c-6968-4fb7-8fb2-93df1f3edda8",
+    "presentation_id": "60e090db-f900-4500-9859-856ee382569a",
+    "model_id": "4d6b0825-9803-4989-9f6c-9af89461336a",
+    "client_id": "328944d5-bf72-424d-874b-8f21b363464a",
+    "notes": null,
+    "created_at": "2026-03-05T05:31:29.898586+00:00",
+    "status": "pending_confirmation",
+    "author_name": null,
+    "is_released": false
+  },
+  {
+    "id": "3cc19855-c76b-426f-924a-acc4ca394598",
+    "presentation_id": "60e090db-f900-4500-9859-856ee382569a",
+    "model_id": "c3f821b7-2f6f-4cf8-8f02-5362d3b4fd29",
+    "client_id": "328944d5-bf72-424d-874b-8f21b363464a",
+    "notes": null,
+    "created_at": "2026-03-05T05:31:34.467308+00:00",
+    "status": "pending_confirmation",
+    "author_name": null,
+    "is_released": false
+  },
+  {
+    "id": "ec51f760-17ba-4c4a-9680-e6d4a482a161",
+    "presentation_id": "60e090db-f900-4500-9859-856ee382569a",
+    "model_id": "5b9b616d-1400-4053-9aef-df8812b68748",
+    "client_id": "328944d5-bf72-424d-874b-8f21b363464a",
+    "notes": null,
+    "created_at": "2026-03-05T05:31:42.708372+00:00",
+    "status": "pending_confirmation",
+    "author_name": null,
+    "is_released": false
+  },
+  {
+    "id": "9f8dd33c-f554-41e9-b3ee-c361018ac8f9",
+    "presentation_id": "60e090db-f900-4500-9859-856ee382569a",
+    "model_id": "467cbd20-3d42-4f7f-bbdf-d9d6744cb8a8",
+    "client_id": "328944d5-bf72-424d-874b-8f21b363464a",
+    "notes": "",
+    "created_at": "2026-03-05T05:32:02.20464+00:00",
+    "status": "pending_confirmation",
+    "author_name": null,
+    "is_released": false
+  },
+  {
+    "id": "44525dd7-de5a-4a6b-bc51-4dc25f167bad",
+    "presentation_id": "60e090db-f900-4500-9859-856ee382569a",
+    "model_id": "abd1af74-9402-4f7e-ac44-20a7da5b895a",
+    "client_id": "328944d5-bf72-424d-874b-8f21b363464a",
+    "notes": "",
+    "created_at": "2026-03-05T05:31:58.542223+00:00",
+    "status": "pending_confirmation",
+    "author_name": null,
+    "is_released": false
+  },
+  {
+    "id": "9589d959-3445-48e3-aba3-e11f1bd00368",
+    "presentation_id": "bbf36a9c-78a8-4a88-8a57-8f992f41a6e0",
+    "model_id": "a5859b08-07bf-4ddc-ab92-2447a7743895",
+    "client_id": "f5fe2bb4-f429-4978-a052-6f00cc614ff8",
+    "notes": "",
+    "created_at": "2026-03-06T18:18:37.107893+00:00",
+    "status": "shortlisted",
+    "author_name": null,
+    "is_released": false
+  },
+  {
+    "id": "845cefe6-8c9e-4ce6-a6f5-37dc6cd3ad62",
+    "presentation_id": "bbf36a9c-78a8-4a88-8a57-8f992f41a6e0",
+    "model_id": "a98164e5-1b14-4d4d-9e5f-61f0e4d015eb",
+    "client_id": "f5fe2bb4-f429-4978-a052-6f00cc614ff8",
+    "notes": "",
+    "created_at": "2026-03-06T18:18:39.538028+00:00",
+    "status": "shortlisted",
+    "author_name": null,
+    "is_released": false
+  },
+  {
+    "id": "f57a62a4-8430-4ed4-aad1-708e33be316f",
+    "presentation_id": "bbf36a9c-78a8-4a88-8a57-8f992f41a6e0",
+    "model_id": "f9cbbaea-fbfb-4aff-bd03-04203414a5e2",
+    "client_id": "f5fe2bb4-f429-4978-a052-6f00cc614ff8",
+    "notes": "",
+    "created_at": "2026-03-06T18:18:40.701543+00:00",
+    "status": "shortlisted",
+    "author_name": null,
+    "is_released": false
+  }
+]

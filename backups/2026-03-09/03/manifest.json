@@ -1,0 +1,41 @@
+{
+  "timestamp": "2026-03-09T03:26:32.667Z",
+  "backups": {
+    "models": {
+      "status": "success",
+      "count": 651,
+      "size": 835652
+    },
+    "projects": {
+      "status": "success",
+      "count": 8,
+      "size": 8189
+    },
+    "project_models": {
+      "status": "success",
+      "count": 242,
+      "size": 146508
+    },
+    "presentations": {
+      "status": "success",
+      "count": 8,
+      "size": 2371
+    },
+    "presentation_models": {
+      "status": "success",
+      "count": 80,
+      "size": 38355
+    },
+    "client_shortlists": {
+      "status": "success",
+      "count": 12,
+      "size": 4714
+    },
+    "team_members": {
+      "status": "success",
+      "count": 3,
+      "size": 781
+    }
+  },
+  "errors": []
+}
