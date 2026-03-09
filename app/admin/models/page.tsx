@@ -60,10 +60,11 @@ export default function ModelsPage() {
       .from('model_media')
       .select('*')
       .in('model_id', ids)
-      .eq('is_visible', true)
 
     const photoMap = new Map<string, string>()
-    ;(media || []).forEach((m: any) => { if (!photoMap.has(m.model_id)) photoMap.set(m.model_id, m.public_url) })
+    ;(media || []).forEach((m: any) => { 
+      if (m.is_visible && !photoMap.has(m.model_id)) photoMap.set(m.model_id, m.public_url) 
+    })
 
     const enriched = filtered.map(m => ({ ...m, photo: photoMap.get(m.id) || null }))
     const pending = enriched.filter(m => !m.reviewed)
