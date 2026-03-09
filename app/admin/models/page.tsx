@@ -61,11 +61,30 @@ export default function ModelsPage() {
       .from('model_media')
       .select('*')
 
-    // Filter to only media for our models and build photo map
+    // Build photo map: prioritize PDF 1, then PDF 2, then first visible
     const photoMap = new Map<string, string>()
+    const pdf2Map = new Map<string, string>()
     ;(allMedia || []).forEach((m: any) => { 
-      if (modelIds.has(m.model_id) && m.is_visible && !photoMap.has(m.model_id)) {
-        photoMap.set(m.model_id, m.public_url) 
+      if (!modelIds.has(m.model_id) || !m.is_visible) return
+      
+      // Prefer PDF 1
+      if (m.is_pdf_primary && !photoMap.has(m.model_id)) {
+        photoMap.set(m.model_id, m.public_url)
+      }
+      // Track PDF 2 as fallback
+      else if (m.is_pdf_secondary && !pdf2Map.has(m.model_id)) {
+        pdf2Map.set(m.model_id, m.public_url)
+      }
+      // Track first visible as final fallback
+      else if (!photoMap.has(m.model_id) && !pdf2Map.has(m.model_id)) {
+        pdf2Map.set(m.model_id, m.public_url)
+      }
+    })
+    
+    // Fill in PDF 2 for models without PDF 1
+    pdf2Map.forEach((url, modelId) => {
+      if (!photoMap.has(modelId)) {
+        photoMap.set(modelId, url)
       }
     })
 
