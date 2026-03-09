@@ -46,6 +46,15 @@ export async function POST(req: NextRequest) {
 
     if (existing) {
       await serviceSupa.from('client_shortlists').update({ notes }).eq('id', existing.id)
+    } else {
+      // Create new entry if doesn't exist yet (allow notes without shortlisting)
+      await serviceSupa.from('client_shortlists').insert({
+        presentation_id: presentationId,
+        model_id: modelId,
+        client_id: user.id,
+        notes: notes || '',
+        status: 'shortlisted', // Default status when adding notes
+      })
     }
     return NextResponse.json({ ok: true })
   }
