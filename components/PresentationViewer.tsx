@@ -568,10 +568,10 @@ export function PresentationViewer({
               <h2 className="text-lg font-light tracking-widest uppercase leading-tight mb-0.5">{model?.first_name} {model?.last_name}</h2>
               {model?.agency && <p className="text-xs text-neutral-600 mb-0.5">{model.agency}</p>}
               {sizing.length > 0 && <p className="text-xs text-neutral-600 mb-0.5">{sizing.join(' · ')}</p>}
-              {/* Rate + location from project_models via presentation_models */}
-              {(pm?.rate || pm?.location) && (
+              {/* Rate + location + option from presentation_models */}
+              {(pm?.rate || pm?.location || pm?.option) && (
                 <p className="text-xs text-neutral-600 mb-0.5">
-                  {[pm?.rate, pm?.location].filter(Boolean).join(' · ')}
+                  {[pm?.rate, pm?.location, pm?.option].filter(Boolean).join(' · ')}
                 </p>
               )}
               {pm?.admin_notes && <p className="text-xs text-neutral-600 mb-1 italic">{pm.admin_notes}</p>}
@@ -729,10 +729,10 @@ export function PresentationViewer({
             <p className="text-neutral-700">{current.rate}</p>
           </div>
         )}
-        {current.admin_notes?.trim() && (
+        {current.option?.trim() && (
           <div className="text-[9px]">
             <p className="text-neutral-400 uppercase tracking-wider font-medium mb-0.5">Option</p>
-            <p className="text-neutral-700">{current.admin_notes}</p>
+            <p className="text-neutral-700">{current.option}</p>
           </div>
         )}
         {current.location?.trim() && (

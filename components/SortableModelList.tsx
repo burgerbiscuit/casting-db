@@ -15,6 +15,7 @@ interface PresentationModel {
   admin_notes: string
   location: string
   rate: string
+  option: string
   client_notes: string
   is_visible: boolean
   models: { first_name: string; last_name: string; agency: string; model_media?: { url: string; display_order: number }[] }
@@ -154,7 +155,7 @@ function SortableItem({ item, onRemove, onFieldChange, onToggleVisible, categori
           {/* Client-visible notes */}
           <div className="space-y-2 border-t border-neutral-100 pt-3">
             <p className="text-[10px] tracking-widest uppercase text-neutral-400 mb-2">Client Notes (visible on slides)</p>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-3 gap-2">
               <div>
                 <label className="text-[10px] tracking-wider uppercase text-neutral-400 block mb-0.5">Location</label>
                 <input value={item.location || ''} onChange={e => onFieldChange(item.id, 'location', e.target.value)}
@@ -164,6 +165,11 @@ function SortableItem({ item, onRemove, onFieldChange, onToggleVisible, categori
                 <label className="text-[10px] tracking-wider uppercase text-neutral-400 block mb-0.5">Rate</label>
                 <input value={item.rate || ''} onChange={e => onFieldChange(item.id, 'rate', e.target.value)}
                   placeholder="e.g. $5,000/day" className={inp} />
+              </div>
+              <div>
+                <label className="text-[10px] tracking-wider uppercase text-neutral-400 block mb-0.5">Option</label>
+                <input value={item.option || ''} onChange={e => onFieldChange(item.id, 'option', e.target.value)}
+                  placeholder="e.g. Option A" className={inp} />
               </div>
             </div>
             <div>
