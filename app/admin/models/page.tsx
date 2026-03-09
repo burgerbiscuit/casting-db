@@ -57,13 +57,32 @@ export default function ModelsPage() {
     if (!ids.length) { setPending([]); setReviewed([]); setLoading(false); return }
 
     const { data: media } = await supabase
-      .from('model_media').select('model_id, public_url, is_pdf_primary, display_order, uploaded_at')
-      .in('model_id', ids).eq('is_visible', true).order('is_pdf_primary', { ascending: false }).order('display_order', { ascending: true })
+      .from('model_media').select('model_id, public_url, is_pdf_primary, display_order')
+      .in('model_id', ids).eq('is_visible', true).order('display_order', { ascending: true })
 
+    // Build maps: track lowest display_order (first uploaded) and PDF 1 image
+    const firstImageMap = new Map<string, { url: string, order: number }>()
+    const pdfPrimaryMap = new Map<string, string>()
+    ;(media || []).forEach((m: any) => {
+      // Track image with lowest display_order (first uploaded)
+      const existing = firstImageMap.get(m.model_id)
+      if (!existing || m.display_order < existing.order) {
+        firstImageMap.set(m.model_id, { url: m.public_url, order: m.display_order })
+      }
+      // Track PDF 1 image (only first occurrence)
+      if (m.is_pdf_primary && !pdfPrimaryMap.has(m.model_id)) {
+        pdfPrimaryMap.set(m.model_id, m.public_url)
+      }
+    })
+    // Build photoMap: prefer PDF 1, fallback to first uploaded
     const photoMap = new Map<string, string>()
-    ;(media || []).forEach((m: any) => { if (!photoMap.has(m.model_id)) photoMap.set(m.model_id, m.public_url) })
+    filtered.forEach((m: any) => {
+      const pdfUrl = pdfPrimaryMap.get(m.id)
+      const firstUrl = firstImageMap.get(m.id)?.url
+      photoMap.set(m.id, pdfUrl || firstUrl || null)
+    })
 
-    const enriched = filtered.map(m => ({ ...m, photo: photoMap.get(m.id) || null }))
+    const enriched = filtered.map(m => ({ ...m, photo: photoMap.get(m.id) }))
     const pending = enriched.filter(m => !m.reviewed)
     // Sort pending by newest submission first (most recent created_at)
     pending.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
