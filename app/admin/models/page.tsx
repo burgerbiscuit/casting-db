@@ -60,6 +60,7 @@ export default function ModelsPage() {
     const { data: allMedia } = await supabase
       .from('model_media')
       .select('*')
+      .order('is_pdf_primary', { ascending: false })
 
     // Build photo map: prioritize PDF 1, then PDF 2, then first visible
     const photoMap = new Map<string, string>()
