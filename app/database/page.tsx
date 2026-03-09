@@ -12,7 +12,7 @@ export default function DatabaseLanding() {
         <h1 className="text-2xl font-light tracking-widest uppercase mb-4 text-center">Who Are You?</h1>
         <p className="text-xs text-neutral-500 mb-16 text-center max-w-sm">Select the option that best describes you to get started.</p>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full max-w-2xl">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full max-w-3xl">
           <Link href="/database/talent"
             className="group border border-neutral-200 hover:border-black transition-all p-10 flex flex-col items-center gap-4 text-center">
             <span className="text-3xl">✦</span>
@@ -22,12 +22,30 @@ export default function DatabaseLanding() {
             </div>
           </Link>
 
+          <Link href="/scout"
+            className="group border border-neutral-200 hover:border-black transition-all p-10 flex flex-col items-center gap-4 text-center">
+            <span className="text-3xl">⬡</span>
+            <div>
+              <p className="text-xs font-medium tracking-widest uppercase mb-1">Climbers / Stories</p>
+              <p className="text-[10px] text-neutral-400 leading-relaxed">I have a unique background or story and want to be considered</p>
+            </div>
+          </Link>
+
           <Link href="/database/agent"
             className="group border border-neutral-200 hover:border-black transition-all p-10 flex flex-col items-center gap-4 text-center">
             <span className="text-3xl">◈</span>
             <div>
               <p className="text-xs font-medium tracking-widest uppercase mb-1">Agent</p>
               <p className="text-[10px] text-neutral-400 leading-relaxed">I represent talent and want to add my contact information</p>
+            </div>
+          </Link>
+
+          <Link href="/assistant"
+            className="group border border-neutral-200 hover:border-black transition-all p-10 flex flex-col items-center gap-4 text-center">
+            <span className="text-3xl">◉</span>
+            <div>
+              <p className="text-xs font-medium tracking-widest uppercase mb-1">Assistant / Intern</p>
+              <p className="text-[10px] text-neutral-400 leading-relaxed">I am interested in working as a casting assistant or intern</p>
             </div>
           </Link>
 
