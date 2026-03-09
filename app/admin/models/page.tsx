@@ -56,10 +56,14 @@ export default function ModelsPage() {
     const ids = filtered.map(m => m.id)
     if (!ids.length) { setPending([]); setReviewed([]); setLoading(false); return }
 
-    const { data: media } = await supabase
-      .from('model_media')
-      .select('*')
-      .in('model_id', ids)
+    // Use REST API directly to avoid .in() client library issues
+    const idParams = ids.map(id => `"${id}"`).join(',')
+    const response = await fetch(`https://yayrsksrgrsjxcewwwlg.supabase.co/rest/v1/model_media?model_id=in.(${idParams})`, {
+      headers: {
+        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlheXJza3NyZ3JzanhjZXd3d2xnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI0MDAzNjcsImV4cCI6MjA4Nzk3NjM2N30.EfiZUuyz0m5lr_R_dHSZVoc6uz1LjuKYx5AhApcZIFE'
+      }
+    })
+    const media = await response.json()
 
     const photoMap = new Map<string, string>()
     ;(media || []).forEach((m: any) => { 
