@@ -30,12 +30,32 @@ export function PresentationViewer({
     presentationModels.forEach(pm => { if (pm.client_notes) m[pm.model_id] = pm.client_notes })
     return m
   })
+  const [localNotes, setLocalNotes] = useState<Record<string, string>>(() => {
+    const m: Record<string, string> = {}
+    Object.entries(shortlistMap).forEach(([modelId, entry]: any) => {
+      if (entry?.notes) m[modelId] = entry.notes
+    })
+    return m
+  })
   const [mediaModal, setMediaModal] = useState<{ url: string; type: string } | null>(null)
   const clientNoteDebounce = useRef<any>(null)
   const swipeTouchStart = useRef<number>(0)
 
   const [isMobile, setIsMobile] = useState(false)
   const [isLandscape, setIsLandscape] = useState(false)
+
+  // Sync shortlistMap updates to localNotes
+  useEffect(() => {
+    setLocalNotes(prev => {
+      const updated = { ...prev }
+      Object.entries(shortlistMap).forEach(([modelId, entry]: any) => {
+        if (entry?.notes && updated[modelId] !== entry.notes) {
+          updated[modelId] = entry.notes
+        }
+      })
+      return updated
+    })
+  }, [shortlistMap])
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768)
@@ -744,9 +764,12 @@ export function PresentationViewer({
 
         {/* Notes textarea */}
         <textarea placeholder="Your notes..." 
-          value={shortlistMap[current.model_id]?.notes || ""}
+          value={localNotes[current.model_id] || ""}
           onChange={(e) => {
             const val = e.target.value
+            // Update local state immediately (optimistic update)
+            setLocalNotes(prev => ({ ...prev, [current.model_id]: val }))
+            // Save to database in background
             fetch('/api/shortlist', {
               method: 'POST',
               body: JSON.stringify({
