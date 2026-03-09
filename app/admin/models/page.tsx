@@ -57,7 +57,7 @@ export default function ModelsPage() {
     if (!ids.length) { setPending([]); setReviewed([]); setLoading(false); return }
 
     const { data: media } = await supabase
-      .from('model_media').select('model_id, public_url, is_pdf_primary')
+      .from('model_media').select('model_id, public_url, is_pdf_primary, display_order')
       .in('model_id', ids).eq('is_visible', true).order('is_pdf_primary', { ascending: false }).order('display_order')
 
     const photoMap = new Map<string, string>()
