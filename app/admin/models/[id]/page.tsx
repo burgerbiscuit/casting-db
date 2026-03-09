@@ -171,18 +171,34 @@ export default function ModelProfile({ params }: { params: { id: string } }) {
             {model.first_name} {model.last_name}
           </h1>
           {model.agency && <p className="text-sm text-neutral-400">{model.agency}</p>}
-          {model.instagram_handle && (
-            <a href={`https://instagram.com/${model.instagram_handle.replace('@', '')}`} target="_blank" rel="noopener noreferrer"
-              className="text-sm text-blue-600 hover:text-blue-800 hover:underline">
-              @{model.instagram_handle.replace('@', '')}
-            </a>
-          )}
-          {model.portfolio_url && (
-            <a href={model.portfolio_url} target="_blank" rel="noopener noreferrer"
-              className="block text-sm text-blue-600 hover:text-blue-800 hover:underline">
-              Portfolio
-            </a>
-          )}
+          
+          {/* Social Links with Icons */}
+          <div className="flex items-center gap-4 mt-3">
+            {model.instagram_handle && (
+              <a href={`https://instagram.com/${model.instagram_handle.replace('@', '')}`} target="_blank" rel="noopener noreferrer"
+                className="flex items-center gap-1.5 text-neutral-600 hover:text-black transition-colors" title="Instagram">
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.204-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zm0 10.162a4 4 0 110-8 4 4 0 010 8zm4.29-10.646a1.44 1.44 0 11-2.881 0 1.44 1.44 0 012.881 0z"/>
+                </svg>
+                <span className="text-sm">@{model.instagram_handle.replace('@', '')}</span>
+              </a>
+            )}
+            {model.tiktok_handle && (
+              <a href={`https://tiktok.com/@${model.tiktok_handle.replace('@', '')}`} target="_blank" rel="noopener noreferrer"
+                className="flex items-center gap-1.5 text-neutral-600 hover:text-black transition-colors" title="TikTok">
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.66 0 2.89 2.89 0 0 1 5.66 0v-3.52a6.33 6.33 0 0 1-5.66 3.14 6.34 6.34 0 0 1-5.66-3.14 6.34 6.34 0 0 1 11.32-3.08v1.14a4.83 4.83 0 0 1-3.77 4.25v3.56a8.81 8.81 0 0 0 8.81-8.81v-6.21z"/>
+                </svg>
+                <span className="text-sm">@{model.tiktok_handle.replace('@', '')}</span>
+              </a>
+            )}
+            {model.portfolio_url && (
+              <a href={model.portfolio_url} target="_blank" rel="noopener noreferrer"
+                className="text-sm text-blue-600 hover:text-blue-800 hover:underline">
+                Portfolio
+              </a>
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-3">
           {!model.reviewed ? (
