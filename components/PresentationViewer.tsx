@@ -659,7 +659,7 @@ export function PresentationViewer({
       })()}
 
 {view === 'slides' && current && currentModel && (
-  <div onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} className="fixed inset-0 bg-white z-40 flex flex-col overflow-hidden" style={{height: '100vh'}}>
+  <div onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} className="fixed inset-0 bg-white z-40 flex flex-col overflow-hidden" style={{height: '100dvh'}}>
     
     {/* TOP BAR: Logo (centered) + Exit button (right) */}
     <div className="flex-shrink-0 px-8 py-3 flex items-center justify-between">
@@ -721,12 +721,12 @@ export function PresentationViewer({
     </div>
     
     {/* BODY: Photos left + Notes right */}
-    <div className="flex-1 flex overflow-hidden" style={{paddingBottom: '48px', paddingTop: '4px'}}>
+    <div className="flex-1 min-h-0 flex overflow-hidden" style={{paddingBottom: '48px', paddingTop: '4px'}}>
       
       {/* LEFT: 2 Photos side by side */}
-      <div className="flex-1 flex gap-2 overflow-hidden px-8 bg-white">
+      <div className="flex-1 min-h-0 flex gap-2 overflow-hidden px-8 bg-white">
         {/* Photo 1 */}
-        <div className="flex-1 relative bg-neutral-200 overflow-hidden">
+        <div className="flex-1 min-h-0 relative bg-neutral-200 overflow-hidden">
           {photoMedia[0] ? (
             photoMedia[0].type === 'video'
               ? <video src={photoMedia[0].public_url} className="absolute inset-0 w-full h-full object-cover" controls />
@@ -737,7 +737,7 @@ export function PresentationViewer({
         </div>
         
         {/* Photo 2 */}
-        <div className="flex-1 relative bg-neutral-200 overflow-hidden">
+        <div className="flex-1 min-h-0 relative bg-neutral-200 overflow-hidden">
           {photoMedia[1] ? (
             photoMedia[1].type === 'video'
               ? <video src={photoMedia[1].public_url} className="absolute inset-0 w-full h-full object-cover" controls />
