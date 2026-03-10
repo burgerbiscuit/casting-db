@@ -721,10 +721,10 @@ export function PresentationViewer({
     </div>
     
     {/* BODY: Photos left + Notes right */}
-    <div className="flex-1 flex overflow-hidden" style={{paddingBottom: '48px'}}>
+    <div className="flex-1 flex overflow-hidden" style={{paddingBottom: '48px', paddingTop: '4px'}}>
       
       {/* LEFT: 2 Photos side by side */}
-      <div className="flex-1 flex gap-4 overflow-hidden px-8 py-6 bg-white">
+      <div className="flex-1 flex gap-2 overflow-hidden px-8 py-0 bg-white">
         {/* Photo 1 */}
         <div className="flex-1 bg-neutral-200 flex items-center justify-center overflow-hidden">
           {photoMedia[0] ? (
