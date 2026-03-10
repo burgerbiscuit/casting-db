@@ -98,8 +98,12 @@ export default async function PresentationView({ params }: { params: { id: strin
     mediaByModel[m.model_id].push(m)
   })
 
-  // admin_notes are team notes visible to clients on the presentation
-  const sanitizedModels = presentationModels || []
+  // Sort alphabetically by last name, first name within each category
+  const sanitizedModels = (presentationModels || []).sort((a: any, b: any) => {
+    const aName = ((a.models?.last_name || '') + (a.models?.first_name || '')).toLowerCase()
+    const bName = ((b.models?.last_name || '') + (b.models?.first_name || '')).toLowerCase()
+    return aName.localeCompare(bName)
+  })
 
   return (
     <div className="max-w-7xl mx-auto">

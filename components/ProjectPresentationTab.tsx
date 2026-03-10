@@ -190,11 +190,16 @@ export function ProjectPresentationTab({ projectId, presentationId: initialPresI
     setCopied(true); setTimeout(() => setCopied(false), 2000)
   }
 
-  // Group models by category for display
-  const uncategorized = presentationModels.filter(pm => !pm.category_id)
+  // Group models by category for display — alphabetical within each section
+  const alphaSort = (a: any, b: any) => {
+    const aName = ((a.models?.last_name || '') + (a.models?.first_name || '')).toLowerCase()
+    const bName = ((b.models?.last_name || '') + (b.models?.first_name || '')).toLowerCase()
+    return aName.localeCompare(bName)
+  }
+  const uncategorized = presentationModels.filter(pm => !pm.category_id).sort(alphaSort)
   const byCategory = categories.map(cat => ({
     ...cat,
-    models: presentationModels.filter(pm => pm.category_id === cat.id)
+    models: presentationModels.filter(pm => pm.category_id === cat.id).sort(alphaSort)
   }))
 
   if (!presId) return (
