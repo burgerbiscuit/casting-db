@@ -60,7 +60,7 @@ export default async function PresentationView({ params }: { params: { id: strin
 
   const modelIds = (presentationModels || []).map((pm: any) => pm.model_id)
   const { data: allMedia } = await db
-    .from('model_media').select('*').in('model_id', modelIds).order('display_order')
+    .from('model_media').select('*').in('model_id', modelIds).order('is_pdf_primary', { ascending: false }).order('is_pdf_secondary', { ascending: false }).order('display_order')
 
   let clientFirstName = 'Guest'
   if (user) {

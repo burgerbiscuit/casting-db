@@ -55,7 +55,7 @@ export default async function SharePage({ params }: { params: { id: string } }) 
   // Attach media to each model
   const modelIds = (presModels || []).map((m: any) => m.model_id)
   const { data: allMedia } = modelIds.length
-    ? await supabase.from('model_media').select('*').in('model_id', modelIds).order('display_order')
+    ? await supabase.from('model_media').select('*').in('model_id', modelIds).order('is_pdf_primary', { ascending: false }).order('is_pdf_secondary', { ascending: false }).order('display_order')
     : { data: [] }
 
   const mediaByModel: Record<string, any[]> = {}

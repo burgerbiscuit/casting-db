@@ -37,7 +37,7 @@ export default async function ProjectDetail({ params, searchParams }: { params: 
   const modelIds = (projectModels || []).map((pm: any) => pm.models?.id).filter(Boolean)
   const { data: photos } = modelIds.length > 0 ? await supabase
     .from('model_media').select('model_id, public_url')
-    .in('model_id', modelIds).eq('is_visible', true).eq('type', 'photo').order('display_order') : { data: [] }
+    .in('model_id', modelIds).eq('is_visible', true).eq('type', 'photo').order('is_pdf_primary', { ascending: false }).order('display_order') : { data: [] }
   const photoMap = new Map<string, string>()
   ;(photos || []).forEach((p: any) => { if (!photoMap.has(p.model_id)) photoMap.set(p.model_id, p.public_url) })
 
