@@ -747,73 +747,72 @@ export function PresentationViewer({
       </div>
       
       {/* RIGHT: Backend fields + Notes + Links */}
-      <div className="flex-shrink-0 px-6 py-6 flex flex-col gap-3 overflow-y-auto" style={{width: '360px'}}>
-        {/* Backend fields */}
-        {current.rate?.trim() && (
-          <div className="text-[9px]">
-            <p className="text-neutral-400 uppercase tracking-wider font-medium mb-0.5">Rate</p>
-            <p className="text-neutral-700">{current.rate}</p>
-          </div>
-        )}
-        {current.option?.trim() && (
-          <div className="text-[9px]">
-            <p className="text-neutral-400 uppercase tracking-wider font-medium mb-0.5">Option</p>
-            <p className="text-neutral-700">{current.option}</p>
-          </div>
-        )}
-        {current.location?.trim() && (
-          <div className="text-[9px]">
-            <p className="text-neutral-400 uppercase tracking-wider font-medium mb-0.5">Location</p>
-            <p className="text-neutral-700">{current.location}</p>
-          </div>
-        )}
+      <div className="flex-shrink-0 px-6 py-6 flex flex-col h-full" style={{width: '360px'}}>
+        {/* Top: rate/option/location */}
+        <div className="flex flex-col gap-3">
+          {current.rate?.trim() && (
+            <div className="text-[9px]">
+              <p className="text-neutral-400 uppercase tracking-wider font-medium mb-0.5">Rate</p>
+              <p className="text-neutral-700">{current.rate}</p>
+            </div>
+          )}
+          {current.option?.trim() && (
+            <div className="text-[9px]">
+              <p className="text-neutral-400 uppercase tracking-wider font-medium mb-0.5">Option</p>
+              <p className="text-neutral-700">{current.option}</p>
+            </div>
+          )}
+          {current.location?.trim() && (
+            <div className="text-[9px]">
+              <p className="text-neutral-400 uppercase tracking-wider font-medium mb-0.5">Location</p>
+              <p className="text-neutral-700">{current.location}</p>
+            </div>
+          )}
+        </div>
 
-        {/* Spacer — pushes notes/links to bottom */}
-        <div className="flex-1" />
-
-        {/* Notes textarea */}
-        <textarea placeholder="Your notes..." 
-          value={localNotes[current.model_id] || ""}
-          onChange={(e) => {
-            const val = e.target.value
-            // Update local state immediately (optimistic update)
-            setLocalNotes(prev => ({ ...prev, [current.model_id]: val }))
-            // Save to database in background
-            fetch('/api/shortlist', {
-              method: 'POST',
-              body: JSON.stringify({
-                action: 'updateNotes',
-                presentationId,
-                modelId: current.model_id,
-                notes: val,
-              }),
-            }).catch(err => console.error('Save notes failed:', err))
-          }}
-          className="w-full text-[8px] border border-neutral-300 bg-white p-2 focus:outline-none focus:border-black resize-none placeholder:text-neutral-400" 
-          rows={4} />
-        
-        {current.show_portfolio && currentModel.portfolio_url && (
-          <a href={currentModel.portfolio_url.startsWith('http') ? currentModel.portfolio_url : 'https://' + currentModel.portfolio_url}
-            target="_blank" rel="noopener noreferrer"
-            className="text-[8px] tracking-widest uppercase border border-neutral-300 px-2 py-1 hover:border-black transition-colors text-center">
-            PORTFOLIO ↗
-          </a>
-        )}
-        
-        {current.show_instagram && currentModel.instagram_handle && (
-          <a href={"https://instagram.com/" + currentModel.instagram_handle}
-            target="_blank" rel="noopener noreferrer"
-            className="text-[8px] tracking-widest uppercase border border-neutral-300 px-2 py-1 hover:border-black transition-colors text-center">
-            INSTAGRAM ↗
-          </a>
-        )}
-        
-        {videoMedia.length > 0 && (
-          <button onClick={() => setMediaModal({ url: videoMedia[0].public_url, type: 'video' })}
-            className="text-[8px] tracking-widest uppercase border border-neutral-300 px-2 py-1 hover:border-black transition-colors text-center">
-            ▶ VIDEO
-          </button>
-        )}
+        {/* Bottom: notes + links — pushed to bottom with mt-auto */}
+        <div className="mt-auto flex flex-col gap-3">
+          <textarea placeholder="Your notes..." 
+            value={localNotes[current.model_id] || ""}
+            onChange={(e) => {
+              const val = e.target.value
+              setLocalNotes(prev => ({ ...prev, [current.model_id]: val }))
+              fetch('/api/shortlist', {
+                method: 'POST',
+                body: JSON.stringify({
+                  action: 'updateNotes',
+                  presentationId,
+                  modelId: current.model_id,
+                  notes: val,
+                }),
+              }).catch(err => console.error('Save notes failed:', err))
+            }}
+            className="w-full text-[8px] border border-neutral-300 bg-white p-2 focus:outline-none focus:border-black resize-none placeholder:text-neutral-400" 
+            rows={4} />
+          
+          {current.show_portfolio && currentModel.portfolio_url && (
+            <a href={currentModel.portfolio_url.startsWith('http') ? currentModel.portfolio_url : 'https://' + currentModel.portfolio_url}
+              target="_blank" rel="noopener noreferrer"
+              className="text-[8px] tracking-widest uppercase border border-neutral-300 px-2 py-1 hover:border-black transition-colors text-center">
+              PORTFOLIO ↗
+            </a>
+          )}
+          
+          {current.show_instagram && currentModel.instagram_handle && (
+            <a href={"https://instagram.com/" + currentModel.instagram_handle}
+              target="_blank" rel="noopener noreferrer"
+              className="text-[8px] tracking-widest uppercase border border-neutral-300 px-2 py-1 hover:border-black transition-colors text-center">
+              INSTAGRAM ↗
+            </a>
+          )}
+          
+          {videoMedia.length > 0 && (
+            <button onClick={() => setMediaModal({ url: videoMedia[0].public_url, type: 'video' })}
+              className="text-[8px] tracking-widest uppercase border border-neutral-300 px-2 py-1 hover:border-black transition-colors text-center">
+              ▶ VIDEO
+            </button>
+          )}
+        </div>
       </div>
     </div>
     
