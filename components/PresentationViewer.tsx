@@ -671,8 +671,8 @@ export function PresentationViewer({
     {/* MODEL INFO + BUTTONS BAR: Name/Sizing (left) | Confirm + Shortlist + Release (right) */}
     <div className="flex-shrink-0 px-8 py-3 flex items-center justify-between bg-white">
       <div>
-        <h2 className="text-xl font-light tracking-[0.15em] uppercase mb-1">{currentModel.first_name} {currentModel.last_name}</h2>
-        <p className="text-[11px] text-neutral-500 tracking-wider">
+        <h2 className="text-2xl font-light tracking-[0.15em] uppercase mb-1">{currentModel.first_name} {currentModel.last_name}</h2>
+        <p className="text-[13px] text-neutral-500 tracking-wider">
           {currentModel.primary_city && <>{currentModel.primary_city} · </>}
           {getSizingParts(current, currentModel).join(' · ')}
         </p>
