@@ -224,8 +224,8 @@ export function PresentationViewer({
     if (aS && !bS) return -1
     if (!aS && bS) return 1
     // Alphabetical within same group
-    const aName = ((a.models?.last_name || '') + (a.models?.first_name || '')).toLowerCase()
-    const bName = ((b.models?.last_name || '') + (b.models?.first_name || '')).toLowerCase()
+    const aName = ((a.models?.first_name || '') + (a.models?.last_name || '')).toLowerCase()
+    const bName = ((b.models?.first_name || '') + (b.models?.last_name || '')).toLowerCase()
     return aName.localeCompare(bName)
   })
 
@@ -357,8 +357,8 @@ export function PresentationViewer({
 
     // Sort alphabetically by last name within a section
   const alphaSort = (a: any, b: any) => {
-    const aName = ((a.models?.last_name || '') + (a.models?.first_name || '')).toLowerCase()
-    const bName = ((b.models?.last_name || '') + (b.models?.first_name || '')).toLowerCase()
+    const aName = ((a.models?.first_name || '') + (a.models?.last_name || '')).toLowerCase()
+    const bName = ((b.models?.first_name || '') + (b.models?.last_name || '')).toLowerCase()
     return aName.localeCompare(bName)
   }
 

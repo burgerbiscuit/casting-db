@@ -26,8 +26,8 @@ export default function ShareViewer({ presentationName, projectName, presModels,
   })
 
   const alphaSort = (arr: any[]) => [...arr].sort((a, b) => {
-    const la = (a.models?.last_name || '').toLowerCase()
-    const lb = (b.models?.last_name || '').toLowerCase()
+    const la = (a.models?.first_name || '').toLowerCase()
+    const lb = (b.models?.first_name || '').toLowerCase()
     return la.localeCompare(lb)
   })
 

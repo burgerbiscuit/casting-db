@@ -100,8 +100,8 @@ export default async function PresentationView({ params }: { params: { id: strin
 
   // Sort alphabetically by last name, first name within each category
   const sanitizedModels = (presentationModels || []).sort((a: any, b: any) => {
-    const aName = ((a.models?.last_name || '') + (a.models?.first_name || '')).toLowerCase()
-    const bName = ((b.models?.last_name || '') + (b.models?.first_name || '')).toLowerCase()
+    const aName = ((a.models?.first_name || '') + (a.models?.last_name || '')).toLowerCase()
+    const bName = ((b.models?.first_name || '') + (b.models?.last_name || '')).toLowerCase()
     return aName.localeCompare(bName)
   })
 

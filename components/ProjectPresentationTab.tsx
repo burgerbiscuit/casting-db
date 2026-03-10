@@ -192,8 +192,8 @@ export function ProjectPresentationTab({ projectId, presentationId: initialPresI
 
   // Group models by category for display — alphabetical within each section
   const alphaSort = (a: any, b: any) => {
-    const aName = ((a.models?.last_name || '') + (a.models?.first_name || '')).toLowerCase()
-    const bName = ((b.models?.last_name || '') + (b.models?.first_name || '')).toLowerCase()
+    const aName = ((a.models?.first_name || '') + (a.models?.last_name || '')).toLowerCase()
+    const bName = ((b.models?.first_name || '') + (b.models?.last_name || '')).toLowerCase()
     return aName.localeCompare(bName)
   }
   const uncategorized = presentationModels.filter(pm => !pm.category_id).sort(alphaSort)
