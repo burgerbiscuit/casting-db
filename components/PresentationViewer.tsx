@@ -768,6 +768,9 @@ export function PresentationViewer({
           </div>
         )}
 
+        {/* Spacer — pushes notes/links to bottom */}
+        <div className="flex-1" />
+
         {/* Notes textarea */}
         <textarea placeholder="Your notes..." 
           value={localNotes[current.model_id] || ""}
