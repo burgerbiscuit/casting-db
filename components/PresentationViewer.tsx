@@ -229,8 +229,32 @@ export function PresentationViewer({
     return aName.localeCompare(bName)
   })
 
+  // Sort alphabetically by first name within a section
+  const alphaSort = (a: any, b: any) => {
+    const aName = ((a.models?.first_name || '') + (a.models?.last_name || '')).toLowerCase()
+    const bName = ((b.models?.first_name || '') + (b.models?.last_name || '')).toLowerCase()
+    return aName.localeCompare(bName)
+  }
+
+  // Group sorted (non-shortlisted) by category — alphabetical within each section
+  const releasedModels = sorted.filter(pm => !!releases[pm.model_id])
+  const unreleasedSorted = sorted.filter(pm => !releases[pm.model_id])
+  const uncategorized = unreleasedSorted.filter(pm => !pm.category_id && !shortlists[pm.model_id]).sort(alphaSort)
+  const byCategory = categories.map(cat => ({
+    ...cat,
+    models: unreleasedSorted.filter(pm => pm.category_id === cat.id && !shortlists[pm.model_id]).sort(alphaSort)
+  })).filter(cat => cat.models.length > 0)
+
+  // Slides navigate in the same order as the grid: shortlisted → sections (category order, alpha within) → uncategorized → released
+  const slidesOrder = [
+    ...sorted.filter(pm => shortlists[pm.model_id] && !releases[pm.model_id]),
+    ...byCategory.flatMap(cat => cat.models),
+    ...uncategorized,
+    ...releasedModels,
+  ]
+
   useEffect(() => {
-    const model = sorted[slideIndex]?.models
+    const model = slidesOrder[slideIndex]?.models
     if (!model?.instagram_handle) return
     const handle = model.instagram_handle
     if (followerCounts[handle]) return
@@ -243,9 +267,9 @@ export function PresentationViewer({
           setFollowerCounts(prev => ({ ...prev, [handle]: fmt }))
         }
       }).catch(() => {})
-  }, [slideIndex, sorted])
+  }, [slideIndex, slidesOrder.length])
 
-  const current = sorted[slideIndex]
+  const current = slidesOrder[slideIndex]
   const currentModel = current?.models
   const currentMedia = (mediaByModel[current?.model_id] || []).filter((m: any) => m.is_visible)
   const photoMedia = currentMedia.filter((m: any) => m.type !== 'video' && m.type !== 'digital')
@@ -253,7 +277,7 @@ export function PresentationViewer({
   const digitalMedia = currentMedia.filter((m: any) => m.type === 'digital')
 
   const prev = () => setSlideIndex(i => Math.max(0, i - 1))
-  const next = () => setSlideIndex(i => Math.min(sorted.length - 1, i + 1))
+  const next = () => setSlideIndex(i => Math.min(slidesOrder.length - 1, i + 1))
 
   const touchStartX = useRef<number | null>(null)
   const onTouchStart = (e: React.TouchEvent) => { touchStartX.current = e.touches[0].clientX }
@@ -355,24 +379,6 @@ export function PresentationViewer({
   const confirmedCount = Object.keys(adminConfirmed).filter(k => adminConfirmed[k] && clientStatus[k] === "pending_confirmation").length
   const shortlistedCount = Object.keys(shortlists).filter(k => shortlists[k] && !releases[k]).length
 
-    // Sort alphabetically by last name within a section
-  const alphaSort = (a: any, b: any) => {
-    const aName = ((a.models?.first_name || '') + (a.models?.last_name || '')).toLowerCase()
-    const bName = ((b.models?.first_name || '') + (b.models?.last_name || '')).toLowerCase()
-    return aName.localeCompare(bName)
-  }
-
-  // Group sorted (non-shortlisted) by category for section headers — alphabetical within each section
-  // Released models go to the very bottom, outside all categories
-  const releasedModels = sorted.filter(pm => !!releases[pm.model_id])
-  const unreleasedSorted = sorted.filter(pm => !releases[pm.model_id])
-  const uncategorized = unreleasedSorted.filter(pm => !pm.category_id && !shortlists[pm.model_id]).sort(alphaSort)
-
-  const byCategory = categories.map(cat => ({
-    ...cat,
-    models: unreleasedSorted.filter(pm => pm.category_id === cat.id && !shortlists[pm.model_id]).sort(alphaSort)
-  })).filter(cat => cat.models.length > 0)
-
   const getSizingParts = (pm: any, model: any): string[] => {
     const parts: string[] = []
     if (model?.agency) parts.push(model.agency)
@@ -466,7 +472,7 @@ export function PresentationViewer({
                       clientId={clientId} initialShortlisted={true}
                       initialNotes={shortlistMap[pm.model_id]?.notes || ''}
                       onShortlistChange={(v) => handleShortlistChange(pm.model_id, v)}
-                      onCardClick={() => { setSlideIndex(sorted.findIndex(s => s.model_id === pm.model_id)); setView('slides') }} />
+                      onCardClick={() => { setSlideIndex(slidesOrder.findIndex(s => s.model_id === pm.model_id)); setView('slides') }} />
                     <button
                       onClick={() => {
                         if (clientStatus[pm.model_id] === "pending_confirmation" || (adminConfirmed[pm.model_id] && clientStatus[pm.model_id] === "pending_confirmation")) return
@@ -497,7 +503,7 @@ export function PresentationViewer({
                   clientId={clientId} initialShortlisted={false}
                   initialNotes={shortlistMap[pm.model_id]?.notes || ''}
                   onShortlistChange={(v) => handleShortlistChange(pm.model_id, v)}
-                  onCardClick={() => { setSlideIndex(sorted.findIndex(s => s.model_id === pm.model_id)); setView('slides') }} />
+                  onCardClick={() => { setSlideIndex(slidesOrder.findIndex(s => s.model_id === pm.model_id)); setView('slides') }} />
                 <button
                   onClick={() => {
                     if (clientStatus[pm.model_id] === "pending_confirmation" || (adminConfirmed[pm.model_id] && clientStatus[pm.model_id] === "pending_confirmation")) return
@@ -547,7 +553,7 @@ export function PresentationViewer({
 
 
       {view === 'swipe' && isMobile && !isLandscape && (() => {
-        const pm = sorted[swipeIndex]
+        const pm = slidesOrder[swipeIndex]
         const model = pm?.models
         const photos = (mediaByModel[pm?.model_id] || []).filter((m: any) => m.type !== 'video')
         const photo = photos[0]
@@ -564,9 +570,9 @@ export function PresentationViewer({
               </button>
               <div className="flex flex-col items-center">
                 <img src="/logo.jpg" alt="" className="h-4 w-auto mb-0.5" />
-                <span className="text-[9px] tracking-widest uppercase text-neutral-400">{swipeIndex + 1} / {sorted.length}</span>
+                <span className="text-[9px] tracking-widest uppercase text-neutral-400">{swipeIndex + 1} / {slidesOrder.length}</span>
               </div>
-              <button onClick={() => setSwipeIndex(i => Math.min(sorted.length - 1, i + 1))} disabled={swipeIndex === sorted.length - 1}
+              <button onClick={() => setSwipeIndex(i => Math.min(slidesOrder.length - 1, i + 1))} disabled={swipeIndex === slidesOrder.length - 1}
                 className="p-2 disabled:opacity-20">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 18l6-6-6-6"/></svg>
               </button>
@@ -815,9 +821,9 @@ export function PresentationViewer({
         PREV
       </button>
       
-      <div className="text-[9px] text-neutral-400 tracking-widest uppercase">{slideIndex + 1} / {sorted.length}</div>
+      <div className="text-[9px] text-neutral-400 tracking-widest uppercase">{slideIndex + 1} / {slidesOrder.length}</div>
       
-      <button onClick={next} disabled={slideIndex === sorted.length - 1}
+      <button onClick={next} disabled={slideIndex === slidesOrder.length - 1}
         className="py-1 px-3 text-neutral-400 hover:text-black disabled:opacity-20 transition-colors border border-neutral-300 text-[9px] tracking-widest uppercase">
         NEXT
       </button>
