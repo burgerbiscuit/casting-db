@@ -724,24 +724,24 @@ export function PresentationViewer({
     <div className="flex-1 flex overflow-hidden" style={{paddingBottom: '48px', paddingTop: '4px'}}>
       
       {/* LEFT: 2 Photos side by side */}
-      <div className="flex-1 flex gap-2 overflow-hidden px-8 py-0 bg-white">
+      <div className="flex-1 flex gap-2 overflow-hidden px-8 bg-white">
         {/* Photo 1 */}
-        <div className="flex-1 bg-neutral-200 flex items-center justify-center overflow-hidden">
+        <div className="flex-1 relative bg-neutral-200 overflow-hidden">
           {photoMedia[0] ? (
             photoMedia[0].type === 'video'
-              ? <video src={photoMedia[0].public_url} className="w-full h-full object-cover" controls />
-              : <img src={photoMedia[0].public_url} alt={currentModel.first_name} className="w-full h-full object-cover object-top" />
+              ? <video src={photoMedia[0].public_url} className="absolute inset-0 w-full h-full object-cover" controls />
+              : <img src={photoMedia[0].public_url} alt={currentModel.first_name} className="absolute inset-0 w-full h-full object-cover object-top" />
           ) : (
-            <div className="text-neutral-400 text-sm">No photo</div>
+            <div className="absolute inset-0 flex items-center justify-center text-neutral-400 text-sm">No photo</div>
           )}
         </div>
         
         {/* Photo 2 */}
-        <div className="flex-1 bg-neutral-200 flex items-center justify-center overflow-hidden">
+        <div className="flex-1 relative bg-neutral-200 overflow-hidden">
           {photoMedia[1] ? (
             photoMedia[1].type === 'video'
-              ? <video src={photoMedia[1].public_url} className="w-full h-full object-cover" controls />
-              : <img src={photoMedia[1].public_url} alt={currentModel.first_name} className="w-full h-full object-cover object-top" />
+              ? <video src={photoMedia[1].public_url} className="absolute inset-0 w-full h-full object-cover" controls />
+              : <img src={photoMedia[1].public_url} alt={currentModel.first_name} className="absolute inset-0 w-full h-full object-cover object-top" />
           ) : null}
         </div>
       </div>
