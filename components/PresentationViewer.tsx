@@ -747,9 +747,9 @@ export function PresentationViewer({
       </div>
       
       {/* RIGHT: Backend fields + Notes + Links */}
-      <div className="flex-shrink-0 px-6 py-6 flex flex-col h-full" style={{width: '360px'}}>
-        {/* Top: rate/option/location */}
-        <div className="flex flex-col gap-3">
+      <div className="flex-shrink-0 px-6 py-6 flex flex-col h-full overflow-hidden" style={{width: '360px'}}>
+        {/* Top: rate/option/location — scrollable if overflow */}
+        <div className="min-h-0 overflow-y-auto flex flex-col gap-3">
           {current.rate?.trim() && (
             <div className="text-[9px]">
               <p className="text-neutral-400 uppercase tracking-wider font-medium mb-0.5">Rate</p>
@@ -770,8 +770,8 @@ export function PresentationViewer({
           )}
         </div>
 
-        {/* Bottom: notes + links — pushed to bottom with mt-auto */}
-        <div className="mt-auto flex flex-col gap-3">
+        {/* Bottom: notes + links — always pinned to bottom */}
+        <div className="flex-shrink-0 mt-auto pt-3 flex flex-col gap-3">
           <textarea placeholder="Your notes..." 
             value={localNotes[current.model_id] || ""}
             onChange={(e) => {
