@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { CopyButton } from '@/components/CopyButton'
 import { ProjectModelsSection } from '@/components/ProjectModelsSection'
 import { ProjectPresentationTab } from '@/components/ProjectPresentationTab'
+import { ProjectGroupsTab } from '@/components/ProjectGroupsTab'
 import ProjectSpecsPanel from '@/components/ProjectSpecsPanel'
 import ProjectFilesTab from '@/components/ProjectFilesTab'
 
@@ -121,13 +122,21 @@ export default async function ProjectDetail({ params, searchParams }: { params: 
           className={`px-6 py-3 text-xs tracking-widest uppercase transition-colors border-b-2 -mb-[1px] ${tab === 'presentation' ? 'border-black text-black' : 'border-transparent text-neutral-400 hover:text-black'}`}>
           Presentation
         </Link>
+        <Link href={`/admin/projects/${id}?tab=groups`}
+          className={`px-6 py-3 text-xs tracking-widest uppercase transition-colors border-b-2 -mb-[1px] ${tab === 'groups' ? 'border-black text-black' : 'border-transparent text-neutral-400 hover:text-black'}`}>
+          Groups
+        </Link>
         <Link href={`/admin/projects/${id}?tab=files`}
           className={`px-6 py-3 text-xs tracking-widest uppercase transition-colors border-b-2 -mb-[1px] ${tab === 'files' ? 'border-black text-black' : 'border-transparent text-neutral-400 hover:text-black'}`}>
           Files ({projectFiles?.length || 0})
         </Link>
       </div>
 
-      {tab !== 'presentation' && (
+      {tab === 'groups' && (
+        <ProjectGroupsTab projectId={id} />
+      )}
+
+      {tab !== 'presentation' && tab !== 'groups' && (
         <ProjectModelsSection
           projectId={id}
           modelsWithPhotos={modelsWithPhotos}
