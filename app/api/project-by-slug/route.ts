@@ -7,7 +7,7 @@ export async function GET(req: NextRequest) {
   const supabase = await createServiceClient()
   const { data, error } = await supabase
     .from('projects')
-    .select('id, name, slug, status, shoot_date')
+    .select('id, name, slug, status, shoot_date, is_group_signin')
     .eq('slug', slug)
     .single()
   if (error || !data) return NextResponse.json({ error: 'Not found' }, { status: 404 })
