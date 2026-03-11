@@ -109,20 +109,43 @@ export default function ModelProfile({ params }: { params: { id: string } }) {
     setModel((m: any) => ({ ...m, reviewed: val }))
     
     // If marking as reviewed, go to next unreviewed model
+    // Pending grid is sorted newest→oldest, so "next" = next older unreviewed submission
     if (val) {
-      const { data: nextModel } = await supabase
-        .from('models')
-        .select('id')
-        .eq('reviewed', false)
-        .order('created_at', { ascending: true })
-        .limit(1)
-        .single()
-      
-      if (nextModel?.id) {
-        router.push(`/admin/models/${nextModel.id}`)
+      const currentCreatedAt = model.created_at
+
+      // Try to get the next one submitted just before the current (descending order = next in grid)
+      let nextId: string | null = null
+
+      if (currentCreatedAt) {
+        const { data: nextModel } = await supabase
+          .from('models')
+          .select('id')
+          .eq('reviewed', false)
+          .eq('is_deleted', false)
+          .lt('created_at', currentCreatedAt)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single()
+        nextId = nextModel?.id || null
+      }
+
+      // If nothing older, wrap to the newest remaining unreviewed
+      if (!nextId) {
+        const { data: firstModel } = await supabase
+          .from('models')
+          .select('id')
+          .eq('reviewed', false)
+          .eq('is_deleted', false)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single()
+        nextId = firstModel?.id || null
+      }
+
+      if (nextId) {
+        router.push(`/admin/models/${nextId}`)
       } else {
-        // No more unreviewed models — go back to reviews
-        router.push('/admin/reviews')
+        router.push('/admin/models')
       }
     }
   }
