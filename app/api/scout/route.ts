@@ -135,9 +135,19 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // If submitted via the climber form, auto-add to the Tender Moments for Calloused Hands presentation
+  // If submitted via the climber form, auto-add to the Tender Moments project + presentation
   if (body.source === 'climber') {
+    const CLIMBER_PROJECT_ID = '120bf745-09fa-4f6a-8d54-e2ef5284636b'
     const CLIMBER_PRESENTATION_ID = '8e5e3d04-f90d-4ba1-8a97-e300afc6b630'
+
+    // Add to project_models (shows on the Models tab)
+    await supabase.from('project_models').upsert({
+      project_id: CLIMBER_PROJECT_ID,
+      model_id: modelId,
+      signed_in_at: new Date().toISOString(),
+    }, { onConflict: 'project_id,model_id' })
+
+    // Add to presentation_models (shows on the Presentation tab)
     await supabase.from('presentation_models').insert({
       presentation_id: CLIMBER_PRESENTATION_ID,
       model_id: modelId,
