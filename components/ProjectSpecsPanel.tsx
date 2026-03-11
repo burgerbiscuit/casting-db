@@ -1,11 +1,13 @@
 'use client'
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { ProjectFormFields, ProjectFormData, fromProject, toDbPayload } from '@/components/ProjectFormFields'
 import { ImagePlus, X, ExternalLink } from 'lucide-react'
 
 export default function ProjectSpecsPanel({ project }: { project: any }) {
   const supabase = createClient()
+  const router = useRouter()
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState<ProjectFormData>(fromProject(project))
@@ -34,7 +36,7 @@ export default function ProjectSpecsPanel({ project }: { project: any }) {
     })
     const result = await res.json()
     setSaving(false)
-    if (result.data) { setDisplay(result.data); setForm(fromProject(result.data)); setEditing(false) }
+    if (result.data) { setDisplay(result.data); setForm(fromProject(result.data)); setEditing(false); router.refresh() }
   }
 
   const [uploadError, setUploadError] = useState('')
