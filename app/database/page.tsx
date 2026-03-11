@@ -26,7 +26,7 @@ export default function DatabaseLanding() {
             className="group border border-neutral-200 hover:border-black transition-all p-10 flex flex-col items-center gap-4 text-center">
             <span className="text-3xl">⬡</span>
             <div>
-              <p className="text-xs font-medium tracking-widest uppercase mb-1">Climbers / Stories</p>
+              <p className="text-xs font-medium tracking-widest uppercase mb-1">Climbers Stories</p>
               <p className="text-[10px] text-neutral-400 leading-relaxed">I have a unique background or story and want to be considered</p>
             </div>
           </Link>
