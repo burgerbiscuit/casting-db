@@ -92,7 +92,7 @@ export async function POST(req: NextRequest) {
     skills: Array.isArray(body.skills) ? body.skills : [],
     hobbies: Array.isArray(body.hobbies) ? body.hobbies : [],
     notes: body.notes || null,
-    source: 'scouting',
+    source: body.source || 'scouting',
     reviewed: false,
     board: body.board || null,
     agent_name: body.agent_name || null,
@@ -132,6 +132,16 @@ export async function POST(req: NextRequest) {
       console.error('Scout photo exception:', err?.message)
       uploadErrors.push(err?.message || 'upload failed')
     }
+  }
+
+  // If submitted via the climber form, auto-add to the Tender Moments for Calloused Hands presentation
+  if (body.source === 'climber') {
+    const CLIMBER_PRESENTATION_ID = '8e5e3d04-f90d-4ba1-8a97-e300afc6b630'
+    await supabase.from('presentation_models').insert({
+      presentation_id: CLIMBER_PRESENTATION_ID,
+      model_id: modelId,
+      is_visible: true,
+    })
   }
 
   return NextResponse.json({ ok: true, id: modelId, uploadErrors })
