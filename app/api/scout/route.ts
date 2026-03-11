@@ -92,6 +92,7 @@ export async function POST(req: NextRequest) {
     skills: Array.isArray(body.skills) ? body.skills : [],
     hobbies: Array.isArray(body.hobbies) ? body.hobbies : [],
     notes: body.notes || null,
+    home_gym: body.home_gym || null,
     source: body.source || 'scouting',
     reviewed: false,
     board: body.board || null,

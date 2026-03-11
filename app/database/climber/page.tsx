@@ -1,5 +1,5 @@
 'use client'
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { X } from 'lucide-react'
 
@@ -28,12 +28,32 @@ export default function ClimberPage() {
     based_in: '',
     email: '',
     phone: '',
+    home_gym: '',
     why_climb: '',
   })
 
   const [photos, setPhotos] = useState<File[]>([])
   const [photoPreviews, setPhotoPreviews] = useState<string[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const gymRef = useRef<HTMLDivElement>(null)
+  const [gymSuggestions, setGymSuggestions] = useState<string[]>([])
+  const [showGymDropdown, setShowGymDropdown] = useState(false)
+
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (gymRef.current && !gymRef.current.contains(e.target as Node)) setShowGymDropdown(false)
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
+
+  const fetchGymSuggestions = async (q: string) => {
+    if (!q.trim()) { setGymSuggestions([]); setShowGymDropdown(false); return }
+    const res = await fetch(`/api/gym-suggestions?q=${encodeURIComponent(q)}`)
+    const data = await res.json()
+    setGymSuggestions(data)
+    setShowGymDropdown(data.length > 0)
+  }
 
   const set = (k: string, v: any) => setForm(f => ({ ...f, [k]: v }))
 
@@ -84,6 +104,7 @@ export default function ClimberPage() {
       fd.append('based_in', form.based_in.trim())
       fd.append('email', form.email.trim())
       fd.append('phone', form.phone.trim())
+      fd.append('home_gym', form.home_gym.trim())
       fd.append('notes', form.why_climb.trim())
       fd.append('source', 'climber')
       photos.forEach(p => fd.append('photos', p))
@@ -196,6 +217,32 @@ export default function ClimberPage() {
             <input value={form.based_in} onChange={e => set('based_in', e.target.value)}
               placeholder="City, State / Country"
               className="w-full border-b border-neutral-300 bg-transparent py-2 text-sm focus:outline-none focus:border-black placeholder:text-neutral-300" />
+          </div>
+
+          {/* Home Gym */}
+          <div className="flex flex-col gap-1" ref={gymRef}>
+            <label className="label">Your Home Gym</label>
+            <div className="relative">
+              <input
+                value={form.home_gym}
+                onChange={e => { set('home_gym', e.target.value); fetchGymSuggestions(e.target.value) }}
+                onFocus={() => form.home_gym && setShowGymDropdown(gymSuggestions.length > 0)}
+                placeholder="e.g. Vital BK, Brooklyn Boulders..."
+                autoComplete="off"
+                className="w-full border-b border-neutral-300 bg-transparent py-2 text-sm focus:outline-none focus:border-black placeholder:text-neutral-300"
+              />
+              {showGymDropdown && gymSuggestions.length > 0 && (
+                <div className="absolute z-20 left-0 right-0 top-full bg-white border border-neutral-200 shadow-sm max-h-48 overflow-y-auto">
+                  {gymSuggestions.map(s => (
+                    <button key={s} type="button"
+                      onMouseDown={() => { set('home_gym', s); setShowGymDropdown(false) }}
+                      className="w-full text-left px-4 py-2.5 text-sm hover:bg-neutral-50 transition-colors border-b border-neutral-50 last:border-0">
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Email + Phone */}
