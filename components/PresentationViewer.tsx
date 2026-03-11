@@ -751,21 +751,21 @@ export function PresentationViewer({
         {/* Top: rate/option/location — scrollable if overflow */}
         <div className="min-h-0 overflow-y-auto flex flex-col gap-3">
           {current.rate?.trim() && (
-            <div className="text-[9px] text-center">
-              <p className="text-neutral-400 uppercase tracking-wider font-medium mb-0.5">Rate</p>
-              <p className="text-neutral-700">{current.rate}</p>
+            <div className="text-center">
+              <p className="text-[9px] text-neutral-400 uppercase tracking-wider font-medium mb-0.5">Rate</p>
+              <p className="text-xs text-neutral-700">{current.rate}</p>
             </div>
           )}
           {current.option?.trim() && (
-            <div className="text-[9px] text-center">
-              <p className="text-neutral-400 uppercase tracking-wider font-medium mb-0.5">Option</p>
-              <p className="text-neutral-700">{current.option}</p>
+            <div className="text-center">
+              <p className="text-[9px] text-neutral-400 uppercase tracking-wider font-medium mb-0.5">Option</p>
+              <p className="text-xs text-neutral-700">{current.option}</p>
             </div>
           )}
           {current.location?.trim() && (
-            <div className="text-[9px] text-center">
-              <p className="text-neutral-400 uppercase tracking-wider font-medium mb-0.5">Location</p>
-              <p className="text-neutral-700">{current.location}</p>
+            <div className="text-center">
+              <p className="text-[9px] text-neutral-400 uppercase tracking-wider font-medium mb-0.5">Location</p>
+              <p className="text-xs text-neutral-700">{current.location}</p>
             </div>
           )}
         </div>
