@@ -228,6 +228,7 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
   // setClientStatus removed — client shortlist status is read-only on admin side (clients write, admin reads)
 
   const [models, setModels] = useState(modelsWithPhotos)
+  const [listSearch, setListSearch] = useState('')
   const [addSearch, setAddSearch] = useState('')
   const [showNewModel, setShowNewModel] = useState(false)
   const [newModelForm, setNewModelForm] = useState({ first_name: '', last_name: '', agency: '', email: '', phone: '', instagram_handle: '' })
@@ -312,6 +313,18 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
   const shortlistedGroup = activeModels.filter(pm => !adminConfirmed[pm.models?.id] && shortlistStatus[pm.models?.id] === 'shortlisted').sort(alphaByLast)
   const othersGroup = activeModels.filter(pm => !adminConfirmed[pm.models?.id] && !shortlistStatus[pm.models?.id]).sort(alphaByLast)
   const sorted = [...confirmedGroup, ...pendingGroup, ...shortlistedGroup, ...othersGroup, ...removedModels]
+
+  // Filter signed-in list by search
+  const filteredSorted = listSearch.trim()
+    ? sorted.filter(pm => {
+        const q = listSearch.toLowerCase()
+        const m = pm.models
+        return (
+          (m?.first_name + ' ' + m?.last_name).toLowerCase().includes(q) ||
+          (m?.agency || '').toLowerCase().includes(q)
+        )
+      })
+    : sorted
 
   // Legacy aliases for grid view
   const confirmed = confirmedGroup
@@ -600,8 +613,24 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
           </div>
         )}
       </div>
+      {/* Search signed-in models */}
+      {models.length > 5 && (
+        <div className="relative mb-3">
+          <input
+            value={listSearch}
+            onChange={e => setListSearch(e.target.value)}
+            placeholder="Search signed-in models..."
+            className="w-full border border-neutral-200 px-3 py-2 text-xs focus:outline-none focus:border-black placeholder:text-neutral-400"
+          />
+          {listSearch && (
+            <button onClick={() => setListSearch('')}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-black text-xs">✕</button>
+          )}
+        </div>
+      )}
+
       <div className="flex items-center justify-between mb-4">
-        <p className="label">Models Signed In ({modelsWithPhotos.length})</p>
+        <p className="label">Models Signed In ({filteredSorted.length}{listSearch ? ` of ${modelsWithPhotos.length}` : ''})</p>
         <div className="flex items-center gap-2">
           {mainPres && (
             <button onClick={addAllToPresentation}
@@ -649,7 +678,7 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
               {renderGroup(shortlisted, 'Shortlisted by Client', 'bg-neutral-700')}
               {renderGroup(others, others.length && hasGroups ? 'Signed In' : undefined)}
             </>
-          ) : renderGroup(sorted)}
+          ) : renderGroup(filteredSorted)}
         </>
       )}
     </div>
