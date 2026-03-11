@@ -27,7 +27,7 @@ export default function DatabaseLanding() {
             <span className="text-3xl">⬡</span>
             <div>
               <p className="text-xs font-medium tracking-widest uppercase mb-1">Climbers Stories</p>
-              <p className="text-[10px] text-neutral-400 leading-relaxed">I have a unique background or story and want to be considered</p>
+              <p className="text-[10px] text-neutral-400 leading-relaxed">I have a story to submit for Tender Moments for Calloused Hands</p>
             </div>
           </Link>
 
