@@ -332,7 +332,7 @@ export default function ScoutPage() {
 
           {/* Agency autocomplete */}
           <div className="relative">
-            <label className={lbl}>Agency (if represented)</label>
+            <label className={lbl}>agency (if represented)</label>
             <input value={form.agency} onChange={e => { set('agency', e.target.value); searchAgencies(e.target.value); setShowAgency(true) }}
               onFocus={() => { if (form.agency) { searchAgencies(form.agency); setShowAgency(true) } }}
               placeholder="Agency name or Freelance" className={inp} />
