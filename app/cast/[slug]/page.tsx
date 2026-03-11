@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { ChipInput } from '@/components/ChipInput'
 
-type Step = 'loading' | 'landing' | 'name' | 'confirm' | 'verify' | 'not-me' | 'form' | 'done'
+type Step = 'loading' | 'landing' | 'name' | 'confirm' | 'verify' | 'not-me' | 'form' | 'done' | 'group-name' | 'group-done'
 type Gender = 'female' | 'male' | 'non-binary' | 'other' | ''
 
 const HEIGHT_FT = [4,5,6,7]
@@ -78,6 +78,8 @@ export default function CastPage({ params }: { params: { slug: string } }) {
   const [project, setProject] = useState<any>(null)
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
+  const [groupName, setGroupName] = useState('')
+  const [groupSaving, setGroupSaving] = useState(false)
   const [suggestions, setSuggestions] = useState<any[]>([])
   const [selectedModel, setSelectedModel] = useState<any>(null)
   const [modelPhoto, setModelPhoto] = useState<string | null>(null)
@@ -340,7 +342,7 @@ export default function CastPage({ params }: { params: { slug: string } }) {
                 {new Date(project.shoot_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
               </p>
             )}
-            <Button onClick={() => setStep('name')} size="lg">Sign In</Button>
+            <Button onClick={() => setStep(project?.is_group_signin ? 'group-name' : 'name')} size="lg">Sign In</Button>
           </div>
         )}
 
@@ -872,6 +874,58 @@ export default function CastPage({ params }: { params: { slug: string } }) {
               className="text-xs tracking-widest uppercase border border-black px-6 py-3 hover:bg-black hover:text-white transition-colors"
             >
               Sign In Another Talent
+            </button>
+          </div>
+        )}
+
+        {step === 'group-name' && (
+          <div>
+            <h2 className="text-xl font-light tracking-widest uppercase mb-10 text-center">Name of Group</h2>
+            <input
+              autoFocus
+              value={groupName}
+              onChange={e => setGroupName(e.target.value)}
+              placeholder="Enter your group name"
+              className="w-full border-b border-neutral-300 bg-transparent py-3 text-sm focus:outline-none focus:border-black placeholder:text-neutral-300 text-center"
+            />
+            <div className="mt-10 flex gap-4 justify-center">
+              <Button variant="ghost" onClick={() => setStep('landing')}>Back</Button>
+              <Button
+                disabled={!groupName.trim() || groupSaving}
+                onClick={async () => {
+                  if (!groupName.trim() || !project?.id) return
+                  setGroupSaving(true)
+                  const { data: newGroup } = await supabase.from('groups').insert({
+                    name: groupName.trim(),
+                    group_type: 'Climbing',
+                    reviewed: false,
+                  }).select('id').single()
+                  if (newGroup?.id) {
+                    await supabase.from('project_groups').upsert({
+                      project_id: project.id,
+                      group_id: newGroup.id,
+                    }, { onConflict: 'project_id,group_id' })
+                  }
+                  setGroupSaving(false)
+                  setStep('group-done')
+                }}
+              >
+                {groupSaving ? 'Signing in...' : 'Sign In'}
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {step === 'group-done' && (
+          <div className="text-center">
+            <div className="text-4xl mb-6">✓</div>
+            <h2 className="text-xl font-light tracking-widest uppercase mb-4">Signed In</h2>
+            <p className="text-sm text-neutral-500 mb-12">{groupName}</p>
+            <button
+              onClick={() => { setGroupName(''); setStep('group-name') }}
+              className="text-xs tracking-widest uppercase border border-black px-6 py-3 hover:bg-black hover:text-white transition-colors"
+            >
+              Sign In Another Group
             </button>
           </div>
         )}
