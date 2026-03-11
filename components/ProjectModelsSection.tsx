@@ -415,14 +415,14 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
         </div>
 
         {expanded && (
-          <div className="px-3 pb-3 pt-1 border-t border-neutral-50 grid grid-cols-2 gap-3">
-            <input className="text-[10px] border-b border-neutral-200 bg-transparent py-1 focus:outline-none focus:border-black placeholder:text-neutral-300"
+          <div className="px-3 pb-3 pt-1 border-t border-neutral-50 grid grid-cols-2 gap-3 text-center">
+            <input className="text-[10px] border-b border-neutral-200 bg-transparent py-1 focus:outline-none focus:border-black placeholder:text-neutral-300 text-center"
               placeholder="Option" value={option} onChange={e => setOption(e.target.value)}
               onBlur={e => savePmField(pm.id, 'pm_option', e.target.value)} />
-            <input className="text-[10px] border-b border-neutral-200 bg-transparent py-1 focus:outline-none focus:border-black placeholder:text-neutral-300"
+            <input className="text-[10px] border-b border-neutral-200 bg-transparent py-1 focus:outline-none focus:border-black placeholder:text-neutral-300 text-center"
               placeholder="Rate" value={rate} onChange={e => setRate(e.target.value)}
               onBlur={e => savePmField(pm.id, 'pm_rate', e.target.value)} />
-            <input className="text-[10px] border-b border-neutral-200 bg-transparent py-1 focus:outline-none focus:border-black placeholder:text-neutral-300 col-span-2"
+            <input className="text-[10px] border-b border-neutral-200 bg-transparent py-1 focus:outline-none focus:border-black placeholder:text-neutral-300 col-span-2 text-center"
               placeholder="Location" value={location} onChange={e => setLocation(e.target.value)}
               onBlur={e => savePmField(pm.id, 'pm_location', e.target.value)} />
             <div className="col-span-2">
@@ -442,9 +442,9 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
                 supabase={supabase}
               />
             </div>
-            <div className="col-span-2">
+            <div className="col-span-2 text-center">
               <p className="text-[9px] text-neutral-400 tracking-widest uppercase mb-1">Notes for client presentation</p>
-              <textarea className="w-full text-[10px] border-b border-neutral-200 bg-transparent py-1 focus:outline-none focus:border-black resize-none placeholder:text-neutral-300"
+              <textarea className="w-full text-[10px] border-b border-neutral-200 bg-transparent py-1 focus:outline-none focus:border-black resize-none placeholder:text-neutral-300 text-center"
                 placeholder={presModelIds.has(mid) ? 'Notes visible to client in presentation...' : 'Add to presentation to enable notes'}
                 rows={2} disabled={!presModelIds.has(mid)}
                 value={notes} onChange={e => setNotes(e.target.value)}
