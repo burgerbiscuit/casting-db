@@ -1,7 +1,6 @@
 'use client'
 import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
-import { X } from 'lucide-react'
 
 const ETHNICITY_OPTIONS = [
   'Asian', 'South Asian', 'Black / African', 'Latino / Hispanic',
@@ -32,9 +31,10 @@ export default function ClimberPage() {
     why_climb: '',
   })
 
-  const [photos, setPhotos] = useState<File[]>([])
-  const [photoPreviews, setPhotoPreviews] = useState<string[]>([])
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [selfieFiles, setSelfieFiles] = useState<(File | null)[]>([null, null])
+  const [selfieUrls, setSelfieUrls] = useState<string[]>(['', ''])
+  const [photoErrors, setPhotoErrors] = useState<string[]>(['', ''])
+  const [photoCompressing, setPhotoCompressing] = useState<boolean[]>([false, false])
   const gymRef = useRef<HTMLDivElement>(null)
   const [gymSuggestions, setGymSuggestions] = useState<string[]>([])
   const [showGymDropdown, setShowGymDropdown] = useState(false)
@@ -57,23 +57,6 @@ export default function ClimberPage() {
 
   const set = (k: string, v: any) => setForm(f => ({ ...f, [k]: v }))
 
-  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || [])
-    if (!files.length) return
-    const combined = [...photos, ...files].slice(0, 2)
-    setPhotos(combined)
-    setPhotoPreviews(combined.map(f => URL.createObjectURL(f)))
-    // Reset input so same file can be re-selected
-    if (fileInputRef.current) fileInputRef.current.value = ''
-  }
-
-  const removePhoto = (idx: number) => {
-    const newPhotos = photos.filter((_, i) => i !== idx)
-    const newPreviews = photoPreviews.filter((_, i) => i !== idx)
-    setPhotos(newPhotos)
-    setPhotoPreviews(newPreviews)
-  }
-
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
@@ -86,6 +69,7 @@ export default function ClimberPage() {
       setError('Email is required.')
       return
     }
+    const photos = selfieFiles.filter(Boolean) as File[]
     if (photos.length < 1) {
       setError('Please upload at least one photo.')
       return
@@ -273,44 +257,40 @@ export default function ClimberPage() {
           </div>
 
           {/* Photos */}
-          <div className="flex flex-col gap-3">
-            <div>
-              <label className="label">Photos (up to 2)</label>
-              <p className="text-[10px] text-neutral-400 mt-0.5">Submit one headshot or portrait, and one climbing or action photo if you have one.</p>
+          <div>
+            <p className="label mb-2">Photos (Optional)</p>
+            <p className="text-xs text-neutral-400 mb-1">Upload up to 2 photos of yourself.</p>
+            <p className="text-xs text-neutral-400 mb-1">A portrait and a climbing photo if you have one.</p>
+            <p className="text-[11px] text-neutral-300 mb-3">Max 8 MB per photo — large images are automatically compressed.</p>
+            <div className="flex gap-3">
+              {[0, 1].map(i => (
+                <div key={i} className="flex-1 flex flex-col gap-1">
+                  <label className={`aspect-[3/4] border-2 border-dashed flex items-center justify-center cursor-pointer hover:border-black transition-colors overflow-hidden relative ${photoErrors[i] ? 'border-red-300' : 'border-neutral-200'}`}>
+                    <input type="file" accept="image/*" className="hidden" onChange={async e => {
+                      const file = e.target.files?.[0]
+                      if (!file) return
+                      if (file.size > 20 * 1024 * 1024) {
+                        const errs = [...photoErrors]; errs[i] = `Too large (${(file.size/1024/1024).toFixed(0)} MB). Max 8 MB.`; setPhotoErrors(errs)
+                        return
+                      }
+                      const errs = [...photoErrors]; errs[i] = ''; setPhotoErrors(errs)
+                      const compressing = [...photoCompressing]; compressing[i] = true; setPhotoCompressing(compressing)
+                      const { compressImage } = await import('@/lib/compress-image')
+                      const compressed = await compressImage(file).catch(() => file)
+                      const done = [...photoCompressing]; done[i] = false; setPhotoCompressing(done)
+                      const f = [...selfieFiles]; f[i] = compressed; setSelfieFiles(f)
+                      const u = [...selfieUrls]; u[i] = URL.createObjectURL(compressed); setSelfieUrls(u)
+                    }} />
+                    {photoCompressing[i]
+                      ? <span className="text-[10px] text-neutral-400 tracking-widest uppercase">Compressing…</span>
+                      : selfieUrls[i]
+                        ? <img src={selfieUrls[i]} className="w-full h-full object-cover" alt="" />
+                        : <span className="text-xs text-neutral-300 tracking-widest uppercase">+ Photo {i + 1}</span>}
+                  </label>
+                  {photoErrors[i] && <p className="text-[10px] text-red-500">{photoErrors[i]}</p>}
+                </div>
+              ))}
             </div>
-
-            {/* Preview */}
-            {photoPreviews.length > 0 && (
-              <div className="flex gap-3">
-                {photoPreviews.map((url, i) => (
-                  <div key={i} className="relative w-28">
-                    <img src={url} alt={`Photo ${i + 1}`} className="w-28 h-36 object-cover object-top" />
-                    <button type="button" onClick={() => removePhoto(i)}
-                      className="absolute top-1 right-1 bg-black/70 text-white rounded-full p-0.5 hover:bg-black">
-                      <X size={10} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {photos.length < 2 && (
-              <>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={handlePhotoChange}
-                  className="hidden"
-                  id="photo-upload"
-                />
-                <label htmlFor="photo-upload"
-                  className="inline-block cursor-pointer border border-neutral-300 hover:border-black transition-colors px-5 py-2.5 text-xs tracking-widest uppercase text-center w-fit">
-                  {photos.length === 0 ? 'Add Photos' : 'Add Another Photo'}
-                </label>
-              </>
-            )}
           </div>
 
           {error && <p className="text-xs text-red-500">{error}</p>}
