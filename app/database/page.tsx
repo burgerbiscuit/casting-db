@@ -22,7 +22,7 @@ export default function DatabaseLanding() {
             </div>
           </Link>
 
-          <Link href="/scout"
+          <Link href="/database/climber"
             className="group border border-neutral-200 hover:border-black transition-all p-10 flex flex-col items-center gap-4 text-center">
             <span className="text-3xl">⬡</span>
             <div>
