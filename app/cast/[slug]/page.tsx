@@ -895,17 +895,11 @@ export default function CastPage({ params }: { params: { slug: string } }) {
                 onClick={async () => {
                   if (!groupName.trim() || !project?.id) return
                   setGroupSaving(true)
-                  const { data: newGroup } = await supabase.from('groups').insert({
-                    name: groupName.trim(),
-                    group_type: 'Climbing',
-                    reviewed: false,
-                  }).select('id').single()
-                  if (newGroup?.id) {
-                    await supabase.from('project_groups').upsert({
-                      project_id: project.id,
-                      group_id: newGroup.id,
-                    }, { onConflict: 'project_id,group_id' })
-                  }
+                  await fetch('/api/group-signin', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ groupName: groupName.trim(), projectId: project.id }),
+                  })
                   setGroupSaving(false)
                   setStep('group-done')
                 }}
