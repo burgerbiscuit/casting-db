@@ -279,6 +279,16 @@ export function PresentationViewer({
   const prev = () => setSlideIndex(i => Math.max(0, i - 1))
   const next = () => setSlideIndex(i => Math.min(slidesOrder.length - 1, i + 1))
 
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
+      if (e.key === 'ArrowRight') next()
+      if (e.key === 'ArrowLeft') prev()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [slidesOrder.length])
+
   const touchStartX = useRef<number | null>(null)
   const onTouchStart = (e: React.TouchEvent) => { touchStartX.current = e.touches[0].clientX }
   const onTouchEnd = (e: React.TouchEvent) => {
