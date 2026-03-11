@@ -29,14 +29,32 @@ export default function ReviewsPage() {
     if (table === 'agent_submissions') {
       const submission = agents.find((a: any) => a.id === id)
       if (submission) {
-        await supabase.from('agency_contacts').upsert({
-          agent_name: `${submission.first_name} ${submission.last_name}`.trim(),
-          agency_name: submission.agency_name,
-          email: submission.email,
-          city: submission.city,
-          contact_type: 'model',
-          board: submission.boards || null,
-        }, { onConflict: 'email' })
+        // Check if this email already exists to avoid duplicates
+        const email = submission.email?.toLowerCase() || null
+        let existingId: string | null = null
+        if (email) {
+          const { data: existing } = await supabase.from('agency_contacts').select('id').eq('email', email).maybeSingle()
+          existingId = existing?.id || null
+        }
+        if (existingId) {
+          // Update existing contact
+          await supabase.from('agency_contacts').update({
+            agent_name: `${submission.first_name} ${submission.last_name}`.trim(),
+            agency_name: submission.agency_name,
+            city: submission.city || null,
+            board: submission.boards || null,
+          }).eq('id', existingId)
+        } else {
+          // Insert new contact
+          await supabase.from('agency_contacts').insert({
+            agent_name: `${submission.first_name} ${submission.last_name}`.trim(),
+            agency_name: submission.agency_name,
+            email: email,
+            city: submission.city || null,
+            contact_type: 'model',
+            board: submission.boards || null,
+          })
+        }
       }
     }
     load()

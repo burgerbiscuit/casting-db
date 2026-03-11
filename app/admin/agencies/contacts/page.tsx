@@ -20,6 +20,7 @@ export default function AgencyContactsPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
   const [editTarget, setEditTarget] = useState<any>(null)
+  const [showAddContact, setShowAddContact] = useState(false)
   const [showComposer, setShowComposer] = useState(false)
   const [copied, setCopied] = useState(false)
   const [emailDraft, setEmailDraft] = useState({ subject: '', message: '' })
@@ -134,12 +135,18 @@ export default function AgencyContactsPage() {
           <h1 className="text-2xl font-light tracking-widest uppercase mb-1">Agent Contacts</h1>
           <p className="text-sm text-neutral-400">{contacts.length} agents</p>
         </div>
-        {selected.size > 0 && (
-          <button onClick={() => setShowComposer(true)}
-            className="flex items-center gap-2 bg-black text-white px-4 py-2 rounded-sm text-xs tracking-widest uppercase hover:opacity-80 transition-opacity">
-            <Mail size={14} /> Email {selected.size}
+        <div className="flex items-center gap-3">
+          {selected.size > 0 && (
+            <button onClick={() => setShowComposer(true)}
+              className="flex items-center gap-2 bg-black text-white px-4 py-2 rounded-sm text-xs tracking-widest uppercase hover:opacity-80 transition-opacity">
+              <Mail size={14} /> Email {selected.size}
+            </button>
+          )}
+          <button onClick={() => setShowAddContact(true)}
+            className="border border-black px-4 py-2 text-xs tracking-widest uppercase hover:bg-black hover:text-white transition-colors">
+            + Add Contact
           </button>
-        )}
+        </div>
       </div>
 
       {/* Filters */}
@@ -248,6 +255,15 @@ export default function AgencyContactsPage() {
           onClose={() => setEditTarget(null)}
           onSaved={() => { setEditTarget(null); load() }}
           onDeleted={() => { setEditTarget(null); load() }}
+        />
+      )}
+
+      {showAddContact && (
+        <ContactEditModal
+          contact={{ agency_name: null, agent_name: null, email: null, board: null, city: null, section: null, office_phone: null, cell_phone: null, contact_type: 'model', website: null, instagram: null, description: null }}
+          onClose={() => setShowAddContact(false)}
+          onSaved={() => { setShowAddContact(false); load() }}
+          onDeleted={() => setShowAddContact(false)}
         />
       )}
 

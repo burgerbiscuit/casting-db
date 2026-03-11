@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { DeleteConfirmModal } from '@/components/DeleteConfirmModal'
 
 interface Contact {
-  id: string
+  id?: string
   agency_name: string | null
   agent_name: string | null
   email: string | null
@@ -37,7 +37,7 @@ export function ContactEditModal({ contact, onClose, onSaved, onDeleted }: Props
 
   const save = async () => {
     setSaving(true)
-    await supabase.from('agency_contacts').update({
+    const payload = {
       agency_name: form.agency_name || null,
       agent_name: form.agent_name || null,
       email: form.email ? form.email.toLowerCase() : null,
@@ -49,7 +49,13 @@ export function ContactEditModal({ contact, onClose, onSaved, onDeleted }: Props
       website: form.website || null,
       instagram: form.instagram || null,
       description: form.description || null,
-    }).eq('id', contact.id)
+      contact_type: form.contact_type || 'model',
+    }
+    if (contact.id) {
+      await supabase.from('agency_contacts').update(payload).eq('id', contact.id)
+    } else {
+      await supabase.from('agency_contacts').insert(payload)
+    }
     setSaving(false)
     onSaved()
   }
@@ -75,7 +81,7 @@ export function ContactEditModal({ contact, onClose, onSaved, onDeleted }: Props
       <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
         <div className="bg-white w-full max-w-lg p-8 max-h-[90vh] overflow-y-auto">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-sm font-medium tracking-widest uppercase">Edit Contact</h3>
+            <h3 className="text-sm font-medium tracking-widest uppercase">{contact.id ? 'Edit Contact' : 'Add Contact'}</h3>
             <button onClick={onClose}><X size={14} className="text-neutral-400 hover:text-black" /></button>
           </div>
           <div className="grid grid-cols-2 gap-x-6 gap-y-4 mb-6">
@@ -99,10 +105,12 @@ export function ContactEditModal({ contact, onClose, onSaved, onDeleted }: Props
             />
           </div>
           <div className="flex items-center justify-between">
-            <button onClick={() => setShowDelete(true)}
-              className="text-[10px] tracking-widest uppercase text-red-400 hover:text-red-600 transition-colors">
-              Delete Contact
-            </button>
+            {contact.id ? (
+              <button onClick={() => setShowDelete(true)}
+                className="text-[10px] tracking-widest uppercase text-red-400 hover:text-red-600 transition-colors">
+                Delete Contact
+              </button>
+            ) : <div />}
             <div className="flex gap-3">
               <button onClick={onClose}
                 className="border border-neutral-300 px-5 py-2.5 text-xs tracking-widest uppercase hover:border-black transition-colors">
@@ -110,7 +118,7 @@ export function ContactEditModal({ contact, onClose, onSaved, onDeleted }: Props
               </button>
               <button onClick={save} disabled={saving}
                 className="bg-black text-white px-5 py-2.5 text-xs tracking-widest uppercase hover:bg-neutral-800 transition-colors disabled:opacity-50">
-                {saving ? 'Saving...' : 'Save'}
+                {saving ? 'Saving...' : contact.id ? 'Save' : 'Add Contact'}
               </button>
             </div>
           </div>
