@@ -142,16 +142,16 @@ export default function ClimberPage() {
           </div>
 
           {/* Gender */}
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-2">
             <label className="label">Gender</label>
-            <select value={form.gender} onChange={e => set('gender', e.target.value)}
-              className="w-full border-b border-neutral-300 bg-transparent py-2 text-sm focus:outline-none focus:border-black">
-              <option value="">Prefer not to say</option>
-              <option value="Female">Female</option>
-              <option value="Male">Male</option>
-              <option value="Non-binary">Non-binary</option>
-              <option value="Other">Other</option>
-            </select>
+            <div className="flex flex-wrap gap-2">
+              {['female', 'male', 'non-binary', 'prefer not to say'].map(g => (
+                <button key={g} type="button" onClick={() => set('gender', g)}
+                  className={`px-4 py-2 text-xs border tracking-wider uppercase transition-colors ${form.gender === g ? 'bg-black text-white border-black' : 'border-neutral-300 hover:border-black'}`}>
+                  {g}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Height */}

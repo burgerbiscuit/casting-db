@@ -208,20 +208,13 @@ export default function ScoutPage() {
           <div>
             <p className="label mb-3">Gender</p>
             <div className="flex flex-wrap gap-2">
-              {['female','male','non-binary','other'].map(g => (
+              {['female','male','non-binary','prefer not to say'].map(g => (
                 <button key={g} type="button" onClick={() => set('gender', g)}
                   className={`px-4 py-2 text-xs border tracking-wider uppercase transition-colors ${form.gender === g ? 'bg-black text-white border-black' : 'border-neutral-300 hover:border-black'}`}>
                   {g}
                 </button>
               ))}
             </div>
-            {form.gender === 'other' && (
-              <div className="mt-3">
-                <label className={lbl}>Please specify</label>
-                <input value={form.gender_other} onChange={e => set('gender_other', e.target.value)}
-                  placeholder="e.g. Gender fluid" className={inp} />
-              </div>
-            )}
           </div>
 
           {/* Adult vs Kids size toggle */}
@@ -278,7 +271,7 @@ export default function ScoutPage() {
                   <div><label className={lbl}>Suit Size</label><input value={form.suit_size} onChange={e => set('suit_size', e.target.value)} className={inp} placeholder='e.g. 40R' /></div>
                 </div>
               )}
-              {(form.gender === 'non-binary' || form.gender === 'other') && (
+              {(form.gender === 'non-binary' || form.gender === 'prefer not to say') && (
                 <div className="grid grid-cols-2 gap-4">
                   <div><label className={lbl}>Bust</label><input value={form.bust} onChange={e => set('bust', e.target.value)} className={inp} /></div>
                   <div><label className={lbl}>Chest</label><input value={form.chest} onChange={e => set('chest', e.target.value)} className={inp} /></div>
