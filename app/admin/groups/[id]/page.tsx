@@ -4,11 +4,11 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { ChipInput } from '@/components/ChipInput'
 import { DeleteConfirmModal } from '@/components/DeleteConfirmModal'
-import { Eye, EyeOff, Star, Trash2, Upload } from 'lucide-react'
+import { Eye, EyeOff, Star, Trash2, Upload, X } from 'lucide-react'
 import Link from 'next/link'
 import { useDropzone } from 'react-dropzone'
 
-const GROUP_TYPES = ['Dance', 'Music', 'Sports', 'Acrobatics', 'Comedy', 'Cheer', 'Theater', 'Other']
+const GROUP_TYPES = ['Climbing', 'Dance', 'Music', 'Sports', 'Acrobatics', 'Comedy', 'Cheer', 'Theater', 'Other']
 
 export default function GroupProfilePage({ params }: { params: { id: string } }) {
   const { id } = params
@@ -16,6 +16,10 @@ export default function GroupProfilePage({ params }: { params: { id: string } })
   const router = useRouter()
   const [group, setGroup] = useState<any>(null)
   const [media, setMedia] = useState<any[]>([])
+  const [members, setMembers] = useState<any[]>([])
+  const [memberSearch, setMemberSearch] = useState('')
+  const [memberResults, setMemberResults] = useState<any[]>([])
+  const [memberSearchLoading, setMemberSearchLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [activeTab, setActiveTab] = useState<'profile' | 'media'>('profile')
@@ -34,7 +38,39 @@ export default function GroupProfilePage({ params }: { params: { id: string } })
     setMedia(data || [])
   }, [id])
 
-  useEffect(() => { loadGroup(); loadMedia() }, [loadGroup, loadMedia])
+  const loadMembers = useCallback(async () => {
+    const { data } = await supabase
+      .from('group_members')
+      .select('id, model_id, models(id, first_name, last_name, agency)')
+      .eq('group_id', id)
+      .order('created_at')
+    setMembers(data || [])
+  }, [id])
+
+  useEffect(() => { loadGroup(); loadMedia(); loadMembers() }, [loadGroup, loadMedia, loadMembers])
+
+  const searchMembers = async (q: string) => {
+    setMemberSearch(q)
+    if (q.length < 2) { setMemberResults([]); return }
+    setMemberSearchLoading(true)
+    const res = await fetch('/api/model-search?q=' + encodeURIComponent(q))
+    const data = await res.json()
+    const existingIds = new Set(members.map((m: any) => m.model_id))
+    setMemberResults((data || []).filter((m: any) => !existingIds.has(m.id)).slice(0, 8))
+    setMemberSearchLoading(false)
+  }
+
+  const addMember = async (model: any) => {
+    const { data } = await supabase.from('group_members').insert({ group_id: id, model_id: model.id }).select('id, model_id, models(id, first_name, last_name, agency)').single()
+    if (data) setMembers(prev => [...prev, data])
+    setMemberSearch('')
+    setMemberResults([])
+  }
+
+  const removeMember = async (memberId: string) => {
+    await supabase.from('group_members').delete().eq('id', memberId)
+    setMembers(prev => prev.filter((m: any) => m.id !== memberId))
+  }
 
   const save = async () => {
     setSaving(true)
@@ -183,6 +219,19 @@ export default function GroupProfilePage({ params }: { params: { id: string } })
             />
           </div>
 
+          {/* Group Story */}
+          <div>
+            <label className="label text-[10px] block mb-1">GROUP STORY</label>
+            <p className="text-[10px] text-neutral-400 mb-2">Long-form story — origin, journey, what this group means to its members.</p>
+            <textarea
+              value={group.group_story || ''}
+              onChange={e => setGroup((g: any) => ({ ...g, group_story: e.target.value }))}
+              rows={8}
+              placeholder="Tell the group's story..."
+              className="w-full border border-neutral-200 bg-transparent p-3 text-sm focus:outline-none focus:border-black resize-none placeholder:text-neutral-300"
+            />
+          </div>
+
           {/* Skills */}
           <div>
             <label className="label text-[10px] block mb-2">SKILLS / SPECIALTIES</label>
@@ -192,6 +241,53 @@ export default function GroupProfilePage({ params }: { params: { id: string } })
               placeholder="Add skill..."
               suggestions={['Hip Hop', 'Ballet', 'Contemporary', 'Jazz', 'Tap', 'Acrobatics', 'Tumbling', 'Breakdancing', 'Ballroom', 'Latin', 'Aerial', 'Gymnastics', 'Cheer', 'Martial Arts', 'Parkour', 'Synchronized Swimming', 'Skating', 'Singing', 'Beatboxing', 'Drumline', 'Comedy', 'Improv', 'Stunt Work']}
             />
+          </div>
+
+          {/* Members */}
+          <div>
+            <h3 className="text-[10px] tracking-widest uppercase text-neutral-400 mb-4 pb-2 border-b border-neutral-100">Members</h3>
+            
+            {/* Current members */}
+            {members.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-3">
+                {members.map((m: any) => (
+                  <div key={m.id} className="flex items-center gap-1.5 border border-neutral-200 px-2.5 py-1.5 text-xs">
+                    <Link href={`/admin/models/${m.model_id}`} className="hover:underline">
+                      {m.models?.first_name} {m.models?.last_name}
+                      {m.models?.agency && <span className="text-neutral-400 ml-1">· {m.models.agency}</span>}
+                    </Link>
+                    <button onClick={() => removeMember(m.id)} className="text-neutral-300 hover:text-red-400 transition-colors ml-1">
+                      <X size={10} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Search to add member */}
+            <div className="relative">
+              <input
+                value={memberSearch}
+                onChange={e => searchMembers(e.target.value)}
+                placeholder="Search models to add as members..."
+                className="w-full border border-neutral-200 px-3 py-2 text-xs focus:outline-none focus:border-black placeholder:text-neutral-400"
+              />
+              {memberSearchLoading && <span className="absolute right-3 top-2 text-[10px] text-neutral-400">searching...</span>}
+              {memberResults.length > 0 && (
+                <div className="absolute top-full left-0 right-0 z-20 bg-white border border-neutral-200 border-t-0 shadow-lg max-h-48 overflow-y-auto">
+                  {memberResults.map((m: any) => (
+                    <button key={m.id} onClick={() => addMember(m)}
+                      className="w-full flex items-center justify-between px-3 py-2 hover:bg-neutral-50 text-left border-b border-neutral-100 last:border-0">
+                      <div>
+                        <p className="text-xs font-medium">{m.first_name} {m.last_name}</p>
+                        {m.agency && <p className="text-[10px] text-neutral-400">{m.agency}</p>}
+                      </div>
+                      <span className="text-[10px] tracking-widest uppercase text-neutral-400">+ Add</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Contact */}
