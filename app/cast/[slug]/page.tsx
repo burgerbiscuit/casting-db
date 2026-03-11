@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { ChipInput } from '@/components/ChipInput'
 
-type Step = 'loading' | 'landing' | 'name' | 'confirm' | 'verify' | 'not-me' | 'form' | 'done' | 'group-name' | 'group-done'
+type Step = 'loading' | 'landing' | 'name' | 'confirm' | 'verify' | 'not-me' | 'form' | 'done' | 'group-name' | 'group-form' | 'group-done'
 type Gender = 'female' | 'male' | 'non-binary' | 'other' | ''
 
 const HEIGHT_FT = [4,5,6,7]
@@ -80,6 +80,13 @@ export default function CastPage({ params }: { params: { slug: string } }) {
   const [lastName, setLastName] = useState('')
   const [groupName, setGroupName] = useState('')
   const [groupSaving, setGroupSaving] = useState(false)
+  const [groupForm, setGroupForm] = useState({
+    group_type: '', size: '', based_in: '', agency: '',
+    instagram_handle: '', website: '',
+    description: '', group_story: '',
+    contact_name: '', contact_email: '', contact_phone: '',
+  })
+  const setGF = (k: string, v: string) => setGroupForm(f => ({ ...f, [k]: v }))
   const [suggestions, setSuggestions] = useState<any[]>([])
   const [selectedModel, setSelectedModel] = useState<any>(null)
   const [modelPhoto, setModelPhoto] = useState<string | null>(null)
@@ -887,24 +894,129 @@ export default function CastPage({ params }: { params: { slug: string } }) {
               onChange={e => setGroupName(e.target.value)}
               placeholder="Enter your group name"
               className="w-full border-b border-neutral-300 bg-transparent py-3 text-sm focus:outline-none focus:border-black placeholder:text-neutral-300 text-center"
+              onKeyDown={e => { if (e.key === 'Enter' && groupName.trim()) setStep('group-form') }}
             />
             <div className="mt-10 flex gap-4 justify-center">
               <Button variant="ghost" onClick={() => setStep('landing')}>Back</Button>
+              <Button disabled={!groupName.trim()} onClick={() => setStep('group-form')}>Continue</Button>
+            </div>
+          </div>
+        )}
+
+        {step === 'group-form' && (
+          <div className="space-y-7">
+            <div>
+              <h2 className="text-xl font-light tracking-widest uppercase mb-1 text-center">{groupName}</h2>
+              <p className="text-xs text-neutral-400 text-center tracking-widest uppercase">Tell us about your group</p>
+            </div>
+
+            {/* Group Type + Size */}
+            <div className="grid grid-cols-2 gap-6">
+              <div className="flex flex-col gap-1">
+                <label className="label">Group Type</label>
+                <select value={groupForm.group_type} onChange={e => setGF('group_type', e.target.value)}
+                  className="w-full border-b border-neutral-300 bg-transparent py-2 text-sm focus:outline-none focus:border-black">
+                  <option value="">Select...</option>
+                  {['Climbing', 'Dance', 'Music', 'Sports', 'Acrobatics', 'Comedy', 'Cheer', 'Theater', 'Other'].map(t =>
+                    <option key={t} value={t}>{t}</option>
+                  )}
+                </select>
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="label">Size</label>
+                <input value={groupForm.size} onChange={e => setGF('size', e.target.value)}
+                  placeholder="e.g. Duo, Trio, 4–6"
+                  className="w-full border-b border-neutral-300 bg-transparent py-2 text-sm focus:outline-none focus:border-black placeholder:text-neutral-300" />
+              </div>
+            </div>
+
+            {/* Location + Agency */}
+            <div className="grid grid-cols-2 gap-6">
+              <div className="flex flex-col gap-1">
+                <label className="label">Based In</label>
+                <input value={groupForm.based_in} onChange={e => setGF('based_in', e.target.value)}
+                  placeholder="City"
+                  className="w-full border-b border-neutral-300 bg-transparent py-2 text-sm focus:outline-none focus:border-black placeholder:text-neutral-300" />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="label">Agency / Rep</label>
+                <input value={groupForm.agency} onChange={e => setGF('agency', e.target.value)}
+                  className="w-full border-b border-neutral-300 bg-transparent py-2 text-sm focus:outline-none focus:border-black" />
+              </div>
+            </div>
+
+            {/* Instagram + Website */}
+            <div className="grid grid-cols-2 gap-6">
+              <div className="flex flex-col gap-1">
+                <label className="label">Instagram</label>
+                <input value={groupForm.instagram_handle} onChange={e => setGF('instagram_handle', e.target.value.replace(/^@/, ''))}
+                  placeholder="@handle"
+                  className="w-full border-b border-neutral-300 bg-transparent py-2 text-sm focus:outline-none focus:border-black placeholder:text-neutral-300" />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="label">Website</label>
+                <input value={groupForm.website} onChange={e => setGF('website', e.target.value)}
+                  placeholder="https://"
+                  className="w-full border-b border-neutral-300 bg-transparent py-2 text-sm focus:outline-none focus:border-black placeholder:text-neutral-300" />
+              </div>
+            </div>
+
+            {/* Description */}
+            <div className="flex flex-col gap-1">
+              <label className="label">About Your Group</label>
+              <textarea value={groupForm.description} onChange={e => setGF('description', e.target.value)}
+                rows={3} placeholder="Style, background, what you do..."
+                className="w-full border border-neutral-200 bg-transparent p-3 text-sm focus:outline-none focus:border-black resize-none placeholder:text-neutral-300" />
+            </div>
+
+            {/* Group Story */}
+            <div className="flex flex-col gap-1">
+              <label className="label">Your Group's Story</label>
+              <p className="text-[10px] text-neutral-400">Origin, journey, what climbing means to you as a group.</p>
+              <textarea value={groupForm.group_story} onChange={e => setGF('group_story', e.target.value)}
+                rows={5} placeholder="Tell your story..."
+                className="w-full border border-neutral-200 bg-transparent p-3 text-sm focus:outline-none focus:border-black resize-none placeholder:text-neutral-300" />
+            </div>
+
+            {/* Contact */}
+            <div>
+              <p className="label mb-3">Contact</p>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="flex flex-col gap-1">
+                  <label className="label">Name</label>
+                  <input value={groupForm.contact_name} onChange={e => setGF('contact_name', e.target.value)}
+                    className="w-full border-b border-neutral-300 bg-transparent py-2 text-sm focus:outline-none focus:border-black" />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="label">Email</label>
+                  <input type="email" value={groupForm.contact_email} onChange={e => setGF('contact_email', e.target.value)}
+                    className="w-full border-b border-neutral-300 bg-transparent py-2 text-sm focus:outline-none focus:border-black" />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="label">Phone</label>
+                  <input type="tel" value={groupForm.contact_phone} onChange={e => setGF('contact_phone', e.target.value)}
+                    className="w-full border-b border-neutral-300 bg-transparent py-2 text-sm focus:outline-none focus:border-black" />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-4 pt-2">
+              <Button variant="ghost" onClick={() => setStep('group-name')}>Back</Button>
               <Button
-                disabled={!groupName.trim() || groupSaving}
+                disabled={groupSaving}
                 onClick={async () => {
                   if (!groupName.trim() || !project?.id) return
                   setGroupSaving(true)
                   await fetch('/api/group-signin', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ groupName: groupName.trim(), projectId: project.id }),
+                    body: JSON.stringify({ groupName: groupName.trim(), projectId: project.id, groupData: groupForm }),
                   })
                   setGroupSaving(false)
                   setStep('group-done')
                 }}
               >
-                {groupSaving ? 'Signing in...' : 'Sign In'}
+                {groupSaving ? 'Submitting...' : 'Submit'}
               </Button>
             </div>
           </div>
