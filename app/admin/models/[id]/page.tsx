@@ -42,8 +42,16 @@ export default function ModelProfile({ params }: { params: { id: string } }) {
   }, [id])
 
   const loadMedia = useCallback(async () => {
-    const { data } = await supabase.from('model_media').select('*').eq('model_id', id).order('display_order')
-    setMedia(data || [])
+    const { data } = await supabase.from('model_media').select('*').eq('model_id', id)
+    const sorted = (data || []).sort((a: any, b: any) => {
+      // PDF 1 first, PDF 2 second, then rest by upload date (oldest first)
+      if (a.is_pdf_primary && !b.is_pdf_primary) return -1
+      if (!a.is_pdf_primary && b.is_pdf_primary) return 1
+      if (a.is_pdf_secondary && !b.is_pdf_secondary) return -1
+      if (!a.is_pdf_secondary && b.is_pdf_secondary) return 1
+      return new Date(a.uploaded_at || a.created_at || 0).getTime() - new Date(b.uploaded_at || b.created_at || 0).getTime()
+    })
+    setMedia(sorted)
   }, [id])
 
   const loadPresentations = useCallback(async () => {
