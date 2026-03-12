@@ -12,6 +12,7 @@ interface Contact {
   board: string | null
   city: string | null
   section: string | null
+  gender: string | null
   office_phone: string | null
   cell_phone: string | null
   contact_type: string
@@ -46,18 +47,26 @@ export function ContactEditModal({ contact, onClose, onSaved, onDeleted }: Props
       section: form.section || null,
       office_phone: form.office_phone || null,
       cell_phone: form.cell_phone || null,
+      gender: form.gender || null,
       website: form.website || null,
       instagram: form.instagram || null,
       description: form.description || null,
       contact_type: form.contact_type || 'model',
     }
-    if (contact.id) {
-      await supabase.from('agency_contacts').update(payload).eq('id', contact.id)
-    } else {
-      await supabase.from('agency_contacts').insert(payload)
+    try {
+      if (contact.id) {
+        const { error } = await supabase.from('agency_contacts').update(payload).eq('id', contact.id)
+        if (error) throw error
+      } else {
+        const { error } = await supabase.from('agency_contacts').insert(payload)
+        if (error) throw error
+      }
+      setSaving(false)
+      onSaved()
+    } catch (err) {
+      setSaving(false)
+      alert('Error saving contact: ' + (err instanceof Error ? err.message : 'Unknown error'))
     }
-    setSaving(false)
-    onSaved()
   }
 
   const handleDelete = async () => {
@@ -88,9 +97,12 @@ export function ContactEditModal({ contact, onClose, onSaved, onDeleted }: Props
             <Field label="Company" k="agency_name" />
             <Field label="Contact Name" k="agent_name" />
             <Field label="Role / Title" k="section" />
+            <Field label="Board" k="board" />
             <Field label="City" k="city" />
+            <Field label="Gender" k="gender" />
             <Field label="Email" k="email" />
-            <Field label="Phone" k="office_phone" />
+            <Field label="Office Phone" k="office_phone" />
+            <Field label="Cell Phone" k="cell_phone" />
             <Field label="Website" k="website" />
             <Field label="Instagram" k="instagram" />
           </div>

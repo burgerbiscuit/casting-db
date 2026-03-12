@@ -260,7 +260,7 @@ export default function AgencyContactsPage() {
 
       {showAddContact && (
         <ContactEditModal
-          contact={{ agency_name: null, agent_name: null, email: null, board: null, city: null, section: null, office_phone: null, cell_phone: null, contact_type: 'model', website: null, instagram: null, description: null }}
+          contact={{ agency_name: null, agent_name: null, email: null, board: null, city: null, section: null, gender: null, office_phone: null, cell_phone: null, contact_type: 'model', website: null, instagram: null, description: null }}
           onClose={() => setShowAddContact(false)}
           onSaved={() => { setShowAddContact(false); load() }}
           onDeleted={() => setShowAddContact(false)}
