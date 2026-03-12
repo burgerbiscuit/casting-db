@@ -6,6 +6,7 @@ import { RotateCcw, Trash2, Search, AlertCircle } from 'lucide-react'
 export default function TrashPage() {
   const supabase = createClient()
   const [items, setItems] = useState<any[]>([])
+  const [mediaItems, setMediaItems] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [stats, setStats] = useState({ totalDeleted: 0, totalModels: 0, percentageDeleted: '0' })
@@ -19,13 +20,18 @@ export default function TrashPage() {
     const statsData = await statsRes.json()
     setStats(statsData)
 
-    // Get trash items
+    // Get deleted models
     let url = `/api/admin/trash?limit=100`
     if (search) url += `&search=${encodeURIComponent(search)}`
-
     const res = await fetch(url)
     const data = await res.json()
     setItems(data.items || [])
+
+    // Get deleted media
+    const mediaRes = await fetch('/api/admin/trash/media?limit=200')
+    const mediaData = await mediaRes.json()
+    setMediaItems(mediaData.items || [])
+
     setLoading(false)
   }, [search])
 
@@ -122,11 +128,46 @@ export default function TrashPage() {
         )}
       </div>
 
-      {/* Trash List */}
+      {/* Deleted Media */}
+      {!loading && mediaItems.length > 0 && (
+        <div className="mb-12">
+          <h2 className="text-sm font-medium tracking-widest uppercase mb-4">Deleted Media ({mediaItems.length})</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3">
+            {mediaItems.map((m: any) => (
+              <div key={m.id} className="border border-neutral-200 overflow-hidden">
+                <div className="relative aspect-square bg-neutral-100">
+                  {m.type === 'video'
+                    ? <video src={m.public_url} className="w-full h-full object-cover" />
+                    : <img src={m.public_url} alt="" className="w-full h-full object-cover object-top" />}
+                  <div className="absolute top-1 right-1 bg-black/60 text-white text-[9px] px-1 py-0.5 uppercase tracking-wider">{m.type}</div>
+                </div>
+                <div className="p-1.5 bg-white">
+                  <p className="text-[9px] text-neutral-500 truncate">{m.models?.first_name} {m.models?.last_name}</p>
+                  <p className="text-[9px] text-neutral-400">{m.daysUntilPurge}d left</p>
+                  <div className="flex gap-1 mt-1">
+                    <button onClick={async () => {
+                      await fetch('/api/admin/trash/media', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: m.id }) })
+                      loadTrash()
+                    }} className="flex-1 text-[9px] tracking-widest uppercase border border-neutral-300 hover:border-black py-1 text-center transition-colors" title="Restore">↩</button>
+                    <button onClick={async () => {
+                      if (!confirm('Permanently delete this file? This cannot be undone.')) return
+                      await fetch('/api/admin/trash/media', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: m.id }) })
+                      loadTrash()
+                    }} className="flex-1 text-[9px] tracking-widest uppercase border border-neutral-300 hover:border-red-500 hover:text-red-500 py-1 text-center transition-colors" title="Delete permanently">✕</button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Deleted Models */}
+      <h2 className="text-sm font-medium tracking-widest uppercase mb-4">Deleted Models ({items.length})</h2>
       {loading ? (
         <div className="text-center py-8 text-neutral-400">Loading trash...</div>
       ) : items.length === 0 ? (
-        <div className="text-center py-8 text-neutral-400">No deleted items</div>
+        <div className="text-center py-8 text-neutral-400">No deleted models</div>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">

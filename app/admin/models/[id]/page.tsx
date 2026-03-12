@@ -42,7 +42,7 @@ export default function ModelProfile({ params }: { params: { id: string } }) {
   }, [id])
 
   const loadMedia = useCallback(async () => {
-    const { data } = await supabase.from('model_media').select('*').eq('model_id', id)
+    const { data } = await supabase.from('model_media').select('*').eq('model_id', id).eq('is_deleted', false)
     const sorted = (data || []).sort((a: any, b: any) => {
       // PDF 1 first, PDF 2 second, then rest by upload date (oldest first)
       if (a.is_pdf_primary && !b.is_pdf_primary) return -1
@@ -158,12 +158,9 @@ export default function ModelProfile({ params }: { params: { id: string } }) {
     }
   }
 
-  const deleteMedia = async (mediaId: string, storagePath: string) => {
-    await fetch('/api/project-files', {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fileId: mediaId, storagePath, bucket: 'model-media', table: 'model_media' }),
-    })
+  const deleteMedia = async (mediaId: string) => {
+    // Soft-delete: move to trash, keep file in storage
+    await supabase.from('model_media').update({ is_deleted: true, deleted_at: new Date().toISOString() }).eq('id', mediaId)
     loadMedia()
   }
 
@@ -519,7 +516,7 @@ export default function ModelProfile({ params }: { params: { id: string } }) {
                         <Crop size={10} />
                       </button>
                     )}
-                    <button onClick={() => deleteMedia(m.id, m.storage_path)}
+                    <button onClick={() => deleteMedia(m.id)}
                       className="px-2 py-1.5 border border-neutral-200 text-neutral-300 hover:border-red-300 hover:text-red-400 transition-colors">
                       <Trash2 size={10} />
                     </button>
