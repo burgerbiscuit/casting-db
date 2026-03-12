@@ -43,12 +43,6 @@ export function ProjectPresentationTab({ projectId, presentationId: initialPresI
 
   useEffect(() => { load() }, [load])
 
-  // Auto-refresh every 30s to pick up new sign-ins
-  useEffect(() => {
-    const interval = setInterval(load, 30_000)
-    return () => clearInterval(interval)
-  }, [load])
-
   const createPresentation = async () => {
     setCreating(true)
     const { data: project } = await supabase.from('projects').select('name').eq('id', projectId).single()
@@ -80,25 +74,27 @@ export function ProjectPresentationTab({ projectId, presentationId: initialPresI
   const addModel = async (model: any) => {
     if (!presId) return
     const maxOrder = Math.max(0, ...presentationModels.map(m => m.display_order))
-    // Check if model is confirmed in project before making visible
-    const { data: pm } = await supabase
-      .from('project_models').select('admin_confirmed').eq('project_id', projectId).eq('model_id', model.id).single()
-    await supabase.from('presentation_models').insert({
+    const { data: newPm } = await supabase.from('presentation_models').insert({
       presentation_id: presId, model_id: model.id, display_order: maxOrder + 1,
       is_visible: true,
-    })
-    load()
+    }).select('*, models(first_name, last_name, agency, model_media(public_url, display_order, is_visible))').single()
+    if (newPm) {
+      setPresentationModels(prev => [...prev, newPm])
+      setAvailableModels(prev => prev.filter(m => m.id !== model.id))
+    }
   }
 
   const removeModel = async (pmId: string) => {
     const pm = presentationModels.find(m => m.id === pmId)
     if (!pm) return
-    // Delete both presentation_models and orphaned client_shortlists
     await Promise.all([
       supabase.from('presentation_models').delete().eq('id', pmId),
       supabase.from('client_shortlists').delete().eq('presentation_id', pm.presentation_id).eq('model_id', pm.model_id),
     ])
-    load()
+    setPresentationModels(prev => prev.filter(m => m.id !== pmId))
+    // Add model back to the available picker
+    const { data: modelData } = await supabase.from('models').select('id, first_name, last_name, agency, model_media(public_url, display_order, is_visible)').eq('id', pm.model_id).single()
+    if (modelData) setAvailableModels(prev => [...prev, modelData].sort((a, b) => (a.last_name || '').localeCompare(b.last_name || '')))
   }
 
   const onFieldChange = (pmId: string, field: string, value: any) => {
@@ -120,22 +116,23 @@ export function ProjectPresentationTab({ projectId, presentationId: initialPresI
     e.preventDefault()
     if (!presId || !newCatName.trim()) return
     const maxOrder = Math.max(-1, ...categories.map(c => c.display_order))
-    await supabase.from('presentation_categories').insert({ presentation_id: presId, name: newCatName.trim(), display_order: maxOrder + 1 })
+    const { data: newCat } = await supabase.from('presentation_categories').insert({ presentation_id: presId, name: newCatName.trim(), display_order: maxOrder + 1 }).select().single()
     setNewCatName('')
-    load()
+    if (newCat) setCategories(prev => [...prev, newCat])
   }
 
   const addCategoryByName = async (name: string) => {
     if (!presId || !name.trim()) return
     const maxOrder = Math.max(-1, ...categories.map(c => c.display_order))
-    await supabase.from('presentation_categories').insert({ presentation_id: presId, name: name.trim(), display_order: maxOrder + 1 })
-    await load()
+    const { data: newCat } = await supabase.from('presentation_categories').insert({ presentation_id: presId, name: name.trim(), display_order: maxOrder + 1 }).select().single()
+    if (newCat) setCategories(prev => [...prev, newCat])
   }
 
   const deleteCategory = async (catId: string) => {
     await supabase.from('presentation_models').update({ category_id: null }).eq('category_id', catId)
     await supabase.from('presentation_categories').delete().eq('id', catId)
-    load()
+    setPresentationModels(prev => prev.map(m => m.category_id === catId ? { ...m, category_id: null } : m))
+    setCategories(prev => prev.filter(c => c.id !== catId))
   }
 
   const moveCategoryUp = async (index: number) => {
@@ -144,7 +141,7 @@ export function ProjectPresentationTab({ projectId, presentationId: initialPresI
     const [a, b] = [updated[index - 1], updated[index]]
     await supabase.from('presentation_categories').update({ display_order: b.display_order }).eq('id', a.id)
     await supabase.from('presentation_categories').update({ display_order: a.display_order }).eq('id', b.id)
-    load()
+    setCategories(prev => { const arr = [...prev]; [arr[index - 1], arr[index]] = [arr[index], arr[index - 1]]; return arr })
   }
 
   const moveCategoryDown = async (index: number) => {
@@ -153,7 +150,7 @@ export function ProjectPresentationTab({ projectId, presentationId: initialPresI
     const [a, b] = [updated[index], updated[index + 1]]
     await supabase.from('presentation_categories').update({ display_order: b.display_order }).eq('id', a.id)
     await supabase.from('presentation_categories').update({ display_order: a.display_order }).eq('id', b.id)
-    load()
+    setCategories(prev => { const arr = [...prev]; [arr[index], arr[index + 1]] = [arr[index + 1], arr[index]]; return arr })
   }
 
   const save = async () => {
