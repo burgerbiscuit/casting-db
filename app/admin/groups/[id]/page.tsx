@@ -109,11 +109,24 @@ export default function GroupProfilePage({ params }: { params: { id: string } })
     setUploading(true)
     for (let i = 0; i < files.length; i++) {
       setUploadProgress(`Uploading ${i + 1} of ${files.length}...`)
-      const fd = new FormData()
-      fd.append('groupId', id)
-      fd.append('mediaType', files[i].type.startsWith('video/') ? 'video' : 'photo')
-      fd.append('file', files[i])
-      await fetch('/api/group-media-upload', { method: 'POST', body: fd })
+      const file = files[i]
+      const mediaType = file.type.startsWith('video/') ? 'video' : 'photo'
+      const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg'
+      const storagePath = `${id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+
+      // Upload directly to Supabase storage (bypasses Vercel 4.5MB limit)
+      const { error: upErr } = await supabase.storage.from('group-media').upload(storagePath, file, { contentType: file.type })
+      if (upErr) { console.error('Group media upload error:', upErr.message); setUploadProgress('Upload failed: ' + upErr.message); continue }
+
+      const { data: { publicUrl } } = supabase.storage.from('group-media').getPublicUrl(storagePath)
+
+      // Register DB record via API (uses service client)
+      const res = await fetch('/api/group-media-register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ groupId: id, storagePath, publicUrl, mediaType }),
+      })
+      if (!res.ok) { console.error('Group media register failed:', await res.text()); setUploadProgress('Upload failed — could not save to database'); continue }
     }
     setUploading(false)
     setUploadProgress('')
