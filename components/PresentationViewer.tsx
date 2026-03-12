@@ -731,18 +731,18 @@ export function PresentationViewer({
     </div>
     
     {/* BODY: Photos left + Notes right */}
-    <div className="flex-1 min-h-0 flex overflow-hidden" style={{paddingBottom: '48px', paddingTop: '4px'}}>
+    <div className="flex-1 min-h-0 flex overflow-hidden">
       
       {/* LEFT: 2 Photos side by side */}
-      <div className="flex-1 min-h-0 flex gap-2 overflow-hidden px-8 bg-white">
+      <div className="flex-1 min-h-0 flex gap-2 overflow-hidden px-8 bg-white pb-12">
         {/* Photo 1 */}
         <div className="flex-1 min-h-0 relative bg-neutral-200 overflow-hidden">
           {photoMedia[0] ? (
             photoMedia[0].type === 'video'
-              ? <video src={photoMedia[0].public_url} className="absolute inset-0 w-full h-full object-cover" controls />
-              : <img src={photoMedia[0].public_url} alt={currentModel.first_name} className="absolute inset-0 w-full h-full object-cover object-top" />
+              ? <video src={photoMedia[0].public_url} className="w-full h-full object-cover" controls />
+              : <img src={photoMedia[0].public_url} alt={currentModel.first_name} className="w-full h-full object-cover object-top" />
           ) : (
-            <div className="absolute inset-0 flex items-center justify-center text-neutral-400 text-sm">No photo</div>
+            <div className="flex items-center justify-center h-full text-neutral-400 text-sm">No photo</div>
           )}
         </div>
         
@@ -750,14 +750,14 @@ export function PresentationViewer({
         <div className="flex-1 min-h-0 relative bg-neutral-200 overflow-hidden">
           {photoMedia[1] ? (
             photoMedia[1].type === 'video'
-              ? <video src={photoMedia[1].public_url} className="absolute inset-0 w-full h-full object-cover" controls />
-              : <img src={photoMedia[1].public_url} alt={currentModel.first_name} className="absolute inset-0 w-full h-full object-cover object-top" />
+              ? <video src={photoMedia[1].public_url} className="w-full h-full object-cover" controls />
+              : <img src={photoMedia[1].public_url} alt={currentModel.first_name} className="w-full h-full object-cover object-top" />
           ) : null}
         </div>
       </div>
       
       {/* RIGHT: Backend fields + Notes + Links */}
-      <div className="flex-shrink-0 px-6 py-6 flex flex-col h-full overflow-hidden" style={{width: '360px'}}>
+      <div className="flex-shrink-0 px-6 py-6 pb-12 flex flex-col h-full overflow-hidden" style={{width: '360px'}}>
         {/* Top: rate/option/location — scrollable if overflow */}
         <div className="min-h-0 overflow-y-auto flex flex-col gap-3">
           {current.rate?.trim() && (
