@@ -149,11 +149,12 @@ export function ModelCard({ presentationModel, model, media, presentationId, cli
           </a>
         )}
 
-        {(presentationModel.rate?.trim() || presentationModel.location?.trim() || presentationModel.admin_notes?.trim()) && (
+        {(presentationModel.rate?.trim() || presentationModel.location?.trim() || presentationModel.option?.trim() || presentationModel.client_notes?.trim()) && (
           <div className="text-[10px] text-neutral-600 space-y-0.5 mb-1 border-t border-neutral-100 pt-2 mt-1">
             {presentationModel.rate?.trim() && <p><span className="text-neutral-400 uppercase tracking-wider text-[9px]">Rate </span>{presentationModel.rate}</p>}
-            {presentationModel.admin_notes?.trim() && <p><span className="text-neutral-400 uppercase tracking-wider text-[9px]">Option </span>{presentationModel.admin_notes}</p>}
+            {presentationModel.option?.trim() && <p><span className="text-neutral-400 uppercase tracking-wider text-[9px]">Option </span>{presentationModel.option}</p>}
             {presentationModel.location?.trim() && <p><span className="text-neutral-400 uppercase tracking-wider text-[9px]">Location </span>{presentationModel.location}</p>}
+            {presentationModel.client_notes?.trim() && <p className="italic">{presentationModel.client_notes}</p>}
           </div>
         )}
 
