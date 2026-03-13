@@ -73,7 +73,7 @@ export default function BillingPage() {
           ))}
         </div>
         {tab === 'invoices' ? (
-          <Link href="/admin/billing/new"
+          <Link href="/admin/billing/invoices/new"
             className="flex items-center gap-2 text-xs tracking-widest uppercase border border-black px-3 py-2 hover:bg-black hover:text-white transition-colors">
             <Plus size={14} /> New Invoice
           </Link>
