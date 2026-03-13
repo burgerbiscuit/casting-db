@@ -109,9 +109,11 @@ export default function CastPage({ params }: { params: { slug: string } }) {
   const agencyRef = useRef<HTMLDivElement>(null)
   const boardRef = useRef<HTMLDivElement>(null)
   const agentNameRef = useRef<HTMLDivElement>(null)
+  const nameSearchRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
+      if (nameSearchRef.current && !nameSearchRef.current.contains(e.target as Node)) setSuggestions([])
       if (agencyRef.current && !agencyRef.current.contains(e.target as Node)) setShowAgencySuggestions(false)
       if (boardRef.current && !boardRef.current.contains(e.target as Node)) setShowBoardSuggestions(false)
       if (agentNameRef.current && !agentNameRef.current.contains(e.target as Node)) setShowAgentNameSuggestions(false)
@@ -369,7 +371,7 @@ export default function CastPage({ params }: { params: { slug: string } }) {
         {step === 'name' && (
           <div>
             <h2 className="text-xl font-light tracking-widest uppercase mb-10 text-center">Your Name</h2>
-            <div className="space-y-6 relative">
+            <div className="space-y-6 relative" ref={nameSearchRef}>
               <Input label="First Name" value={firstName} onChange={e => onNameChange(e.target.value, lastName)} autoFocus />
               <Input label="Last Name" value={lastName} onChange={e => onNameChange(firstName, e.target.value)} />
               {suggestions.length > 0 && (
