@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/Button'
 import { revalidatePath } from 'next/cache'
 import { CopyButton } from '@/components/CopyButton'
 import { ProjectModelsSection } from '@/components/ProjectModelsSection'
-import { ProjectPresentationTab } from '@/components/ProjectPresentationTab'
 import { ProjectGroupsTab } from '@/components/ProjectGroupsTab'
 import ProjectSpecsPanel from '@/components/ProjectSpecsPanel'
 import ProjectFilesTab from '@/components/ProjectFilesTab'
@@ -115,12 +114,8 @@ export default async function ProjectDetail({ params, searchParams }: { params: 
       {/* Tabs */}
       <div className="flex border-b border-neutral-200 mb-4">
         <Link href={`/admin/projects/${id}?tab=models`}
-          className={`px-6 py-3 text-xs tracking-widest uppercase transition-colors border-b-2 -mb-[1px] ${tab !== 'presentation' ? 'border-black text-black' : 'border-transparent text-neutral-400 hover:text-black'}`}>
+          className={`px-6 py-3 text-xs tracking-widest uppercase transition-colors border-b-2 -mb-[1px] ${tab === 'models' || tab === 'files' || !['groups','files'].includes(tab) ? 'border-black text-black' : 'border-transparent text-neutral-400 hover:text-black'}`}>
           Models ({projectModels?.length || 0})
-        </Link>
-        <Link href={`/admin/projects/${id}?tab=presentation`}
-          className={`px-6 py-3 text-xs tracking-widest uppercase transition-colors border-b-2 -mb-[1px] ${tab === 'presentation' ? 'border-black text-black' : 'border-transparent text-neutral-400 hover:text-black'}`}>
-          Presentation
         </Link>
         <Link href={`/admin/projects/${id}?tab=groups`}
           className={`px-6 py-3 text-xs tracking-widest uppercase transition-colors border-b-2 -mb-[1px] ${tab === 'groups' ? 'border-black text-black' : 'border-transparent text-neutral-400 hover:text-black'}`}>
@@ -136,20 +131,12 @@ export default async function ProjectDetail({ params, searchParams }: { params: 
         <ProjectGroupsTab projectId={id} />
       )}
 
-      {tab !== 'presentation' && tab !== 'groups' && (
+      {tab !== 'groups' && tab !== 'files' && (
         <ProjectModelsSection
           projectId={id}
           modelsWithPhotos={modelsWithPhotos}
           mainPres={mainPres || null}
           presModelIds={presModelIdsList}
-        />
-      )}
-
-      {tab === 'presentation' && (
-        <ProjectPresentationTab
-          projectId={id}
-          presentationId={mainPres?.id || null}
-          isPublished={mainPres?.is_published || false}
         />
       )}
     </div>

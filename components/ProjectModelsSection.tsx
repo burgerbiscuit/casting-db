@@ -81,7 +81,7 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
     const allPresIds = (allPres || []).map((p: any) => p.id)
     const [{ data: pm }, { data: sl }] = await Promise.all([
       supabase.from('presentation_models')
-        .select('id, model_id, admin_notes, is_visible, rate, location, pm_option, category_id')
+        .select('id, model_id, admin_notes, client_notes, is_visible, rate, location, option, category_id, show_sizing, show_instagram, show_portfolio')
         .eq('presentation_id', mainPres.id),
       allPresIds.length > 0
         ? supabase.from('client_shortlists').select('model_id, status, is_released').in('presentation_id', allPresIds)
@@ -141,8 +141,11 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
     setPresModels(prev => ({ ...prev, [modelId]: { ...prev[modelId], admin_notes: notes } }))
   }
 
-  const savePmField = async (pmId: string, field: string, value: string) => {
-    await supabase.from('project_models').update({ [field]: value }).eq('id', pmId)
+  const savePresField = async (modelId: string, field: string, value: any) => {
+    const pm = presModels[modelId]
+    if (!pm?.id) return
+    await supabase.from('presentation_models').update({ [field]: value }).eq('id', pm.id)
+    setPresModels(prev => ({ ...prev, [modelId]: { ...prev[modelId], [field]: value } }))
   }
 
   const togglePresentation = async (modelId: string, displayOrder: number) => {
@@ -337,13 +340,23 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
     const mid = model?.id
     const status = shortlistStatus[mid]
     const presModel = presModels[mid]
-    const [notes, setNotes] = useState(presModel?.admin_notes || '')
-    const [option, setOption] = useState(pm.pm_option || '')
-    const [rate, setRate] = useState(pm.pm_rate || '')
-    const [location, setLocation] = useState(pm.pm_location || '')
+    const [adminNotes, setAdminNotes] = useState(presModel?.admin_notes || '')
+    const [clientNotes, setClientNotes] = useState(presModel?.client_notes || '')
+    const [option, setOption] = useState(presModel?.option || '')
+    const [rate, setRate] = useState(presModel?.rate || '')
+    const [location, setLocation] = useState(presModel?.location || '')
     const [expanded, setExpanded] = useState(false)
 
-    useEffect(() => { setNotes(presModels[mid]?.admin_notes || '') }, [presModels[mid]?.admin_notes])
+    useEffect(() => {
+      const pm = presModels[mid]
+      if (pm) {
+        setAdminNotes(pm.admin_notes || '')
+        setClientNotes(pm.client_notes || '')
+        setOption(pm.option || '')
+        setRate(pm.rate || '')
+        setLocation(pm.location || '')
+      }
+    }, [presModels[mid]])
 
     return (
       <div className={`border border-neutral-100 ${expanded ? 'mb-1' : ''}`}>
@@ -418,13 +431,13 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
           <div className="px-3 pb-3 pt-1 border-t border-neutral-50 grid grid-cols-2 gap-3 text-center">
             <input className="text-[10px] border-b border-neutral-200 bg-transparent py-1 focus:outline-none focus:border-black placeholder:text-neutral-300 text-center"
               placeholder="Option" value={option} onChange={e => setOption(e.target.value)}
-              onBlur={e => savePmField(pm.id, 'pm_option', e.target.value)} />
+              onBlur={e => savePresField(mid, 'option', e.target.value)} />
             <input className="text-[10px] border-b border-neutral-200 bg-transparent py-1 focus:outline-none focus:border-black placeholder:text-neutral-300 text-center"
               placeholder="Rate" value={rate} onChange={e => setRate(e.target.value)}
-              onBlur={e => savePmField(pm.id, 'pm_rate', e.target.value)} />
+              onBlur={e => savePresField(mid, 'rate', e.target.value)} />
             <input className="text-[10px] border-b border-neutral-200 bg-transparent py-1 focus:outline-none focus:border-black placeholder:text-neutral-300 col-span-2 text-center"
               placeholder="Location" value={location} onChange={e => setLocation(e.target.value)}
-              onBlur={e => savePmField(pm.id, 'pm_location', e.target.value)} />
+              onBlur={e => savePresField(mid, 'location', e.target.value)} />
             <div className="col-span-2">
               <SectionField
                 modelId={mid}
@@ -442,13 +455,40 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
                 supabase={supabase}
               />
             </div>
+            {presModelIds.has(mid) && (
+              <div className="col-span-2 flex gap-4 justify-center text-[9px] tracking-widest uppercase text-neutral-500">
+                <label className="flex items-center gap-1 cursor-pointer">
+                  <input type="checkbox" checked={presModels[mid]?.show_sizing ?? true}
+                    onChange={e => savePresField(mid, 'show_sizing', e.target.checked)} />
+                  Show Sizing
+                </label>
+                <label className="flex items-center gap-1 cursor-pointer">
+                  <input type="checkbox" checked={presModels[mid]?.show_instagram ?? true}
+                    onChange={e => savePresField(mid, 'show_instagram', e.target.checked)} />
+                  Show Instagram
+                </label>
+                <label className="flex items-center gap-1 cursor-pointer">
+                  <input type="checkbox" checked={presModels[mid]?.show_portfolio ?? true}
+                    onChange={e => savePresField(mid, 'show_portfolio', e.target.checked)} />
+                  Show Portfolio
+                </label>
+              </div>
+            )}
             <div className="col-span-2 text-center">
-              <p className="text-[9px] text-neutral-400 tracking-widest uppercase mb-1">Notes for client presentation</p>
+              <p className="text-[9px] text-neutral-400 tracking-widest uppercase mb-1">Notes for client — visible on slides</p>
               <textarea className="w-full text-[10px] border-b border-neutral-200 bg-transparent py-1 focus:outline-none focus:border-black resize-none placeholder:text-neutral-300 text-center"
-                placeholder={presModelIds.has(mid) ? 'Notes visible to client in presentation...' : 'Add to presentation to enable notes'}
+                placeholder={presModelIds.has(mid) ? 'Visible to client on slides...' : 'Add to presentation to enable'}
                 rows={2} disabled={!presModelIds.has(mid)}
-                value={notes} onChange={e => setNotes(e.target.value)}
-                onBlur={e => savePresNotes(mid, e.target.value)} />
+                value={clientNotes} onChange={e => setClientNotes(e.target.value)}
+                onBlur={e => savePresField(mid, 'client_notes', e.target.value)} />
+            </div>
+            <div className="col-span-2 text-center">
+              <p className="text-[9px] text-neutral-400 tracking-widest uppercase mb-1">Private admin notes — not shown to client</p>
+              <textarea className="w-full text-[10px] border-b border-neutral-200 bg-transparent py-1 focus:outline-none focus:border-black resize-none placeholder:text-neutral-300 text-center"
+                placeholder="Internal only..."
+                rows={2}
+                value={adminNotes} onChange={e => setAdminNotes(e.target.value)}
+                onBlur={e => savePresField(mid, 'admin_notes', e.target.value)} />
             </div>
           </div>
         )}
@@ -461,12 +501,16 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
     const mid = model?.id
     const status = shortlistStatus[mid]
     const presModel = presModels[mid]
-    const [notes, setNotes] = useState(presModel?.admin_notes || '')
-    const [option, setOption] = useState(pm.pm_option || '')
-    const [rate, setRate] = useState(pm.pm_rate || '')
-    const [location, setLocation] = useState(pm.pm_location || '')
+    const [clientNotes, setClientNotes] = useState(presModel?.client_notes || '')
+    const [adminNotes, setAdminNotes] = useState(presModel?.admin_notes || '')
+    const [option, setOption] = useState(presModel?.option || '')
+    const [rate, setRate] = useState(presModel?.rate || '')
+    const [location, setLocation] = useState(presModel?.location || '')
 
-    useEffect(() => { setNotes(presModels[mid]?.admin_notes || '') }, [presModels[mid]?.admin_notes])
+    useEffect(() => {
+      const p = presModels[mid]
+      if (p) { setClientNotes(p.client_notes || ''); setAdminNotes(p.admin_notes || ''); setOption(p.option || ''); setRate(p.rate || ''); setLocation(p.location || '') }
+    }, [presModels[mid]])
 
     return (
       <div className="border border-neutral-100 flex flex-col">
@@ -492,15 +536,19 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
           </div>
           {model?.agency && <p className="text-[10px] text-neutral-400 truncate">{model?.agency}</p>}
           <input className="w-full text-[10px] border-b border-neutral-200 bg-transparent py-0.5 focus:outline-none focus:border-black placeholder:text-neutral-300"
-            placeholder="Option" value={option} onChange={e => setOption(e.target.value)} onBlur={e => savePmField(pm.id, 'pm_option', e.target.value)} />
+            placeholder="Option" value={option} onChange={e => setOption(e.target.value)} onBlur={e => savePresField(mid, 'option', e.target.value)} />
           <input className="w-full text-[10px] border-b border-neutral-200 bg-transparent py-0.5 focus:outline-none focus:border-black placeholder:text-neutral-300"
-            placeholder="Rate" value={rate} onChange={e => setRate(e.target.value)} onBlur={e => savePmField(pm.id, 'pm_rate', e.target.value)} />
+            placeholder="Rate" value={rate} onChange={e => setRate(e.target.value)} onBlur={e => savePresField(mid, 'rate', e.target.value)} />
           <input className="w-full text-[10px] border-b border-neutral-200 bg-transparent py-0.5 focus:outline-none focus:border-black placeholder:text-neutral-300"
-            placeholder="Location" value={location} onChange={e => setLocation(e.target.value)} onBlur={e => savePmField(pm.id, 'pm_location', e.target.value)} />
+            placeholder="Location" value={location} onChange={e => setLocation(e.target.value)} onBlur={e => savePresField(mid, 'location', e.target.value)} />
           <textarea className="w-full text-[10px] border-b border-neutral-200 bg-transparent py-0.5 focus:outline-none focus:border-black resize-none placeholder:text-neutral-300"
-            placeholder={presModelIds.has(mid) ? 'Notes for presentation...' : 'Add to presentation first'}
+            placeholder={presModelIds.has(mid) ? 'Client notes (visible on slides)...' : 'Add to presentation first'}
             rows={2} disabled={!presModelIds.has(mid)}
-            value={notes} onChange={e => setNotes(e.target.value)} onBlur={e => savePresNotes(mid, e.target.value)} />
+            value={clientNotes} onChange={e => setClientNotes(e.target.value)} onBlur={e => savePresField(mid, 'client_notes', e.target.value)} />
+          <textarea className="w-full text-[10px] border-b border-neutral-200 bg-transparent py-0.5 focus:outline-none focus:border-black resize-none placeholder:text-neutral-300"
+            placeholder="Private admin notes..."
+            rows={2}
+            value={adminNotes} onChange={e => setAdminNotes(e.target.value)} onBlur={e => savePresField(mid, 'admin_notes', e.target.value)} />
         </div>
       </div>
     )
@@ -583,6 +631,24 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Presentation toolbar */}
+      {mainPres?.id && (
+        <div className="flex gap-2 mb-6 flex-wrap items-center justify-end border-b border-neutral-100 pb-4">
+          <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/client/presentations/${mainPres.id}`) }}
+            className="text-[10px] tracking-widest uppercase border border-neutral-300 px-3 py-1.5 hover:border-black transition-colors">
+            Copy Presentation Link
+          </button>
+          <a href={`/client/presentations/${mainPres.id}`} target="_blank"
+            className="text-[10px] tracking-widest uppercase border border-neutral-300 px-3 py-1.5 hover:border-black transition-colors">
+            Preview ↗
+          </a>
+          <a href={`/api/pdf/${mainPres.id}`} target="_blank"
+            className="text-[10px] tracking-widest uppercase border border-neutral-300 px-3 py-1.5 hover:border-black transition-colors">
+            ↓ PDF
+          </a>
         </div>
       )}
 
