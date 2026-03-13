@@ -129,6 +129,23 @@ function EstimatePreviewInner() {
                 </div>
               </>
             )}
+
+            <hr className="my-6" />
+
+            {/* Terms & Conditions */}
+            <div>
+              <p className="text-xs tracking-widest uppercase font-semibold mb-4">Terms & Conditions</p>
+              <div className="space-y-4 text-[10px] leading-relaxed text-neutral-500">
+                <div><p className="font-semibold text-neutral-700 mb-0.5">Scope & Overages</p><p>This estimate is based on the specs shared. Any change in scope, including added shoot days, deliverables, usage, or altered casting criteria — may result in additional fees ("Overages"). Overages will be communicated in writing and require written approval before proceeding.</p></div>
+                <div><p className="font-semibold text-neutral-700 mb-0.5">Payment Terms</p><p>• Final balance due within 30 days of final invoice.<br/>• Late payments incur a 2% monthly finance charge.</p></div>
+                <div><p className="font-semibold text-neutral-700 mb-0.5">Cancellations / Postponements</p><p>• If casting has begun, 50% of the casting fee is due even if the project is canceled.<br/>• If cancellation occurs within 48 hours of the scheduled casting, 100% of fees and confirmed vendor costs apply.<br/>• If project is delayed or paused by client beyond the original timeline, additional hold fees may apply.</p></div>
+                <div><p className="font-semibold text-neutral-700 mb-0.5">Usage & Talent Liability</p><p>Casting Director provides talent options and recommendations in good faith but is not responsible for talent performance or final usage rights negotiated directly with talent agents or production.</p></div>
+                <div><p className="font-semibold text-neutral-700 mb-0.5">Portfolio Rights</p><p>Casting Director may use non-confidential imagery or footage from the casting session for archival and portfolio purposes unless otherwise agreed in writing.</p></div>
+              </div>
+            </div>
+
+            <hr className="my-6" />
+            <div className="text-[10px] text-neutral-400 tracking-widest uppercase">Client Signature on Sent Estimate →</div>
           </div>
         </div>
 

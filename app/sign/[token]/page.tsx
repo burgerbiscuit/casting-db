@@ -141,9 +141,48 @@ export default function SignPage() {
           </table>
         </div>
 
+        {/* Terms & Conditions */}
+        <div className="mb-8 border border-neutral-200 p-6">
+          <p className="text-[10px] tracking-widest uppercase font-semibold mb-5">Terms & Conditions</p>
+
+          <div className="space-y-5 text-[11px] leading-relaxed text-neutral-600">
+            <div>
+              <p className="font-semibold text-black mb-1">Scope & Overages</p>
+              <p>This estimate is based on the specs shared. Any change in scope, including added shoot days, deliverables, usage, or altered casting criteria — may result in additional fees ("Overages"). Overages will be communicated in writing and require written approval before proceeding.</p>
+            </div>
+
+            <div>
+              <p className="font-semibold text-black mb-1">Payment Terms</p>
+              <ul className="space-y-1 ml-3">
+                <li>• Final balance due within 30 days of final invoice.</li>
+                <li>• Late payments incur a 2% monthly finance charge.</li>
+              </ul>
+            </div>
+
+            <div>
+              <p className="font-semibold text-black mb-1">Cancellations / Postponements</p>
+              <ul className="space-y-1 ml-3">
+                <li>• If casting has begun, 50% of the casting fee is due even if the project is canceled.</li>
+                <li>• If cancellation occurs within 48 hours of the scheduled casting, 100% of fees and confirmed vendor costs apply.</li>
+                <li>• If project is delayed or paused by client beyond the original timeline, additional hold fees may apply.</li>
+              </ul>
+            </div>
+
+            <div>
+              <p className="font-semibold text-black mb-1">Usage & Talent Liability</p>
+              <p>Casting Director provides talent options and recommendations in good faith but is not responsible for talent performance or final usage rights negotiated directly with talent agents or production.</p>
+            </div>
+
+            <div>
+              <p className="font-semibold text-black mb-1">Portfolio Rights</p>
+              <p>Casting Director may use non-confidential imagery or footage from the casting session for archival and portfolio purposes unless otherwise agreed in writing.</p>
+            </div>
+          </div>
+        </div>
+
         {/* Signer info */}
         <div className="space-y-4 mb-8">
-          <p className="text-[10px] tracking-widest uppercase font-medium">Your Information</p>
+          <p className="text-[10px] tracking-widest uppercase font-medium">By signing below, you agree to the Terms & Conditions above</p>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className={labelClass}>Name *</label>
@@ -157,6 +196,14 @@ export default function SignPage() {
           <div>
             <label className={labelClass}>Company</label>
             <input value={signerCompany} onChange={e => setSignerCompany(e.target.value)} className={inputClass} placeholder="Company name" />
+          </div>
+        </div>
+
+        {/* Date */}
+        <div className="mb-6">
+          <label className={labelClass}>Date</label>
+          <div className={inputClass + " bg-neutral-50 text-neutral-500"}>
+            {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
           </div>
         </div>
 
