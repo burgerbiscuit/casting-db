@@ -64,6 +64,70 @@ function SectionField({ modelId, presModelId, categoryId, categories, presModelI
   )
 }
 
+function SectionManager({ categories, presentationId, supabase, onChanged }: { categories: any[]; presentationId: string; supabase: any; onChanged: () => void }) {
+  const [adding, setAdding] = useState(false)
+  const [newName, setNewName] = useState('')
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editName, setEditName] = useState('')
+
+  const createSection = async () => {
+    if (!newName.trim()) return
+    const maxOrder = Math.max(-1, ...categories.map(c => c.display_order || 0))
+    await supabase.from('presentation_categories').insert({ presentation_id: presentationId, name: newName.trim().toUpperCase(), display_order: maxOrder + 1 })
+    setNewName(''); setAdding(false); onChanged()
+  }
+
+  const renameSection = async (id: string) => {
+    if (!editName.trim()) return
+    await supabase.from('presentation_categories').update({ name: editName.trim().toUpperCase() }).eq('id', id)
+    setEditingId(null); onChanged()
+  }
+
+  const deleteSection = async (id: string) => {
+    if (!confirm('Delete this section? Models in it will be moved to "Other".')) return
+    await supabase.from('presentation_models').update({ category_id: null }).eq('category_id', id)
+    await supabase.from('presentation_categories').delete().eq('id', id)
+    onChanged()
+  }
+
+  return (
+    <div className="flex flex-wrap items-center gap-2 py-3 mb-4 border-b border-neutral-100">
+      <span className="text-[9px] tracking-widest uppercase text-neutral-400 mr-1">Sections</span>
+      {categories.map(c => (
+        <div key={c.id} className="flex items-center gap-0.5 border border-neutral-200 px-2 py-1">
+          {editingId === c.id ? (
+            <input autoFocus value={editName} onChange={e => setEditName(e.target.value)}
+              onBlur={() => renameSection(c.id)}
+              onKeyDown={e => { if (e.key === 'Enter') renameSection(c.id); if (e.key === 'Escape') setEditingId(null) }}
+              className="text-[10px] tracking-widest uppercase w-24 bg-transparent focus:outline-none border-b border-black" />
+          ) : (
+            <button onClick={() => { setEditingId(c.id); setEditName(c.name) }}
+              className="text-[10px] tracking-widest uppercase text-neutral-600 hover:text-black transition-colors">
+              {c.name}
+            </button>
+          )}
+          <button onClick={() => deleteSection(c.id)}
+            className="ml-1 text-neutral-300 hover:text-red-400 transition-colors text-[10px] leading-none">×</button>
+        </div>
+      ))}
+      {adding ? (
+        <div className="flex items-center gap-1 border border-black px-2 py-1">
+          <input autoFocus value={newName} onChange={e => setNewName(e.target.value)} placeholder="Section name"
+            onKeyDown={e => { if (e.key === 'Enter') createSection(); if (e.key === 'Escape') { setAdding(false); setNewName('') } }}
+            className="text-[10px] tracking-widest uppercase bg-transparent focus:outline-none w-28 placeholder:text-neutral-300 placeholder:normal-case placeholder:tracking-normal" />
+          <button onClick={createSection} className="text-[10px] text-black font-medium">✓</button>
+          <button onClick={() => { setAdding(false); setNewName('') }} className="text-[10px] text-neutral-400">✕</button>
+        </div>
+      ) : (
+        <button onClick={() => setAdding(true)}
+          className="text-[10px] tracking-widest uppercase border border-dashed border-neutral-300 px-2 py-1 text-neutral-400 hover:border-black hover:text-black transition-colors">
+          + Add Section
+        </button>
+      )}
+    </div>
+  )
+}
+
 export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, presModelIds: initialPresModelIds }: Props) {
   const supabase = createClient()
   const [view, setView] = useState<'list' | 'grid'>('list')
@@ -139,6 +203,17 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
     if (!pm) return
     await supabase.from('presentation_models').update({ admin_notes: notes }).eq('id', pm.id)
     setPresModels(prev => ({ ...prev, [modelId]: { ...prev[modelId], admin_notes: notes } }))
+  }
+
+  const refreshCategories = async () => {
+    if (!mainPres?.id) return
+    const { data: cats } = await supabase.from('presentation_categories').select('id, name, display_order').eq('presentation_id', mainPres.id).order('display_order')
+    setCategories(cats || [])
+    // Re-sync category assignments after deletion
+    const { data: pm } = await supabase.from('presentation_models').select('model_id, category_id').eq('presentation_id', mainPres.id)
+    const catMap: Record<string, string | null> = {}
+    ;(pm || []).forEach((m: any) => { catMap[m.model_id] = m.category_id || null })
+    setPresModelCategories(catMap)
   }
 
   const savePresField = async (modelId: string, field: string, value: any) => {
@@ -650,6 +725,16 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
             ↓ PDF
           </a>
         </div>
+      )}
+
+      {/* Section manager */}
+      {mainPres?.id && (
+        <SectionManager
+          categories={categories}
+          presentationId={mainPres.id}
+          supabase={supabase}
+          onChanged={refreshCategories}
+        />
       )}
 
       {/* Add model search */}
