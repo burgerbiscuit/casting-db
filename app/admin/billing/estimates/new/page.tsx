@@ -30,7 +30,7 @@ export default function NewEstimatePage() {
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }))
 
   useEffect(() => {
-    supabase.from('projects').select('id, name, client_emails, billing_contact, shoot_date').eq('status', 'active').order('created_at', { ascending: false })
+    supabase.from('projects').select('id, name, client_emails, billing_contact, billing_name, billing_email, billing_address, billing_notes, shoot_date').eq('status', 'active').order('created_at', { ascending: false })
       .then(({ data }) => setProjects(data || []))
   }, [])
 
@@ -40,6 +40,8 @@ export default function NewEstimatePage() {
     if (proj) {
       if (proj.client_emails?.[0]) set('client_email', proj.client_emails[0])
       if (proj.billing_contact) set('billing_contact_name', proj.billing_contact)
+      if (proj.billing_email) set('billing_contact_email', proj.billing_email)
+      if (proj.billing_address) set('billing_contact_address', proj.billing_address)
     }
   }
 

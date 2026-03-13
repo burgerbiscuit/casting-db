@@ -29,7 +29,7 @@ export default function NewInvoicePage() {
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }))
 
   useEffect(() => {
-    supabase.from('projects').select('id, name, client_emails, billing_contact, shoot_date').eq('status', 'active').order('created_at', { ascending: false })
+    supabase.from('projects').select('id, name, client_emails, billing_contact, billing_name, billing_email, billing_address, billing_notes, shoot_date').eq('status', 'active').order('created_at', { ascending: false })
       .then(({ data }) => setProjects(data || []))
   }, [])
 
@@ -38,6 +38,7 @@ export default function NewInvoicePage() {
     const proj = projects.find(p => p.id === projectId)
     if (proj) {
       if (proj.client_emails?.[0]) set('client_email', proj.client_emails[0])
+      if (proj.billing_name) set('client_name', proj.billing_name)
     }
   }
 
