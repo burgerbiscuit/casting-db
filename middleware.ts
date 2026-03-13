@@ -49,10 +49,7 @@ export async function middleware(request: NextRequest) {
 
   // Project-specific login pages (/client/[uuid]) handle their own auth inline
   const clientProjectMatch = path.match(/^\/client\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/)
-  if (clientProjectMatch) {
-    supabaseResponse.headers.set('x-project-login', 'true')
-    return supabaseResponse
-  }
+  if (clientProjectMatch) return supabaseResponse
 
   if (path.startsWith('/client') && path !== '/client/login' && path !== '/client/signup') {
     // Allow share-cookie access to presentation, chart, or project pages (no login required)
