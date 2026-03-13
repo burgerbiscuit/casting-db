@@ -30,6 +30,12 @@ export default async function ProjectDetail({ params, searchParams }: { params: 
   const { data: presentations } = await supabase
     .from('presentations').select('*').eq('project_id', id).order('created_at', { ascending: false })
   const mainPres = presentations?.[0]
+
+  // Load client logins for this project
+  const { data: clientProjects } = await supabase
+    .from('client_projects')
+    .select('client_id, client_profiles(name, email)')
+    .eq('project_id', id)
   const { data: presModels } = mainPres ? await supabase
     .from('presentation_models').select('model_id').eq('presentation_id', mainPres.id) : { data: [] }
   const presModelIdsList = (presModels || []).map((pm: any) => pm.model_id)
@@ -87,14 +93,25 @@ export default async function ProjectDetail({ params, searchParams }: { params: 
           {clientLink ? (
             <>
               <div className="bg-neutral-50 px-3 py-2 text-xs text-neutral-500 mb-3 break-all">{clientLink}</div>
-              <div className="flex gap-4 items-center">
+              <div className="flex gap-4 items-center mb-4">
                 <a href={clientLink} target="_blank" className="text-xs tracking-widest uppercase underline">Open ↗</a>
                 <CopyButton text={clientLink} />
-
               </div>
             </>
           ) : (
-            <p className="text-xs text-neutral-400 italic">Go to the Presentation tab to set up the client view.</p>
+            <p className="text-xs text-neutral-400 italic mb-4">No presentation yet.</p>
+          )}
+          {clientProjects && clientProjects.length > 0 && (
+            <div className="border-t border-neutral-100 pt-3 mt-1">
+              <p className="text-[9px] tracking-widest uppercase text-neutral-400 mb-2">Client Logins</p>
+              <div className="space-y-1">
+                {clientProjects.map((cp: any) => (
+                  <div key={cp.client_id} className="text-[10px] text-neutral-500 font-mono">
+                    {cp.client_profiles?.email}
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
         </div>
         {shareLink && (
