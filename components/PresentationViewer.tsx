@@ -610,7 +610,7 @@ export function PresentationViewer({
                   {[pm?.rate, pm?.location, pm?.option].filter(Boolean).join(' · ')}
                 </p>
               )}
-              {pm?.admin_notes && <p className="text-xs text-neutral-600 mb-1 italic">{pm.admin_notes}</p>}
+              {pm?.client_notes && <p className="text-xs text-neutral-600 mb-1 italic">{pm.client_notes}</p>}
               {/* Social / portfolio links */}
               <div className="flex gap-3 mb-2 flex-wrap">
                 {model?.instagram_handle && (
@@ -776,6 +776,12 @@ export function PresentationViewer({
             <div className="text-center">
               <p className="text-[9px] text-neutral-400 uppercase tracking-wider font-medium mb-0.5">Location</p>
               <p className="text-xs text-neutral-700">{current.location}</p>
+            </div>
+          )}
+          {current.client_notes?.trim() && (
+            <div className="text-center">
+              <p className="text-[9px] text-neutral-400 uppercase tracking-wider font-medium mb-0.5">Notes</p>
+              <p className="text-xs text-neutral-700 italic">{current.client_notes}</p>
             </div>
           )}
         </div>
