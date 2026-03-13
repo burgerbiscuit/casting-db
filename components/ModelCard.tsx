@@ -144,7 +144,7 @@ export function ModelCard({ presentationModel, model, media, presentationId, cli
 
         {presentationModel.show_portfolio && model.portfolio_url && (
           <a href={model.portfolio_url.startsWith('http') ? model.portfolio_url : `https://${model.portfolio_url}`} target="_blank" rel="noopener noreferrer"
-            className="text-xs text-neutral-600 hover:text-black underline block mb-3 truncate">
+            className="text-xs text-neutral-600 hover:text-black underline mb-2 inline-block">
             Portfolio ↗
           </a>
         )}
