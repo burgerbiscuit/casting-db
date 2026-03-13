@@ -399,23 +399,23 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
                 </span>
               )}
               {isRemoved(pm) && (
-                <span className="text-[8px] tracking-widest uppercase px-1.5 py-0.5 text-neutral-300 border border-neutral-200">
-                  Removed from Presentation
+                <span className="text-[8px] tracking-widest uppercase px-1.5 py-0.5 text-neutral-400 bg-neutral-100">
+                  Hidden from Presentation
                 </span>
               )}
             </div>
             {model?.agency && <p className="text-[10px] text-neutral-400">{model?.agency}</p>}
           </div>
-          {/* Remove / Restore from presentation */}
+          {/* Visible / Hidden toggle */}
           {presModelIds.has(mid) && (
             isRemoved(pm)
               ? <button onClick={() => restoreToPresentation(mid)}
-                  className="flex-shrink-0 text-[8px] tracking-widest uppercase px-2 py-1 border border-neutral-300 text-neutral-400 hover:border-black hover:text-black transition-colors whitespace-nowrap">
-                  Restore
+                  className="flex-shrink-0 text-[8px] tracking-widest uppercase px-2 py-1 border border-neutral-300 bg-neutral-100 text-neutral-400 hover:border-black hover:text-black hover:bg-white transition-colors whitespace-nowrap">
+                  ● Hidden
                 </button>
               : <button onClick={() => removeFromPresentation(mid)}
-                  className="flex-shrink-0 text-[8px] tracking-widest uppercase px-2 py-1 border border-neutral-200 text-neutral-300 hover:border-red-300 hover:text-red-400 transition-colors whitespace-nowrap">
-                  Remove
+                  className="flex-shrink-0 text-[8px] tracking-widest uppercase px-2 py-1 border border-neutral-200 text-neutral-500 hover:border-neutral-400 hover:bg-neutral-50 transition-colors whitespace-nowrap">
+                  ○ Visible
                 </button>
           )}
           <button onClick={() => setExpanded(!expanded)} className="text-[10px] text-neutral-300 hover:text-black transition-colors px-2">
