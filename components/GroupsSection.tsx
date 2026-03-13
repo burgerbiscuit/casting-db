@@ -103,22 +103,22 @@ export function GroupsSection({ groups, hasModels }: { groups: GroupEntry[]; has
             <span className="text-xs text-neutral-400 tracking-widest">{slideIndex + 1} / {groups.length}</span>
           </div>
 
-          {/* BODY: Photo + notes */}
-          <div className="flex-1 min-h-0 flex overflow-hidden px-8 pb-6 gap-6">
+          {/* BODY: Photo + optional notes */}
+          <div className="flex-1 min-h-0 flex overflow-hidden gap-6 pb-4">
 
-            {/* Photo */}
-            <div className="flex-1 min-h-0 relative bg-neutral-100 overflow-hidden">
+            {/* Photo — fits to full height, natural aspect ratio */}
+            <div className="flex-1 min-h-0 flex items-center justify-center overflow-hidden bg-neutral-50">
               {current.coverPhoto ? (
                 <img src={current.coverPhoto} alt={current.groups?.name}
-                  className="absolute inset-0 w-full h-full object-cover object-top" />
+                  className="h-full w-auto object-contain object-top" />
               ) : (
-                <div className="absolute inset-0 flex items-center justify-center text-neutral-300 text-xs tracking-widest uppercase">No Photo</div>
+                <div className="text-neutral-300 text-xs tracking-widest uppercase">No Photo</div>
               )}
             </div>
 
             {/* Notes panel (only if notes or description) */}
             {(current.notes || current.groups?.description) && (
-              <div className="w-64 flex-shrink-0 overflow-y-auto">
+              <div className="w-56 flex-shrink-0 overflow-y-auto py-2">
                 {current.groups?.description && (
                   <p className="text-sm text-neutral-500 leading-relaxed mb-4">{current.groups.description}</p>
                 )}
