@@ -100,8 +100,8 @@ export function ModelCard({ presentationModel, model, media, presentationId, cli
       </div>
 
       {/* Info */}
-      <div className="p-3 flex flex-col" style={{height: "160px", overflow: "hidden"}}>
-        <h3 className="text-sm font-medium tracking-widest uppercase mb-1 truncate">
+      <div className="p-3 flex flex-col">
+        <h3 className="text-sm font-medium tracking-widest uppercase mb-1">
           {model.first_name} {model.last_name}
         </h3>
 
