@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { ChipInput } from '@/components/ChipInput'
@@ -15,6 +15,7 @@ export default function GroupProfilePage({ params }: { params: { id: string } })
   const supabase = createClient()
   const router = useRouter()
   const [group, setGroup] = useState<any>(null)
+  const groupRef = useRef<any>(null)
   const [media, setMedia] = useState<any[]>([])
   const [members, setMembers] = useState<any[]>([])
   const [memberSearch, setMemberSearch] = useState('')
@@ -31,6 +32,7 @@ export default function GroupProfilePage({ params }: { params: { id: string } })
   const loadGroup = useCallback(async () => {
     const { data } = await supabase.from('groups').select('*').eq('id', id).single()
     setGroup(data)
+    groupRef.current = data
   }, [id])
 
   const loadMedia = useCallback(async () => {
@@ -72,9 +74,19 @@ export default function GroupProfilePage({ params }: { params: { id: string } })
     setMembers(prev => prev.filter((m: any) => m.id !== memberId))
   }
 
+  const setGroupAndRef = (updater: any) => {
+    setGroup((prev: any) => {
+      const next = typeof updater === 'function' ? updater(prev) : updater
+      groupRef.current = next
+      return next
+    })
+  }
+
   const save = async () => {
+    const current = groupRef.current
+    if (!current) return
     setSaving(true)
-    await supabase.from('groups').update({ ...group, updated_at: new Date().toISOString() }).eq('id', id)
+    await supabase.from('groups').update({ ...current, updated_at: new Date().toISOString() }).eq('id', id)
     setSaving(false); setSaved(true); setTimeout(() => setSaved(false), 2000)
   }
 
@@ -116,7 +128,12 @@ export default function GroupProfilePage({ params }: { params: { id: string } })
 
       // Upload directly to Supabase storage (bypasses Vercel 4.5MB limit)
       const { error: upErr } = await supabase.storage.from('group-media').upload(storagePath, file, { contentType: file.type })
-      if (upErr) { console.error('Group media upload error:', upErr.message); setUploadProgress('Upload failed: ' + upErr.message); continue }
+      if (upErr) {
+        console.error('Group media upload error:', upErr.message)
+        setUploadProgress(`Upload failed: ${upErr.message}`)
+        alert(`Upload failed: ${upErr.message}`)
+        continue
+      }
 
       const { data: { publicUrl } } = supabase.storage.from('group-media').getPublicUrl(storagePath)
 
@@ -126,11 +143,17 @@ export default function GroupProfilePage({ params }: { params: { id: string } })
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ groupId: id, storagePath, publicUrl, mediaType }),
       })
-      if (!res.ok) { console.error('Group media register failed:', await res.text()); setUploadProgress('Upload failed — could not save to database'); continue }
+      if (!res.ok) {
+        const errText = await res.text()
+        console.error('Group media register failed:', errText)
+        setUploadProgress(`Upload failed — could not save to database: ${errText}`)
+        alert(`Upload failed — could not save to database: ${errText}`)
+        continue
+      }
     }
     setUploading(false)
     setUploadProgress('')
-    loadMedia()
+    await loadMedia()
   }
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -146,7 +169,7 @@ export default function GroupProfilePage({ params }: { params: { id: string } })
       <input
         type={type}
         value={group[k] || ''}
-        onChange={e => setGroup((g: any) => ({ ...g, [k]: e.target.value }))}
+        onChange={e => setGroupAndRef((g: any) => ({ ...g, [k]: e.target.value }))}
         placeholder={placeholder}
         className="w-full border-b border-neutral-200 bg-transparent py-1.5 text-sm focus:outline-none focus:border-black placeholder:text-neutral-300"
       />
@@ -167,7 +190,7 @@ export default function GroupProfilePage({ params }: { params: { id: string } })
         <div className="flex items-center gap-3">
           {!group.reviewed && (
             <button
-              onClick={() => { setGroup((g: any) => ({ ...g, reviewed: true })); setTimeout(save, 50) }}
+              onClick={() => { setGroupAndRef((g: any) => ({ ...g, reviewed: true })); save() }}
               className="border border-amber-300 text-amber-600 px-4 py-2 text-xs tracking-widest uppercase hover:bg-amber-50 transition-colors">
               Mark Approved
             </button>
@@ -207,7 +230,7 @@ export default function GroupProfilePage({ params }: { params: { id: string } })
               <label className="label text-[10px] block mb-1">GROUP TYPE</label>
               <select
                 value={group.group_type || ''}
-                onChange={e => setGroup((g: any) => ({ ...g, group_type: e.target.value }))}
+                onChange={e => setGroupAndRef((g: any) => ({ ...g, group_type: e.target.value }))}
                 className="w-full border-b border-neutral-200 bg-transparent py-1.5 text-sm focus:outline-none focus:border-black">
                 <option value="">—</option>
                 {GROUP_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
@@ -225,7 +248,7 @@ export default function GroupProfilePage({ params }: { params: { id: string } })
             <label className="label text-[10px] block mb-1">DESCRIPTION / BIO</label>
             <textarea
               value={group.description || ''}
-              onChange={e => setGroup((g: any) => ({ ...g, description: e.target.value }))}
+              onChange={e => setGroupAndRef((g: any) => ({ ...g, description: e.target.value }))}
               rows={4}
               placeholder="About the group, their style, background..."
               className="w-full border border-neutral-200 bg-transparent p-3 text-sm focus:outline-none focus:border-black resize-none placeholder:text-neutral-300"
@@ -238,7 +261,7 @@ export default function GroupProfilePage({ params }: { params: { id: string } })
             <p className="text-[10px] text-neutral-400 mb-2">Long-form story — origin, journey, what this group means to its members.</p>
             <textarea
               value={group.group_story || ''}
-              onChange={e => setGroup((g: any) => ({ ...g, group_story: e.target.value }))}
+              onChange={e => setGroupAndRef((g: any) => ({ ...g, group_story: e.target.value }))}
               rows={8}
               placeholder="Tell the group's story..."
               className="w-full border border-neutral-200 bg-transparent p-3 text-sm focus:outline-none focus:border-black resize-none placeholder:text-neutral-300"
@@ -250,7 +273,7 @@ export default function GroupProfilePage({ params }: { params: { id: string } })
             <label className="label text-[10px] block mb-2">SKILLS / SPECIALTIES</label>
             <ChipInput
               value={group.skills || []}
-              onChange={(val: string[]) => setGroup((g: any) => ({ ...g, skills: val }))}
+              onChange={(val: string[]) => setGroupAndRef((g: any) => ({ ...g, skills: val }))}
               placeholder="Add skill..."
               suggestions={['Hip Hop', 'Ballet', 'Contemporary', 'Jazz', 'Tap', 'Acrobatics', 'Tumbling', 'Breakdancing', 'Ballroom', 'Latin', 'Aerial', 'Gymnastics', 'Cheer', 'Martial Arts', 'Parkour', 'Synchronized Swimming', 'Skating', 'Singing', 'Beatboxing', 'Drumline', 'Comedy', 'Improv', 'Stunt Work']}
             />
@@ -318,7 +341,7 @@ export default function GroupProfilePage({ params }: { params: { id: string } })
             <label className="label text-[10px] block mb-1">INTERNAL NOTES</label>
             <textarea
               value={group.notes || ''}
-              onChange={e => setGroup((g: any) => ({ ...g, notes: e.target.value }))}
+              onChange={e => setGroupAndRef((g: any) => ({ ...g, notes: e.target.value }))}
               rows={3}
               placeholder="Internal notes, availability, rates..."
               className="w-full border border-neutral-200 bg-transparent p-3 text-sm focus:outline-none focus:border-black resize-none placeholder:text-neutral-300"
@@ -331,7 +354,7 @@ export default function GroupProfilePage({ params }: { params: { id: string } })
               <input
                 type="checkbox"
                 checked={!!group.reviewed}
-                onChange={e => setGroup((g: any) => ({ ...g, reviewed: e.target.checked }))}
+                onChange={e => setGroupAndRef((g: any) => ({ ...g, reviewed: e.target.checked }))}
                 className="cursor-pointer"
               />
               <span className="text-xs tracking-widest uppercase">Mark as Reviewed / Approved</span>
