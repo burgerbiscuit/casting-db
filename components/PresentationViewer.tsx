@@ -473,16 +473,18 @@ export function PresentationViewer({
               <p className="label mb-4 flex items-center gap-2"><Heart size={10} className="fill-black text-black" /> Shortlisted</p>
               <div className={`grid gap-3 ${isMobile ? 'grid-cols-2' : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6'}`}>
                 {sorted.filter(pm => shortlists[pm.model_id] && !releases[pm.model_id]).map(pm => (
-                  <div key={pm.id} className="relative">
+                  <div key={pm.id} className="relative flex flex-col">
                     {(adminConfirmed[pm.model_id] && clientStatus[pm.model_id] === "pending_confirmation") && (
                       <div className="absolute top-2 left-2 z-10 bg-black text-white text-[9px] tracking-widest uppercase px-2 py-1">Officially Confirmed</div>
                     )}
-                    <ModelCard presentationModel={pm} model={pm.models}
-                      media={mediaByModel[pm.model_id] || []} presentationId={presentationId}
-                      clientId={clientId} initialShortlisted={true}
-                      initialNotes={shortlistMap[pm.model_id]?.notes || ''}
-                      onShortlistChange={(v) => handleShortlistChange(pm.model_id, v)}
-                      onCardClick={() => { setSlideIndex(slidesOrder.findIndex(s => s.model_id === pm.model_id)); setView('slides') }} />
+                    <div className="flex-1">
+                      <ModelCard presentationModel={pm} model={pm.models}
+                        media={mediaByModel[pm.model_id] || []} presentationId={presentationId}
+                        clientId={clientId} initialShortlisted={true}
+                        initialNotes={shortlistMap[pm.model_id]?.notes || ''}
+                        onShortlistChange={(v) => handleShortlistChange(pm.model_id, v)}
+                        onCardClick={() => { setSlideIndex(slidesOrder.findIndex(s => s.model_id === pm.model_id)); setView('slides') }} />
+                    </div>
                     <button
                       onClick={() => {
                         if (clientStatus[pm.model_id] === "pending_confirmation" || (adminConfirmed[pm.model_id] && clientStatus[pm.model_id] === "pending_confirmation")) return
@@ -504,16 +506,18 @@ export function PresentationViewer({
           {/* Helper to render a model card */}
           {(() => {
             const renderCard = (pm: any) => (
-              <div key={pm.id} className="relative">
+              <div key={pm.id} className="relative flex flex-col">
                 {(adminConfirmed[pm.model_id] && clientStatus[pm.model_id] === "pending_confirmation") && (
                   <div className="absolute top-2 left-2 z-10 bg-black text-white text-[9px] tracking-widest uppercase px-2 py-1">Officially Confirmed</div>
                 )}
-                <ModelCard presentationModel={pm} model={pm.models}
-                  media={mediaByModel[pm.model_id] || []} presentationId={presentationId}
-                  clientId={clientId} initialShortlisted={false}
-                  initialNotes={shortlistMap[pm.model_id]?.notes || ''}
-                  onShortlistChange={(v) => handleShortlistChange(pm.model_id, v)}
-                  onCardClick={() => { setSlideIndex(slidesOrder.findIndex(s => s.model_id === pm.model_id)); setView('slides') }} />
+                <div className="flex-1">
+                  <ModelCard presentationModel={pm} model={pm.models}
+                    media={mediaByModel[pm.model_id] || []} presentationId={presentationId}
+                    clientId={clientId} initialShortlisted={false}
+                    initialNotes={shortlistMap[pm.model_id]?.notes || ''}
+                    onShortlistChange={(v) => handleShortlistChange(pm.model_id, v)}
+                    onCardClick={() => { setSlideIndex(slidesOrder.findIndex(s => s.model_id === pm.model_id)); setView('slides') }} />
+                </div>
                 <button
                   onClick={() => {
                     if (clientStatus[pm.model_id] === "pending_confirmation" || (adminConfirmed[pm.model_id] && clientStatus[pm.model_id] === "pending_confirmation")) return
