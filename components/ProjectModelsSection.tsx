@@ -379,22 +379,43 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
     return aName.localeCompare(bName)
   }
 
-  // Sort: officially confirmed first (green), then confirmation requested, shortlisted, others — removed from pres sink to bottom
+  // Order matches client presentation view: shortlisted → sections (display_order) → other → hidden
   const alphaByLast = (a: any, b: any) => (a.models?.last_name || '').localeCompare(b.models?.last_name || '')
   const isRemoved = (pm: any) => presModels[pm.models?.id] ? presModels[pm.models?.id].is_visible === false : false
+  const isClientShortlisted = (pm: any) => !!shortlistStatus[pm.models?.id]
 
   const activeModels = models.filter(pm => !isRemoved(pm))
-  const removedModels = models.filter(pm => isRemoved(pm))
+  const hiddenModels = models.filter(pm => isRemoved(pm))
 
-  const confirmedGroup = activeModels.filter(pm => adminConfirmed[pm.models?.id]).sort(alphaByLast)
-  const pendingGroup = activeModels.filter(pm => !adminConfirmed[pm.models?.id] && shortlistStatus[pm.models?.id] === 'pending_confirmation').sort(alphaByLast)
-  const shortlistedGroup = activeModels.filter(pm => !adminConfirmed[pm.models?.id] && shortlistStatus[pm.models?.id] === 'shortlisted').sort(alphaByLast)
-  const othersGroup = activeModels.filter(pm => !adminConfirmed[pm.models?.id] && !shortlistStatus[pm.models?.id]).sort(alphaByLast)
-  const sorted = [...confirmedGroup, ...pendingGroup, ...shortlistedGroup, ...othersGroup, ...removedModels]
+  // 1. Shortlisted by client (any shortlist/pending_confirmation status)
+  const shortlistedGroup = activeModels.filter(pm => isClientShortlisted(pm)).sort(alphaByLast)
 
-  // Filter signed-in list by search
+  // 2. Non-shortlisted, grouped by section in display_order
+  const nonShortlisted = activeModels.filter(pm => !isClientShortlisted(pm))
+  const bySectionGroups = categories
+    .map(cat => ({
+      cat,
+      models: nonShortlisted.filter(pm => presModelCategories[pm.models?.id] === cat.id).sort(alphaByLast)
+    }))
+    .filter(g => g.models.length > 0)
+
+  // 3. Uncategorized (no section, not shortlisted)
+  const otherGroup = nonShortlisted.filter(pm => !presModelCategories[pm.models?.id]).sort(alphaByLast)
+
+  // 4. Hidden from presentation
+  const hiddenGroup = hiddenModels.sort(alphaByLast)
+
+  // Flat sorted list (for search / no-group view)
+  const allSorted = [
+    ...shortlistedGroup,
+    ...bySectionGroups.flatMap(g => g.models),
+    ...otherGroup,
+    ...hiddenGroup,
+  ]
+
+  // Filter by search
   const filteredSorted = listSearch.trim()
-    ? sorted.filter(pm => {
+    ? allSorted.filter(pm => {
         const q = listSearch.toLowerCase()
         const m = pm.models
         return (
@@ -402,13 +423,7 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
           (m?.agency || '').toLowerCase().includes(q)
         )
       })
-    : sorted
-
-  // Legacy aliases for grid view
-  const confirmed = confirmedGroup
-  const pending = pendingGroup
-  const shortlisted = shortlistedGroup
-  const others = othersGroup
+    : allSorted
 
   const ModelListRow = ({ pm, i }: { pm: any; i: number }) => {
     const model = pm.models
@@ -650,7 +665,7 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
     )
   }
 
-  const hasGroups = confirmed.length > 0 || pending.length > 0 || shortlisted.length > 0
+  const hasGroups = !listSearch.trim() && (shortlistedGroup.length > 0 || bySectionGroups.length > 0 || otherGroup.length > 0)
 
   return (
     <div>
@@ -812,22 +827,12 @@ export function ProjectModelsSection({ projectId, modelsWithPhotos, mainPres, pr
         <>
           {hasGroups ? (
             <>
-              {renderGroup(
-                confirmed,
-                'Officially Confirmed ✓',
-                'bg-green-600',
-                projectId ? (
-                  <Link
-                    href={`/admin/projects/${projectId}/confirmation-chart`}
-                    className="text-[9px] tracking-widest uppercase border border-white/60 text-white/90 px-2 py-0.5 hover:border-white hover:text-white transition-colors whitespace-nowrap"
-                  >
-                    Edit Confirmation Chart ↗
-                  </Link>
-                ) : undefined
+              {renderGroup(shortlistedGroup, shortlistedGroup.length > 0 ? 'Shortlisted by Client' : undefined, 'bg-neutral-700')}
+              {bySectionGroups.map(({ cat, models }) =>
+                renderGroup(models, cat.name, 'bg-black')
               )}
-              {renderGroup(pending, 'Confirmation Requested', 'bg-amber-400')}
-              {renderGroup(shortlisted, 'Shortlisted by Client', 'bg-neutral-700')}
-              {renderGroup(others, others.length && hasGroups ? 'Signed In' : undefined)}
+              {renderGroup(otherGroup, bySectionGroups.length > 0 && otherGroup.length > 0 ? 'Other' : undefined)}
+              {renderGroup(hiddenGroup, hiddenGroup.length > 0 ? 'Hidden from Presentation' : undefined, 'bg-neutral-300')}
             </>
           ) : renderGroup(filteredSorted)}
         </>
