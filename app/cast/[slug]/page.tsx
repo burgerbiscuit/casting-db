@@ -106,6 +106,19 @@ export default function CastPage({ params }: { params: { slug: string } }) {
   const [showAgencySuggestions, setShowAgencySuggestions] = useState(false)
   const [showBoardSuggestions, setShowBoardSuggestions] = useState(false)
   const [showAgentNameSuggestions, setShowAgentNameSuggestions] = useState(false)
+  const agencyRef = useRef<HTMLDivElement>(null)
+  const boardRef = useRef<HTMLDivElement>(null)
+  const agentNameRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (agencyRef.current && !agencyRef.current.contains(e.target as Node)) setShowAgencySuggestions(false)
+      if (boardRef.current && !boardRef.current.contains(e.target as Node)) setShowBoardSuggestions(false)
+      if (agentNameRef.current && !agentNameRef.current.contains(e.target as Node)) setShowAgentNameSuggestions(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
   // Friends & Family
   const [friendSearch, setFriendSearch] = useState('')
   const [friendResults, setFriendResults] = useState<any[]>([])
@@ -543,7 +556,7 @@ export default function CastPage({ params }: { params: { slug: string } }) {
               </div>
 
               {/* Agency with autocomplete */}
-              <div className="relative">
+              <div className="relative" ref={agencyRef}>
                 <Input
                   label="Agency"
                   value={form.agency}
@@ -582,7 +595,7 @@ export default function CastPage({ params }: { params: { slug: string } }) {
                   <div className="space-y-1 max-h-48 overflow-y-auto border border-neutral-200">
                     {agencyContacts.map((ac, i) => (
                       <button key={i} type="button"
-                        onClick={() => setForm(f => ({ ...f, agent_name: ac.agent_name || '', board: ac.board || '' }))}
+                        onClick={() => { setShowAgencySuggestions(false); setShowBoardSuggestions(false); setForm(f => ({ ...f, agent_name: ac.agent_name || '', board: ac.board || '' })) }}
                         className={`w-full px-4 py-2.5 text-left text-sm border-b border-neutral-100 last:border-0 transition-colors ${form.agent_name === ac.agent_name ? 'bg-black text-white' : 'hover:bg-neutral-50'}`}>
                         <span className="font-medium">{ac.agent_name}</span>
                         {ac.board && <span className="ml-2 text-xs opacity-60">{ac.board}</span>}
@@ -599,7 +612,7 @@ export default function CastPage({ params }: { params: { slug: string } }) {
               )}
 
               {/* Board with autocomplete */}
-              <div className="relative">
+              <div className="relative" ref={boardRef}>
                 <Input
                   label="Board"
                   value={form.board}
@@ -625,7 +638,7 @@ export default function CastPage({ params }: { params: { slug: string } }) {
               </div>
 
               {/* Agent Name with autocomplete */}
-              <div className="relative">
+              <div className="relative" ref={agentNameRef}>
                 <Input
                   label="Agent Name"
                   value={form.agent_name}
