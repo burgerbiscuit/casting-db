@@ -58,6 +58,9 @@ export async function middleware(request: NextRequest) {
     if (projShareMatch) {
       const projId = projShareMatch[1]
       if (request.cookies.get(`share_project_${projId}`)?.value === 'true') return supabaseResponse
+      // Allow project-specific URLs through — the page component renders its own inline login form
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(projId)
+      if (isUuid) return supabaseResponse
     }
 
     if (!user) return NextResponse.redirect(new URL('/client/login', request.url))

@@ -1,6 +1,6 @@
 'use client'
-import { useState } from 'react'
-import { ChevronLeft, ChevronRight, LayoutGrid } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
+import { LayoutGrid } from 'lucide-react'
 
 interface GroupEntry {
   id: string
@@ -17,85 +17,142 @@ interface GroupEntry {
 }
 
 export function GroupsSection({ groups, hasModels }: { groups: GroupEntry[]; hasModels: boolean }) {
-  const [view, setView] = useState<'grid' | 'slides'>(hasModels ? 'grid' : 'slides')
+  const [view, setView] = useState<'grid' | 'slides'>('grid')
   const [slideIndex, setSlideIndex] = useState(0)
 
   const current = groups[slideIndex]
 
+  const prev = useCallback(() => setSlideIndex(i => Math.max(0, i - 1)), [])
+  const next = useCallback(() => setSlideIndex(i => Math.min(groups.length - 1, i + 1)), [groups.length])
+
+  // Keyboard navigation in slides view
+  useEffect(() => {
+    if (view !== 'slides') return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft') prev()
+      if (e.key === 'ArrowRight') next()
+      if (e.key === 'Escape') setView('grid')
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [view, prev, next])
+
+  const openSlide = (i: number) => { setSlideIndex(i); setView('slides') }
+
   return (
-    <div className={`${hasModels ? 'mt-12 pt-8 border-t border-neutral-200' : ''}`}>
-      {/* Header + view toggle */}
-      <div className="flex items-center justify-between mb-6">
-        <p className="text-xs tracking-widest uppercase text-neutral-400">Groups ({groups.length})</p>
-        <div className="flex gap-2">
+    <>
+      {/* Header + view toggle — same style as PresentationViewer */}
+      <div className={`${hasModels ? 'mt-12 pt-8 border-t border-neutral-200' : ''}`}>
+        <div className="flex items-center gap-2 mb-6">
           <button onClick={() => setView('grid')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs tracking-widest uppercase border transition-colors ${view === 'grid' ? 'bg-black text-white border-black' : 'border-neutral-300 text-neutral-500 hover:border-black'}`}>
-            <LayoutGrid size={11} /> Grid
+            className={`flex items-center gap-2 px-4 py-2 text-xs tracking-widest uppercase border transition-colors ${view === 'grid' ? 'bg-black text-white border-black' : 'border-neutral-300 text-neutral-500 hover:border-black'}`}>
+            <LayoutGrid size={12} /> Grid
           </button>
-          <button onClick={() => setView('slides')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs tracking-widest uppercase border transition-colors ${view === 'slides' ? 'bg-black text-white border-black' : 'border-neutral-300 text-neutral-500 hover:border-black'}`}>
+          <button onClick={() => { setView('slides'); setSlideIndex(0) }}
+            className={`flex items-center gap-2 px-4 py-2 text-xs tracking-widest uppercase border transition-colors ${view === 'slides' ? 'bg-black text-white border-black' : 'border-neutral-300 text-neutral-500 hover:border-black'}`}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
             Slides
           </button>
+          <span className="ml-auto text-xs tracking-widest uppercase text-neutral-400">{groups.length} {groups.length === 1 ? 'Group' : 'Groups'}</span>
         </div>
+
+        {/* Grid — matches PresentationViewer grid exactly */}
+        {view === 'grid' && (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-6">
+            {groups.map((pg, i) => (
+              <div key={pg.id} className="cursor-pointer" onClick={() => openSlide(i)}>
+                <div className="relative aspect-[3/4] bg-neutral-100 overflow-hidden mb-2 md:mb-3">
+                  {pg.coverPhoto ? (
+                    <img src={pg.coverPhoto} alt={pg.groups?.name}
+                      className="w-full h-full object-cover object-top hover:scale-105 transition-transform duration-300" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-neutral-300 text-[9px] tracking-widest uppercase">No Photo</div>
+                  )}
+                </div>
+                <div className="px-0">
+                  <h3 className="text-sm font-medium tracking-widest uppercase mb-1 leading-tight">{pg.groups?.name}</h3>
+                  {pg.groups?.group_type && <p className="text-xs text-neutral-500">{pg.groups.group_type}</p>}
+                  {pg.groups?.size && <p className="text-xs text-neutral-500">{pg.groups.size}</p>}
+                  {pg.notes && <p className="text-xs text-neutral-500 mt-1 italic">{pg.notes}</p>}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* Grid view */}
-      {view === 'grid' && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          {groups.map((pg, i) => (
-            <button key={pg.id} onClick={() => { setSlideIndex(i); setView('slides') }} className="text-left group">
-              <div className="aspect-[3/4] overflow-hidden bg-neutral-100 mb-2">
-                {pg.coverPhoto ? (
-                  <img src={pg.coverPhoto} alt={pg.groups?.name} className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-300" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-neutral-300 text-[9px] tracking-widest uppercase">No Photo</div>
+      {/* Slides — full-screen overlay matching PresentationViewer */}
+      {view === 'slides' && current && (
+        <div className="fixed inset-0 bg-white z-40 flex flex-col overflow-hidden" style={{ height: '100dvh' }}>
+
+          {/* TOP BAR */}
+          <div className="flex-shrink-0 px-8 py-3 flex items-center justify-between">
+            <button onClick={() => setView('grid')} className="text-neutral-400 hover:text-black transition-colors text-xs tracking-widest uppercase">← Back</button>
+            <img src="/logo.jpg" alt="Tasha Tongpreecha Casting" className="h-5 w-auto" />
+            <button onClick={() => setView('grid')} className="text-neutral-400 hover:text-black transition-colors text-lg">✕</button>
+          </div>
+
+          {/* NAME + INFO BAR */}
+          <div className="flex-shrink-0 px-8 py-3 flex items-center justify-between bg-white">
+            <div>
+              <h2 className="text-2xl font-light tracking-[0.15em] uppercase mb-1">{current.groups?.name}</h2>
+              <p className="text-[13px] text-neutral-500 tracking-wider">
+                {[current.groups?.group_type, current.groups?.size, current.groups?.based_in].filter(Boolean).join(' · ')}
+              </p>
+            </div>
+            <span className="text-xs text-neutral-400 tracking-widest">{slideIndex + 1} / {groups.length}</span>
+          </div>
+
+          {/* BODY: Photo + notes */}
+          <div className="flex-1 min-h-0 flex overflow-hidden px-8 pb-6 gap-6">
+
+            {/* Photo */}
+            <div className="flex-1 min-h-0 relative bg-neutral-100 overflow-hidden">
+              {current.coverPhoto ? (
+                <img src={current.coverPhoto} alt={current.groups?.name}
+                  className="absolute inset-0 w-full h-full object-cover object-top" />
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center text-neutral-300 text-xs tracking-widest uppercase">No Photo</div>
+              )}
+            </div>
+
+            {/* Notes panel (only if notes or description) */}
+            {(current.notes || current.groups?.description) && (
+              <div className="w-64 flex-shrink-0 overflow-y-auto">
+                {current.groups?.description && (
+                  <p className="text-sm text-neutral-500 leading-relaxed mb-4">{current.groups.description}</p>
+                )}
+                {current.notes && (
+                  <>
+                    <p className="text-[10px] tracking-widest uppercase text-neutral-400 mb-2">Notes</p>
+                    <p className="text-sm text-neutral-600 leading-relaxed">{current.notes}</p>
+                  </>
                 )}
               </div>
-              <p className="text-xs font-medium tracking-widest uppercase">{pg.groups?.name}</p>
-              {pg.groups?.group_type && <p className="text-[10px] text-neutral-400 mt-0.5">{pg.groups.group_type}</p>}
-              {pg.groups?.size && <p className="text-[10px] text-neutral-400">{pg.groups.size}</p>}
-              {pg.notes && <p className="text-[10px] text-neutral-500 mt-1">{pg.notes}</p>}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* Slides view */}
-      {view === 'slides' && current && (
-        <div className="flex flex-col items-center">
-          {/* Photo */}
-          <div className="w-full max-w-lg aspect-[3/4] overflow-hidden bg-neutral-100 mb-6 relative">
-            {current.coverPhoto ? (
-              <img src={current.coverPhoto} alt={current.groups?.name} className="w-full h-full object-cover object-top" />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-neutral-300 text-xs tracking-widest uppercase">No Photo</div>
             )}
           </div>
 
-          {/* Info */}
-          <div className="text-center mb-8 max-w-md">
-            <p className="text-lg font-light tracking-widest uppercase mb-1">{current.groups?.name}</p>
-            {current.groups?.group_type && <p className="text-xs text-neutral-400 tracking-widest mb-0.5">{current.groups.group_type}</p>}
-            {current.groups?.size && <p className="text-xs text-neutral-400">{current.groups.size}</p>}
-            {current.groups?.based_in && <p className="text-xs text-neutral-400">{current.groups.based_in}</p>}
-            {current.notes && <p className="text-sm text-neutral-600 mt-3 leading-relaxed">{current.notes}</p>}
-            {current.groups?.description && <p className="text-xs text-neutral-400 mt-2 leading-relaxed">{current.groups.description}</p>}
-          </div>
-
-          {/* Navigation */}
-          <div className="flex items-center gap-6">
-            <button onClick={() => setSlideIndex(i => Math.max(0, i - 1))} disabled={slideIndex === 0}
-              className="p-2 border border-neutral-300 hover:border-black disabled:opacity-20 disabled:cursor-default transition-colors">
-              <ChevronLeft size={16} />
+          {/* PREV / NEXT */}
+          <div className="flex-shrink-0 flex items-center justify-between px-8 py-4 border-t border-neutral-100">
+            <button onClick={prev} disabled={slideIndex === 0}
+              className="flex items-center gap-2 text-xs tracking-widest uppercase text-neutral-500 hover:text-black disabled:opacity-20 disabled:cursor-default transition-colors">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 18l-6-6 6-6"/></svg>
+              Prev
             </button>
-            <span className="text-xs text-neutral-400 tracking-widest">{slideIndex + 1} / {groups.length}</span>
-            <button onClick={() => setSlideIndex(i => Math.min(groups.length - 1, i + 1))} disabled={slideIndex === groups.length - 1}
-              className="p-2 border border-neutral-300 hover:border-black disabled:opacity-20 disabled:cursor-default transition-colors">
-              <ChevronRight size={16} />
+            <div className="flex gap-1">
+              {groups.map((_, i) => (
+                <button key={i} onClick={() => setSlideIndex(i)}
+                  className={`w-1.5 h-1.5 rounded-full transition-colors ${i === slideIndex ? 'bg-black' : 'bg-neutral-300'}`} />
+              ))}
+            </div>
+            <button onClick={next} disabled={slideIndex === groups.length - 1}
+              className="flex items-center gap-2 text-xs tracking-widest uppercase text-neutral-500 hover:text-black disabled:opacity-20 disabled:cursor-default transition-colors">
+              Next
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 18l6-6-6-6"/></svg>
             </button>
           </div>
         </div>
       )}
-    </div>
+    </>
   )
 }
