@@ -46,7 +46,9 @@ export default function NewEstimatePage() {
   const goToPreview = (e: React.FormEvent) => {
     e.preventDefault()
     const params = new URLSearchParams()
-    Object.entries(form).forEach(([k, v]) => params.set(k, String(v)))
+    Object.entries(form).forEach(([k, v]) => {
+      if (v !== '' && v !== null && v !== undefined) params.set(k, String(v))
+    })
     router.push(`/admin/billing/estimates/preview?${params.toString()}`)
   }
 

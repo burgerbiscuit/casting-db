@@ -40,6 +40,8 @@ export default function EstimatePreviewPage() {
       ...form,
       project_id: form.project_id || null,
       casting_fee: parseFloat(form.casting_fee) || 0,
+      valid_until: form.valid_until || null,
+      issue_date: form.issue_date || null,
       created_by: user?.id,
     }).select().single()
 
