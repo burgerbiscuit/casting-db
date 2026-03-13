@@ -98,15 +98,15 @@ export default async function PresentationView({ params }: { params: { id: strin
     mediaByModel[m.model_id].push(m)
   })
 
-  // Load project groups with cover photos
-  const { data: projectGroupsRaw } = await db
+  // Load project groups with cover photos (always use service client for reliable nested joins)
+  const { data: projectGroupsRaw } = await serviceSupabase
     .from('project_groups')
     .select('id, notes, groups(id, name, group_type, size, based_in, description)')
     .eq('project_id', presentation.project_id)
     .order('created_at')
   const groupIds = (projectGroupsRaw || []).map((pg: any) => pg.groups?.id).filter(Boolean)
   const { data: groupMediaRaw } = groupIds.length > 0
-    ? await db.from('group_media').select('group_id, public_url, media_type').in('group_id', groupIds).eq('is_visible', true)
+    ? await serviceSupabase.from('group_media').select('group_id, public_url, media_type').in('group_id', groupIds).eq('is_visible', true)
     : { data: [] }
   const groupCoverMap: Record<string, string> = {}
   ;(groupMediaRaw || []).forEach((m: any) => {

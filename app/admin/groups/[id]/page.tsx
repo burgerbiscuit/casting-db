@@ -119,6 +119,12 @@ export default function GroupProfilePage({ params }: { params: { id: string } })
   const uploadFiles = async (files: File[]) => {
     if (!files.length) return
     setUploading(true)
+
+    // Check if any cover photo already exists for this group
+    const { data: existingCover } = await supabase
+      .from('group_media').select('id').eq('group_id', id).eq('is_cover', true).limit(1)
+    let hasCover = (existingCover?.length ?? 0) > 0
+
     for (let i = 0; i < files.length; i++) {
       setUploadProgress(`Uploading ${i + 1} of ${files.length}...`)
       const file = files[i]
@@ -126,30 +132,28 @@ export default function GroupProfilePage({ params }: { params: { id: string } })
       const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg'
       const storagePath = `${id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
 
-      // Upload directly to Supabase storage (bypasses Vercel 4.5MB limit)
       const { error: upErr } = await supabase.storage.from('group-media').upload(storagePath, file, { contentType: file.type })
       if (upErr) {
-        console.error('Group media upload error:', upErr.message)
-        setUploadProgress(`Upload failed: ${upErr.message}`)
-        alert(`Upload failed: ${upErr.message}`)
+        setUploadProgress(`Failed: ${upErr.message}`)
         continue
       }
 
       const { data: { publicUrl } } = supabase.storage.from('group-media').getPublicUrl(storagePath)
 
-      // Register DB record via API (uses service client)
-      const res = await fetch('/api/group-media-register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ groupId: id, storagePath, publicUrl, mediaType }),
+      const { error: dbErr } = await supabase.from('group_media').insert({
+        group_id: id,
+        storage_path: storagePath,
+        public_url: publicUrl,
+        media_type: mediaType,
+        is_visible: true,
+        is_cover: !hasCover,
+        display_order: i,
       })
-      if (!res.ok) {
-        const errText = await res.text()
-        console.error('Group media register failed:', errText)
-        setUploadProgress(`Upload failed — could not save to database: ${errText}`)
-        alert(`Upload failed — could not save to database: ${errText}`)
+      if (dbErr) {
+        setUploadProgress(`DB error: ${dbErr.message}`)
         continue
       }
+      hasCover = true // first successful upload becomes cover
     }
     setUploading(false)
     setUploadProgress('')
@@ -158,6 +162,7 @@ export default function GroupProfilePage({ params }: { params: { id: string } })
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     accept: { 'image/*': [], 'video/*': [] },
+    multiple: true,
     onDrop: uploadFiles,
   })
 
@@ -385,11 +390,12 @@ export default function GroupProfilePage({ params }: { params: { id: string } })
             <input {...getInputProps()} />
             <Upload size={20} className="mx-auto mb-3 text-neutral-300" />
             {uploading ? (
-              <p className="text-xs text-neutral-500">{uploadProgress}</p>
+              <p className="text-xs text-neutral-500">{uploadProgress || 'Uploading...'}</p>
             ) : (
               <>
                 <p className="text-xs tracking-widest uppercase text-neutral-400">Drop photos or videos here</p>
-                <p className="text-[10px] text-neutral-300 mt-1">or click to browse</p>
+                <p className="text-[10px] text-neutral-300 mt-1">Click to browse — multiple files supported</p>
+                {media.length > 0 && <p className="text-[10px] text-neutral-400 mt-2">{media.length} photo{media.length !== 1 ? 's' : ''} uploaded</p>}
               </>
             )}
           </div>
