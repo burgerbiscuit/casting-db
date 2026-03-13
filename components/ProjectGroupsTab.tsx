@@ -11,6 +11,7 @@ interface Props {
 export function ProjectGroupsTab({ projectId }: Props) {
   const supabase = createClient()
   const [groups, setGroups] = useState<any[]>([])
+  const [groupCovers, setGroupCovers] = useState<Record<string, string>>({})
   const [search, setSearch] = useState('')
   const [searchResults, setSearchResults] = useState<any[]>([])
   const [searchLoading, setSearchLoading] = useState(false)
@@ -24,6 +25,20 @@ export function ProjectGroupsTab({ projectId }: Props) {
       .eq('project_id', projectId)
       .order('created_at', { ascending: false })
     setGroups(data || [])
+
+    // Load cover photos
+    const gIds = (data || []).map((pg: any) => pg.group_id).filter(Boolean)
+    if (gIds.length > 0) {
+      const { data: media } = await supabase
+        .from('group_media')
+        .select('group_id, public_url')
+        .in('group_id', gIds)
+        .eq('is_visible', true)
+      const covers: Record<string, string> = {}
+      ;(media || []).forEach((m: any) => { if (!covers[m.group_id]) covers[m.group_id] = m.public_url })
+      setGroupCovers(covers)
+    }
+
     setLoading(false)
   }, [projectId])
 
@@ -107,8 +122,16 @@ export function ProjectGroupsTab({ projectId }: Props) {
         {groups.map((pg: any) => {
           const g = pg.groups
           return (
-            <div key={pg.id} className="border border-neutral-100 px-4 py-3">
-              <div className="flex items-start justify-between gap-3">
+            <div key={pg.id} className="border border-neutral-100 flex gap-3">
+              {/* Cover photo */}
+              <div className="flex-shrink-0 w-16 h-20 bg-neutral-100 overflow-hidden">
+                {groupCovers[pg.group_id] ? (
+                  <img src={groupCovers[pg.group_id]} alt="" className="w-full h-full object-cover object-top" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-[8px] text-neutral-300 uppercase tracking-widest text-center px-1">No Photo</div>
+                )}
+              </div>
+              <div className="flex items-start justify-between gap-3 flex-1 py-3 pr-4">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-0.5">
                     <Link href={`/admin/groups/${g?.id}`}

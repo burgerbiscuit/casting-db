@@ -98,6 +98,25 @@ export default async function PresentationView({ params }: { params: { id: strin
     mediaByModel[m.model_id].push(m)
   })
 
+  // Load project groups with cover photos
+  const { data: projectGroupsRaw } = await db
+    .from('project_groups')
+    .select('id, notes, groups(id, name, group_type, size, based_in, description)')
+    .eq('project_id', presentation.project_id)
+    .order('created_at')
+  const groupIds = (projectGroupsRaw || []).map((pg: any) => pg.groups?.id).filter(Boolean)
+  const { data: groupMediaRaw } = groupIds.length > 0
+    ? await db.from('group_media').select('group_id, public_url, media_type').in('group_id', groupIds).eq('is_visible', true)
+    : { data: [] }
+  const groupCoverMap: Record<string, string> = {}
+  ;(groupMediaRaw || []).forEach((m: any) => {
+    if (!groupCoverMap[m.group_id]) groupCoverMap[m.group_id] = m.public_url
+  })
+  const projectGroups = (projectGroupsRaw || []).map((pg: any) => ({
+    ...pg,
+    coverPhoto: groupCoverMap[pg.groups?.id] || null,
+  }))
+
   // Sort alphabetically by last name, first name within each category
   const sanitizedModels = (presentationModels || []).sort((a: any, b: any) => {
     const aName = ((a.models?.first_name || '') + (a.models?.last_name || '')).toLowerCase()
@@ -138,6 +157,29 @@ export default async function PresentationView({ params }: { params: { id: strin
         projectName={(presentation.projects as any)?.name || ''}
         projectSpecs={(presentation.projects as any)?.specs || ''}
       />
+
+      {projectGroups.length > 0 && (
+        <div className="mt-12 pt-8 border-t border-neutral-200">
+          <p className="text-xs tracking-widest uppercase text-neutral-400 mb-6">Groups</p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            {projectGroups.map((pg: any) => (
+              <div key={pg.id} className="group">
+                <div className="aspect-[3/4] overflow-hidden bg-neutral-100 mb-2">
+                  {pg.coverPhoto ? (
+                    <img src={pg.coverPhoto} alt={pg.groups?.name} className="w-full h-full object-cover object-top" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-neutral-300 text-xs tracking-widest uppercase">No Photo</div>
+                  )}
+                </div>
+                <p className="text-xs font-medium tracking-widest uppercase">{pg.groups?.name}</p>
+                {pg.groups?.group_type && <p className="text-[10px] text-neutral-400 mt-0.5">{pg.groups.group_type}</p>}
+                {pg.groups?.size && <p className="text-[10px] text-neutral-400">{pg.groups.size}</p>}
+                {pg.notes && <p className="text-[10px] text-neutral-500 mt-1">{pg.notes}</p>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
