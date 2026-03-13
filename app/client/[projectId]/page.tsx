@@ -17,7 +17,7 @@ export default async function ProjectDashboard({ params }: { params: { projectId
   if (!user && !hasShareAccess) {
     // Show project-specific login form instead of redirecting to generic login
     const { data: proj } = await serviceSupabase.from('projects').select('name').eq('id', projectId).single()
-    const { data: pres } = await serviceSupabase.from('presentations').select('id').eq('project_id', projectId).eq('is_published', true).order('created_at', { ascending: false }).limit(1).maybeSingle()
+    const { data: pres } = await serviceSupabase.from('presentations').select('id').eq('project_id', projectId).order('created_at', { ascending: false }).limit(1).maybeSingle()
     const redirectTo = pres?.id ? `/client/presentations/${pres.id}` : `/client/${projectId}`
     return <ProjectLoginForm projectName={proj?.name || 'Casting Presentation'} redirectTo={redirectTo} />
   }

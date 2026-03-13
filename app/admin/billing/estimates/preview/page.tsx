@@ -55,19 +55,27 @@ function EstimatePreviewInner() {
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
       {/* Header */}
-      <div className="flex items-center gap-2 mb-8">
-        <button onClick={() => window.history.back()} className="text-neutral-400 hover:text-black transition-colors">
-          <ArrowLeft size={18} />
-        </button>
-        <div>
-          <h1 className="text-2xl font-light tracking-widest uppercase">Confirm & Send Estimate</h1>
-          <p className="text-sm text-neutral-400 mt-1">Review the estimate below and confirm recipients</p>
+      <div className="flex items-center justify-between mb-8 print:hidden">
+        <div className="flex items-center gap-2">
+          <button onClick={() => window.history.back()} className="text-neutral-400 hover:text-black transition-colors">
+            <ArrowLeft size={18} />
+          </button>
+          <div>
+            <h1 className="text-2xl font-light tracking-widest uppercase">Confirm & Send Estimate</h1>
+            <p className="text-sm text-neutral-400 mt-1">Review the estimate below and confirm recipients</p>
+          </div>
         </div>
+        <button onClick={() => window.print()}
+          className="flex items-center gap-2 text-xs tracking-widest uppercase border border-neutral-300 px-4 py-2 hover:border-black transition-colors">
+          ↓ Download PDF
+        </button>
       </div>
+
+      <style>{`@media print { .no-print { display: none !important; } .print-full { grid-column: 1 / -1 !important; } }`}</style>
 
       <div className="grid grid-cols-3 gap-6">
         {/* Preview */}
-        <div className="col-span-2">
+        <div className="col-span-2 print-full">
           <div className="border border-neutral-200 p-8 bg-white">
             {/* Header */}
             <div className="mb-8">
@@ -150,7 +158,7 @@ function EstimatePreviewInner() {
         </div>
 
         {/* Recipients & Actions */}
-        <div>
+        <div className="no-print">
           <div className="border border-neutral-200 p-6 sticky top-8">
             <p className="text-xs tracking-widest uppercase font-medium mb-4">Send to</p>
             <div className="space-y-2 mb-6">

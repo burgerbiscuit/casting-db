@@ -1,5 +1,6 @@
 import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { PresentationViewer } from '@/components/PresentationViewer'
+import { GroupsSection } from '@/components/GroupsSection'
 import Link from 'next/link'
 import { Download } from 'lucide-react'
 import { redirect } from 'next/navigation'
@@ -159,26 +160,7 @@ export default async function PresentationView({ params }: { params: { id: strin
       />
 
       {projectGroups.length > 0 && (
-        <div className="mt-12 pt-8 border-t border-neutral-200">
-          <p className="text-xs tracking-widest uppercase text-neutral-400 mb-6">Groups</p>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-            {projectGroups.map((pg: any) => (
-              <div key={pg.id} className="group">
-                <div className="aspect-[3/4] overflow-hidden bg-neutral-100 mb-2">
-                  {pg.coverPhoto ? (
-                    <img src={pg.coverPhoto} alt={pg.groups?.name} className="w-full h-full object-cover object-top" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-neutral-300 text-xs tracking-widest uppercase">No Photo</div>
-                  )}
-                </div>
-                <p className="text-xs font-medium tracking-widest uppercase">{pg.groups?.name}</p>
-                {pg.groups?.group_type && <p className="text-[10px] text-neutral-400 mt-0.5">{pg.groups.group_type}</p>}
-                {pg.groups?.size && <p className="text-[10px] text-neutral-400">{pg.groups.size}</p>}
-                {pg.notes && <p className="text-[10px] text-neutral-500 mt-1">{pg.notes}</p>}
-              </div>
-            ))}
-          </div>
-        </div>
+        <GroupsSection groups={projectGroups} hasModels={sanitizedModels.length > 0} />
       )}
     </div>
   )
