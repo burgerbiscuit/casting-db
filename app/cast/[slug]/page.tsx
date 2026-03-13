@@ -447,7 +447,7 @@ export default function CastPage({ params }: { params: { slug: string } }) {
               <Button onClick={() => { setSelectedModel(null); setModelPhoto(null); setIsReturning(false); setFirstName(''); setLastName(''); setStep('name') }}>
                 Search My Name Again
               </Button>
-              <Button variant="secondary" onClick={() => { setSelectedModel(null); setModelPhoto(null); setIsReturning(false); setStep('form') }}>
+              <Button variant="secondary" onClick={() => { setSelectedModel(null); setModelPhoto(null); setIsReturning(false); setSelfieFiles([]); setSelfiePreviewUrls([]); setPhotoErrors(['', '']); setForm(defaultForm); setStep('form') }}>
                 I'm New — Add Me
               </Button>
             </div>
@@ -876,6 +876,7 @@ export default function CastPage({ params }: { params: { slug: string } }) {
                 setFirstName(''); setLastName('');
                 setSelectedModel(null); setModelPhoto(null);
                 setIsReturning(false); setForm(defaultForm);
+                setSelfieFiles([]); setSelfiePreviewUrls([]); setPhotoErrors(['', '']);
                 setSuggestions([]); setRelatedModels([]); setRelatedModelNames({}); setStep('name');
               }}
               className="text-xs tracking-widest uppercase border border-black px-6 py-3 hover:bg-black hover:text-white transition-colors"
