@@ -78,7 +78,7 @@ export function ModelCard({ presentationModel, model, media, presentationId, cli
   }
 
   return (
-    <div className="border border-neutral-200 flex flex-col">
+    <div className="border border-neutral-200 flex flex-col h-full">
       {/* Photos — click to open slides */}
       <div className="relative aspect-[3/4] bg-neutral-100 overflow-hidden cursor-pointer" onClick={onCardClick}>
         {visibleMedia.length > 0 ? (
@@ -100,7 +100,7 @@ export function ModelCard({ presentationModel, model, media, presentationId, cli
       </div>
 
       {/* Info */}
-      <div className="p-3 flex flex-col">
+      <div className="p-3 flex flex-col flex-1">
         <h3 className="text-sm font-medium tracking-widest uppercase mb-1">
           {model.first_name} {model.last_name}
         </h3>
@@ -150,7 +150,7 @@ export function ModelCard({ presentationModel, model, media, presentationId, cli
         )}
 
         {(presentationModel.rate?.trim() || presentationModel.location?.trim() || presentationModel.option?.trim() || presentationModel.client_notes?.trim()) && (
-          <div className="text-[10px] text-neutral-600 space-y-0.5 mb-1 border-t border-neutral-100 pt-2 mt-1">
+          <div className="text-[10px] text-neutral-600 space-y-0.5 mb-1 border-t border-neutral-100 pt-2 mt-auto">
             {presentationModel.rate?.trim() && <p><span className="text-neutral-400 uppercase tracking-wider text-[9px]">Rate </span>{presentationModel.rate}</p>}
             {presentationModel.option?.trim() && <p><span className="text-neutral-400 uppercase tracking-wider text-[9px]">Option </span>{presentationModel.option}</p>}
             {presentationModel.location?.trim() && <p><span className="text-neutral-400 uppercase tracking-wider text-[9px]">Location </span>{presentationModel.location}</p>}
