@@ -23,15 +23,18 @@ export function ProjectPresentationTab({ projectId, presentationId: initialPresI
   const [copied, setCopied] = useState(false)
   const [creating, setCreating] = useState(false)
   const [modelSearch, setModelSearch] = useState('')
+  const [shortlistedIds, setShortlistedIds] = useState<Set<string>>(new Set())
 
   const load = useCallback(async () => {
     if (!presId) return
-    const [{ data: pm }, { data: cats }] = await Promise.all([
+    const [{ data: pm }, { data: cats }, { data: sl }] = await Promise.all([
       supabase.from('presentation_models').select('*, models(first_name, last_name, agency, model_media(public_url, display_order, is_visible))').eq('presentation_id', presId).order('display_order'),
       supabase.from('presentation_categories').select('*').eq('presentation_id', presId).order('display_order'),
+      supabase.from('client_shortlists').select('model_id').eq('presentation_id', presId),
     ])
     setPresentationModels(pm || [])
     setCategories(cats || [])
+    setShortlistedIds(new Set((sl || []).map((s: any) => s.model_id)))
     const alreadyIn = new Set((pm || []).map((m: any) => m.model_id))
     // Load ALL models for the add-model picker (search across full DB)
     const { data: allModels } = await supabase
@@ -198,16 +201,18 @@ export function ProjectPresentationTab({ projectId, presentationId: initialPresI
     setCopied(true); setTimeout(() => setCopied(false), 2000)
   }
 
-  // Group models by category for display — alphabetical within each section
+  // Group models: Shortlisted → Categories → Other (mirrors client presentation order)
   const alphaSort = (a: any, b: any) => {
     const aName = ((a.models?.first_name || '') + (a.models?.last_name || '')).toLowerCase()
     const bName = ((b.models?.first_name || '') + (b.models?.last_name || '')).toLowerCase()
     return aName.localeCompare(bName)
   }
-  const uncategorized = presentationModels.filter(pm => !pm.category_id).sort(alphaSort)
+  const shortlistedPMs = presentationModels.filter(pm => shortlistedIds.has(pm.model_id)).sort(alphaSort)
+  const shortlistedModelIdSet = new Set(shortlistedPMs.map(pm => pm.model_id))
+  const uncategorized = presentationModels.filter(pm => !pm.category_id && !shortlistedModelIdSet.has(pm.model_id)).sort(alphaSort)
   const byCategory = categories.map(cat => ({
     ...cat,
-    models: presentationModels.filter(pm => pm.category_id === cat.id).sort(alphaSort)
+    models: presentationModels.filter(pm => pm.category_id === cat.id && !shortlistedModelIdSet.has(pm.model_id)).sort(alphaSort)
   }))
 
   if (!presId) return (
@@ -331,19 +336,20 @@ export function ProjectPresentationTab({ projectId, presentationId: initialPresI
           </div>
         </div>
 
-        {/* Right: Model list grouped by category */}
+        {/* Right: Model list — Shortlisted → Categories → Other */}
         <div className="col-span-3">
-          <p className="label mb-4">Presentation Order — assign sections using the dropdown on each model</p>
+          <p className="label mb-4">Presentation Order — mirrors client view: shortlisted · sections · other</p>
 
-          {/* Uncategorized */}
-          {uncategorized.length > 0 && (
+          {/* Shortlisted by client */}
+          {shortlistedPMs.length > 0 && (
             <div className="mb-6">
-              <p className="text-[10px] tracking-widest uppercase text-neutral-400 mb-2 pb-1 border-b border-neutral-100">
-                Uncategorized ({uncategorized.filter(m => m.is_visible).length} visible{uncategorized.filter(m => !m.is_visible).length > 0 ? `, ${uncategorized.filter(m => !m.is_visible).length} hidden` : ''})
+              <p className="text-[10px] tracking-widest uppercase font-medium mb-2 pb-1 border-b border-black flex items-center gap-2">
+                ♥ Shortlisted by Client
+                <span className="font-normal text-neutral-400">({shortlistedPMs.filter(m => m.is_visible).length} visible{shortlistedPMs.filter(m => !m.is_visible).length > 0 ? `, ${shortlistedPMs.filter(m => !m.is_visible).length} hidden` : ''})</span>
               </p>
               <SortableModelList
-                items={uncategorized}
-                onChange={(items) => setPresentationModels(prev => [...items, ...prev.filter(m => m.category_id)])}
+                items={shortlistedPMs}
+                onChange={(items) => setPresentationModels(prev => [...items, ...prev.filter(m => !shortlistedIds.has(m.model_id))])}
                 onRemove={removeModel}
                 onFieldChange={onFieldChange}
                 onToggleVisible={toggleVisible}
@@ -355,6 +361,7 @@ export function ProjectPresentationTab({ projectId, presentationId: initialPresI
             </div>
           )}
 
+          {/* Categories (e.g. NEW) */}
           {byCategory.map(cat => (
             <div key={cat.id} className="mb-6">
               <p className="text-[10px] tracking-widest uppercase font-medium mb-2 pb-1 border-b border-black">
@@ -374,6 +381,26 @@ export function ProjectPresentationTab({ projectId, presentationId: initialPresI
               />
             </div>
           ))}
+
+          {/* Other (uncategorized, not shortlisted) */}
+          {uncategorized.length > 0 && (
+            <div className="mb-6">
+              <p className="text-[10px] tracking-widest uppercase text-neutral-400 mb-2 pb-1 border-b border-neutral-100">
+                Other ({uncategorized.filter(m => m.is_visible).length} visible{uncategorized.filter(m => !m.is_visible).length > 0 ? `, ${uncategorized.filter(m => !m.is_visible).length} hidden` : ''})
+              </p>
+              <SortableModelList
+                items={uncategorized}
+                onChange={(items) => setPresentationModels(prev => [...items, ...prev.filter(m => m.category_id || shortlistedIds.has(m.model_id))])}
+                onRemove={removeModel}
+                onFieldChange={onFieldChange}
+                onToggleVisible={toggleVisible}
+                onSaveModel={saveModel}
+                categories={categories}
+                onCategoryChange={assignCategory}
+                onCreateCategory={async (name) => { await addCategoryByName(name) }}
+              />
+            </div>
+          )}
         </div>
       </div>
     </div>
