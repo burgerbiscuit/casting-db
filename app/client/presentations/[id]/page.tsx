@@ -102,7 +102,7 @@ export default async function PresentationView({ params }: { params: { id: strin
   // Load project groups with cover photos (always use service client for reliable nested joins)
   const { data: projectGroupsRaw } = await serviceSupabase
     .from('project_groups')
-    .select('id, notes, groups(id, name, group_type, size, based_in, description)')
+    .select('id, notes, groups(id, name, group_type, size, based_in, agency, instagram_handle, website, description, group_story, skills)')
     .eq('project_id', presentation.project_id)
     .order('created_at')
   const groupIds = (projectGroupsRaw || []).map((pg: any) => pg.groups?.id).filter(Boolean)

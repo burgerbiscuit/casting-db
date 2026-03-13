@@ -12,7 +12,12 @@ interface GroupEntry {
     group_type?: string
     size?: string
     based_in?: string
+    agency?: string
+    instagram_handle?: string
+    website?: string
     description?: string
+    group_story?: string
+    skills?: string[]
   }
 }
 
@@ -69,10 +74,19 @@ export function GroupsSection({ groups, hasModels }: { groups: GroupEntry[]; has
                     <div className="w-full h-full flex items-center justify-center text-neutral-300 text-[9px] tracking-widest uppercase">No Photo</div>
                   )}
                 </div>
-                <div className="px-0">
+                <div className="px-0 p-3">
                   <h3 className="text-sm font-medium tracking-widest uppercase mb-1 leading-tight">{pg.groups?.name}</h3>
-                  {pg.groups?.group_type && <p className="text-xs text-neutral-500">{pg.groups.group_type}</p>}
-                  {pg.groups?.size && <p className="text-xs text-neutral-500">{pg.groups.size}</p>}
+                  {pg.groups?.agency && <p className="text-xs text-neutral-600 mb-0.5">{pg.groups.agency}</p>}
+                  {[pg.groups?.group_type, pg.groups?.size, pg.groups?.based_in].filter(Boolean).length > 0 && (
+                    <p className="text-xs text-neutral-500 mb-1">{[pg.groups?.group_type, pg.groups?.size, pg.groups?.based_in].filter(Boolean).join(' · ')}</p>
+                  )}
+                  {pg.groups?.instagram_handle && (
+                    <a href={`https://instagram.com/${pg.groups.instagram_handle.replace(/^@/, '')}`} target="_blank" rel="noopener noreferrer"
+                      onClick={e => e.stopPropagation()}
+                      className="text-xs text-neutral-500 underline underline-offset-2 hover:text-black block mb-0.5">
+                      @{pg.groups.instagram_handle.replace(/^@/, '')}
+                    </a>
+                  )}
                   {pg.notes && <p className="text-xs text-neutral-500 mt-1 italic">{pg.notes}</p>}
                 </div>
               </div>
@@ -93,14 +107,30 @@ export function GroupsSection({ groups, hasModels }: { groups: GroupEntry[]; has
           </div>
 
           {/* NAME + INFO BAR */}
-          <div className="flex-shrink-0 px-8 py-3 flex items-center justify-between bg-white">
+          <div className="flex-shrink-0 px-8 py-3 flex items-start justify-between bg-white gap-4">
             <div>
-              <h2 className="text-2xl font-light tracking-[0.15em] uppercase mb-1">{current.groups?.name}</h2>
+              <h2 className="text-2xl font-light tracking-[0.15em] uppercase mb-0.5">{current.groups?.name}</h2>
+              {current.groups?.agency && <p className="text-sm text-neutral-500 mb-0.5">{current.groups.agency}</p>}
               <p className="text-[13px] text-neutral-500 tracking-wider">
                 {[current.groups?.group_type, current.groups?.size, current.groups?.based_in].filter(Boolean).join(' · ')}
               </p>
+              <div className="flex gap-4 mt-1 flex-wrap">
+                {current.groups?.instagram_handle && (
+                  <a href={`https://instagram.com/${current.groups.instagram_handle.replace(/^@/, '')}`} target="_blank" rel="noopener noreferrer"
+                    className="text-[10px] tracking-widest uppercase underline underline-offset-2 text-neutral-500 hover:text-black">
+                    @{current.groups.instagram_handle.replace(/^@/, '')} ↗
+                  </a>
+                )}
+                {current.groups?.website && (
+                  <a href={current.groups.website.startsWith('http') ? current.groups.website : 'https://' + current.groups.website}
+                    target="_blank" rel="noopener noreferrer"
+                    className="text-[10px] tracking-widest uppercase underline underline-offset-2 text-neutral-500 hover:text-black">
+                    Website ↗
+                  </a>
+                )}
+              </div>
             </div>
-            <span className="text-xs text-neutral-400 tracking-widest">{slideIndex + 1} / {groups.length}</span>
+            <span className="text-xs text-neutral-400 tracking-widest flex-shrink-0">{slideIndex + 1} / {groups.length}</span>
           </div>
 
           {/* BODY: Photo + optional notes */}
@@ -116,17 +146,32 @@ export function GroupsSection({ groups, hasModels }: { groups: GroupEntry[]; has
               )}
             </div>
 
-            {/* Notes panel (only if notes or description) */}
-            {(current.notes || current.groups?.description) && (
-              <div className="w-56 flex-shrink-0 overflow-y-auto py-2">
+            {/* Notes / info panel */}
+            {(current.notes || current.groups?.description || current.groups?.group_story || (current.groups?.skills?.length ?? 0) > 0) && (
+              <div className="w-64 flex-shrink-0 overflow-y-auto py-2 space-y-4">
                 {current.groups?.description && (
-                  <p className="text-sm text-neutral-500 leading-relaxed mb-4">{current.groups.description}</p>
+                  <div>
+                    <p className="text-[10px] tracking-widest uppercase text-neutral-400 mb-1">About</p>
+                    <p className="text-sm text-neutral-600 leading-relaxed">{current.groups.description}</p>
+                  </div>
+                )}
+                {current.groups?.group_story && (
+                  <div>
+                    <p className="text-[10px] tracking-widest uppercase text-neutral-400 mb-1">Story</p>
+                    <p className="text-sm text-neutral-600 leading-relaxed">{current.groups.group_story}</p>
+                  </div>
+                )}
+                {(current.groups?.skills?.length ?? 0) > 0 && (
+                  <div>
+                    <p className="text-[10px] tracking-widest uppercase text-neutral-400 mb-1">Skills</p>
+                    <p className="text-sm text-neutral-600">{current.groups!.skills!.join(', ')}</p>
+                  </div>
                 )}
                 {current.notes && (
-                  <>
-                    <p className="text-[10px] tracking-widest uppercase text-neutral-400 mb-2">Notes</p>
+                  <div>
+                    <p className="text-[10px] tracking-widest uppercase text-neutral-400 mb-1">Notes</p>
                     <p className="text-sm text-neutral-600 leading-relaxed">{current.notes}</p>
-                  </>
+                  </div>
                 )}
               </div>
             )}
