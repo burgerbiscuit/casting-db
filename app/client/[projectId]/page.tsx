@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { cookies } from 'next/headers'
 import { ProjectActions, PresentationDeleteButton } from './ProjectActions'
+import ProjectLoginForm from './ProjectLoginForm'
 
 export default async function ProjectDashboard({ params }: { params: { projectId: string } }) {
   const { projectId } = params
@@ -14,7 +15,11 @@ export default async function ProjectDashboard({ params }: { params: { projectId
   const hasShareAccess = cookieStore.get(`share_project_${projectId}`)?.value === 'true'
 
   if (!user && !hasShareAccess) {
-    redirect(`/client/login?redirect=/client/${projectId}`)
+    // Show project-specific login form instead of redirecting to generic login
+    const { data: proj } = await serviceSupabase.from('projects').select('name').eq('id', projectId).single()
+    const { data: pres } = await serviceSupabase.from('presentations').select('id').eq('project_id', projectId).eq('is_published', true).order('created_at', { ascending: false }).limit(1).maybeSingle()
+    const redirectTo = pres?.id ? `/client/presentations/${pres.id}` : `/client/${projectId}`
+    return <ProjectLoginForm projectName={proj?.name || 'Casting Presentation'} redirectTo={redirectTo} />
   }
 
   // Share-cookie guests get full visibility (same as team member) — they already authenticated with the password
