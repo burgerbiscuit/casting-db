@@ -167,6 +167,17 @@ export function ProjectPresentationTab({ projectId, presentationId: initialPresI
     setSaving(false); setSaved(true); setTimeout(() => setSaved(false), 2000)
   }
 
+  const saveModel = async (pmId: string) => {
+    const m = presentationModels.find(pm => pm.id === pmId)
+    if (!m) return
+    await supabase.from('presentation_models').update({
+      show_sizing: m.show_sizing, show_instagram: m.show_instagram,
+      show_portfolio: m.show_portfolio, admin_notes: m.admin_notes,
+      location: m.location || '', rate: m.rate || '', option: m.option || '', client_notes: m.client_notes || '',
+      is_visible: m.is_visible, category_id: m.category_id || null,
+    }).eq('id', pmId)
+  }
+
   const [emailStatus, setEmailStatus] = useState('')
   const [showEmailPicker, setShowEmailPicker] = useState(false)
 
@@ -336,6 +347,7 @@ export function ProjectPresentationTab({ projectId, presentationId: initialPresI
                 onRemove={removeModel}
                 onFieldChange={onFieldChange}
                 onToggleVisible={toggleVisible}
+                onSaveModel={saveModel}
                 categories={categories}
                 onCategoryChange={assignCategory}
                 onCreateCategory={async (name) => { await addCategoryByName(name) }}
@@ -355,6 +367,7 @@ export function ProjectPresentationTab({ projectId, presentationId: initialPresI
                 onRemove={removeModel}
                 onFieldChange={onFieldChange}
                 onToggleVisible={toggleVisible}
+                onSaveModel={saveModel}
                 categories={categories}
                 onCategoryChange={assignCategory}
                 onCreateCategory={async (name) => { await addCategoryByName(name) }}

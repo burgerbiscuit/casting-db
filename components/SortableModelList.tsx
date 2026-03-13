@@ -27,6 +27,7 @@ interface Props {
   onRemove: (id: string) => void
   onFieldChange: (id: string, field: keyof PresentationModel, value: any) => void
   onToggleVisible: (id: string, visible: boolean) => void
+  onSaveModel?: (id: string) => Promise<void>
   categories?: { id: string; name: string }[]
   onCategoryChange?: (pmId: string, categoryId: string | null) => void
   onCreateCategory?: (name: string) => Promise<void>
@@ -82,11 +83,12 @@ function SectionPicker({ categoryId, categories, onCategoryChange, onCreateCateg
   )
 }
 
-function SortableItem({ item, onRemove, onFieldChange, onToggleVisible, categories, onCategoryChange, onCreateCategory }: {
+function SortableItem({ item, onRemove, onFieldChange, onToggleVisible, onSaveModel, categories, onCategoryChange, onCreateCategory }: {
   item: PresentationModel
   onRemove: (id: string) => void
   onFieldChange: (id: string, field: keyof PresentationModel, value: any) => void
   onToggleVisible: (id: string, visible: boolean) => void
+  onSaveModel?: (id: string) => Promise<void>
   categories?: { id: string; name: string }[]
   onCategoryChange?: (pmId: string, categoryId: string | null) => void
   onCreateCategory?: (name: string) => Promise<void>
@@ -95,6 +97,17 @@ function SortableItem({ item, onRemove, onFieldChange, onToggleVisible, categori
   const style = { transform: CSS.Transform.toString(transform), transition }
   const inp = 'w-full border-b border-neutral-200 bg-transparent py-1 text-xs focus:outline-none focus:border-black resize-none placeholder:text-neutral-300'
   const hidden = !item.is_visible
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+
+  const handleSave = async () => {
+    if (!onSaveModel) return
+    setSaving(true)
+    await onSaveModel(item.id)
+    setSaving(false)
+    setSaved(true)
+    setTimeout(() => setSaved(false), 2000)
+  }
 
   return (
     <div ref={setNodeRef} style={style} className={`border p-4 transition-colors ${hidden ? 'border-neutral-100 bg-neutral-50 opacity-60' : 'border-neutral-200 bg-white'}`}>
@@ -185,13 +198,26 @@ function SortableItem({ item, onRemove, onFieldChange, onToggleVisible, categori
             <textarea value={item.admin_notes || ''} onChange={e => onFieldChange(item.id, 'admin_notes', e.target.value)}
               placeholder="Internal notes only..." rows={2} className={inp} />
           </div>
+
+          {/* Save button */}
+          {onSaveModel && (
+            <div className="mt-4 pt-3 border-t border-neutral-100 flex justify-end">
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className={`text-[10px] tracking-widest uppercase px-4 py-2 transition-colors ${saved ? 'bg-neutral-100 text-neutral-500' : 'bg-black text-white hover:bg-neutral-800'} disabled:opacity-50`}
+              >
+                {saving ? 'Saving...' : saved ? '✓ Saved' : 'Save Changes'}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>
   )
 }
 
-export function SortableModelList({ items, onChange, onRemove, onFieldChange, onToggleVisible, categories, onCategoryChange, onCreateCategory }: Props) {
+export function SortableModelList({ items, onChange, onRemove, onFieldChange, onToggleVisible, onSaveModel, categories, onCategoryChange, onCreateCategory }: Props) {
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
@@ -211,7 +237,7 @@ export function SortableModelList({ items, onChange, onRemove, onFieldChange, on
       <SortableContext items={items.map(i => i.id)} strategy={verticalListSortingStrategy}>
         <div className="space-y-2">
           {items.map(item => (
-            <SortableItem key={item.id} item={item} onRemove={onRemove} onFieldChange={onFieldChange} onToggleVisible={onToggleVisible} categories={categories} onCategoryChange={onCategoryChange} onCreateCategory={onCreateCategory} />
+            <SortableItem key={item.id} item={item} onRemove={onRemove} onFieldChange={onFieldChange} onToggleVisible={onToggleVisible} onSaveModel={onSaveModel} categories={categories} onCategoryChange={onCategoryChange} onCreateCategory={onCreateCategory} />
           ))}
         </div>
       </SortableContext>
