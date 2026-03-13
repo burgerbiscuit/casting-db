@@ -7,8 +7,6 @@ export default function NewEstimatePage() {
   const router = useRouter()
   const supabase = createClient()
   const [projects, setProjects] = useState<any[]>([])
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState('')
 
   const year = new Date().getFullYear()
   const [form, setForm] = useState({
@@ -45,19 +43,11 @@ export default function NewEstimatePage() {
     }
   }
 
-  const save = async (e: React.FormEvent) => {
+  const goToPreview = (e: React.FormEvent) => {
     e.preventDefault()
-    setSaving(true); setError('')
-    const { data: { user } } = await supabase.auth.getUser()
-    const { data, error: err } = await supabase.from('estimates').insert({
-      ...form,
-      project_id: form.project_id || null,
-      casting_fee: parseFloat(form.casting_fee) || 0,
-      created_by: user?.id,
-    }).select().single()
-    setSaving(false)
-    if (err) { setError(err.message); return }
-    router.push(`/admin/billing/estimates/${data.id}`)
+    const params = new URLSearchParams()
+    Object.entries(form).forEach(([k, v]) => params.set(k, String(v)))
+    router.push(`/admin/billing/estimates/preview?${params.toString()}`)
   }
 
   const labelClass = "block text-[10px] tracking-widest uppercase text-neutral-500 mb-1"
@@ -70,7 +60,7 @@ export default function NewEstimatePage() {
         <h1 className="text-2xl font-light tracking-widest uppercase mt-2">New Estimate</h1>
       </div>
 
-      <form onSubmit={save} className="space-y-8">
+      <form onSubmit={goToPreview} className="space-y-8">
         {/* Project & Estimate # */}
         <div className="grid grid-cols-2 gap-4">
           <div>
@@ -142,11 +132,9 @@ export default function NewEstimatePage() {
           <textarea value={form.notes} onChange={e => set('notes', e.target.value)} rows={3} className={inputClass + " resize-none"} />
         </div>
 
-        {error && <p className="text-xs text-red-500">{error}</p>}
-
         <div className="flex gap-4">
-          <button type="submit" disabled={saving} className="px-6 py-2.5 bg-black text-white text-xs tracking-widest uppercase hover:bg-neutral-800 disabled:opacity-50">
-            {saving ? 'Saving...' : 'Create Estimate'}
+          <button type="submit" className="px-6 py-2.5 bg-black text-white text-xs tracking-widest uppercase hover:bg-neutral-800">
+            Next → Preview
           </button>
           <a href="/admin/billing" className="px-6 py-2.5 border border-neutral-200 text-xs tracking-widest uppercase hover:bg-neutral-50">
             Cancel
