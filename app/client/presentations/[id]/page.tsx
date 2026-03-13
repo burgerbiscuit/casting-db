@@ -145,19 +145,21 @@ export default async function PresentationView({ params }: { params: { id: strin
         </div>
       </div>
 
-      <PresentationViewer
-        presentationModels={sanitizedModels}
-        mediaByModel={mediaByModel}
-        presentationId={id}
-        clientId={effectiveClientId}
-        clientFirstName={clientFirstName}
-        categories={categories || []}
-        shortlistMap={shortlistMap}
-        confirmMap={confirmMap}
-        presentationName={presentation.name}
-        projectName={(presentation.projects as any)?.name || ''}
-        projectSpecs={(presentation.projects as any)?.specs || ''}
-      />
+      {sanitizedModels.length > 0 && (
+        <PresentationViewer
+          presentationModels={sanitizedModels}
+          mediaByModel={mediaByModel}
+          presentationId={id}
+          clientId={effectiveClientId}
+          clientFirstName={clientFirstName}
+          categories={categories || []}
+          shortlistMap={shortlistMap}
+          confirmMap={confirmMap}
+          presentationName={presentation.name}
+          projectName={(presentation.projects as any)?.name || ''}
+          projectSpecs={(presentation.projects as any)?.specs || ''}
+        />
+      )}
 
       {projectGroups.length > 0 && (
         <GroupsSection groups={projectGroups} hasModels={sanitizedModels.length > 0} />
