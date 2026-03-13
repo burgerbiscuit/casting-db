@@ -9,7 +9,7 @@ type Step = 'loading' | 'landing' | 'name' | 'confirm' | 'verify' | 'not-me' | '
 type Gender = 'female' | 'male' | 'non-binary' | 'other' | ''
 
 const HEIGHT_FT = [4,5,6,7]
-const HEIGHT_IN = [0,1,2,3,4,5,6,7,8,9,10,11]
+const HEIGHT_IN = [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 6.5, 7, 7.5, 8, 8.5, 9, 9.5, 10, 10.5, 11, 11.5]
 const SHOE_SIZES = [
   {us: '4', eu: '34'}, {us: '4.5', eu: '34-35'}, {us: '5', eu: '35'},
   {us: '5.5', eu: '35-36'}, {us: '6', eu: '36'}, {us: '6.5', eu: '36-37'},
@@ -508,7 +508,7 @@ export default function CastPage({ params }: { params: { slug: string } }) {
                     <label className="label">In</label>
                     <select value={form.height_in} onChange={e => setForm(f => ({ ...f, height_in: +e.target.value }))}
                       className="w-full border-b border-neutral-300 bg-transparent py-2 text-sm focus:outline-none">
-                      {HEIGHT_IN.map(n => <option key={n} value={n}>{n}</option>)}
+                      {HEIGHT_IN.map(n => <option key={n} value={n}>{Number.isInteger(n) ? n : n}</option>)}
                     </select>
                   </div>
                 </div>
