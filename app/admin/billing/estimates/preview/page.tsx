@@ -1,11 +1,10 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { ArrowLeft } from 'lucide-react'
-import Link from 'next/link'
 
-export default function EstimatePreviewPage() {
+function EstimatePreviewInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const supabase = createClient()
@@ -161,5 +160,13 @@ export default function EstimatePreviewPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function EstimatePreviewPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-xs text-neutral-400">Loading preview...</div>}>
+      <EstimatePreviewInner />
+    </Suspense>
   )
 }
