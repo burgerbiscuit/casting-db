@@ -35,11 +35,26 @@ export default function ModelProfile({ params }: { params: { id: string } }) {
   const [cropTarget, setCropTarget] = useState<{url: string, storagePath: string, id: string} | null>(null)
   const [showDeleteModel, setShowDeleteModel] = useState(false)
   const [presentations, setPresentations] = useState<any[]>([])
+  const [agencySuggestions, setAgencySuggestions] = useState<string[]>([])
 
   const loadModel = useCallback(async () => {
     const { data } = await supabase.from('models').select('*').eq('id', id).single()
+    if (data && (!data.agencies || data.agencies.length === 0) && data.agency) {
+      data.agencies = [data.agency]
+    }
     setModel(data)
   }, [id])
+
+  const searchAgencies = async (q: string) => {
+    if (!q || q.length < 1) return
+    const { data } = await supabase
+      .from('agency_contacts')
+      .select('agency_name')
+      .ilike('agency_name', `%${q}%`)
+      .limit(20)
+    const names = [...new Set((data || []).map((r: any) => r.agency_name).filter(Boolean))] as string[]
+    setAgencySuggestions(names)
+  }
 
   const loadMedia = useCallback(async () => {
     const { data } = await supabase.from('model_media').select('*').eq('model_id', id).eq('is_deleted', false)
@@ -67,7 +82,14 @@ export default function ModelProfile({ params }: { params: { id: string } }) {
 
   const saveModel = async () => {
     setSaving(true)
-    await supabase.from('models').update({ ...model, updated_at: new Date().toISOString() }).eq('id', id)
+    const agencies = model.agencies || []
+    const primaryAgency = agencies[0] || model.agency || ''
+    await supabase.from('models').update({
+      ...model,
+      agencies,
+      agency: primaryAgency,
+      updated_at: new Date().toISOString()
+    }).eq('id', id)
     setSaving(false); setSaved(true); setTimeout(() => setSaved(false), 2000)
   }
 
@@ -198,7 +220,11 @@ export default function ModelProfile({ params }: { params: { id: string } }) {
           <h1 className="text-2xl font-light tracking-widest uppercase mt-2">
             {model.first_name} {model.last_name}
           </h1>
-          {model.agency && <p className="text-sm text-neutral-400">{model.agency}</p>}
+          {(model.agencies?.length > 0 ? model.agencies : (model.agency ? [model.agency] : [])).length > 0 && (
+            <p className="text-sm text-neutral-400">
+              {(model.agencies?.length > 0 ? model.agencies : [model.agency]).join(' · ')}
+            </p>
+          )}
           
           {/* Social Links with Icons */}
           <div className="flex items-center gap-4 mt-3">
@@ -331,7 +357,14 @@ export default function ModelProfile({ params }: { params: { id: string } }) {
           )}
 
           <Input label="Shoe Size" value={model.shoe_size || ''} onChange={e => setModel({ ...model, shoe_size: e.target.value })} />
-          <Input label="Agency" value={model.agency || ''} onChange={e => setModel({ ...model, agency: e.target.value })} />
+          <ChipInput
+            label="Agencies"
+            value={Array.isArray(model.agencies) ? model.agencies : (model.agency ? [model.agency] : [])}
+            onChange={agencies => setModel({ ...model, agencies, agency: agencies[0] || '' })}
+            placeholder="Type agency name and press Enter"
+            suggestions={agencySuggestions}
+            onSearch={searchAgencies}
+          />
 
           {/* Ethnicity - multi select */}
           <div>
