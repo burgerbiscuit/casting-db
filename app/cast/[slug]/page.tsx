@@ -568,6 +568,7 @@ export default function CastPage({ params }: { params: { slug: string } }) {
                     setShowAgencySuggestions(true)
                   }}
                   onFocus={() => { if (form.agency) { searchAgencies(form.agency); setShowAgencySuggestions(true) } }}
+                  onBlur={() => { setTimeout(() => setShowAgencySuggestions(false), 200) }}
                   placeholder="Agency name or Freelance"
                 />
                 {showAgencySuggestions && (agencySuggestions.length > 0 || form.agency.length > 1) && (
@@ -592,9 +593,9 @@ export default function CastPage({ params }: { params: { slug: string } }) {
 
               {/* Agent picker from agency_contacts */}
               {agencyContacts.length > 0 && (
-                <div>
+                <div className="relative z-20">
                   <p className="label mb-2">Select Your Agent</p>
-                  <div className="space-y-1 max-h-48 overflow-y-auto border border-neutral-200">
+                  <div className="space-y-1 border border-neutral-200">
                     {agencyContacts.map((ac, i) => (
                       <button key={i} type="button"
                         onClick={() => { setShowAgencySuggestions(false); setShowBoardSuggestions(false); setForm(f => ({ ...f, agent_name: ac.agent_name || '', board: ac.board || '' })) }}
@@ -624,6 +625,7 @@ export default function CastPage({ params }: { params: { slug: string } }) {
                     setShowBoardSuggestions(true)
                   }}
                   onFocus={() => { if (form.board) { searchBoards(form.board); setShowBoardSuggestions(true) } }}
+                  onBlur={() => { setTimeout(() => setShowBoardSuggestions(false), 200) }}
                   placeholder="Board name (if applicable)"
                 />
                 {showBoardSuggestions && boardSuggestions.length > 0 && (
@@ -650,6 +652,7 @@ export default function CastPage({ params }: { params: { slug: string } }) {
                     setShowAgentNameSuggestions(true)
                   }}
                   onFocus={() => { if (form.agent_name) { searchAgentNames(form.agent_name); setShowAgentNameSuggestions(true) } }}
+                  onBlur={() => { setTimeout(() => setShowAgentNameSuggestions(false), 200) }}
                   placeholder="Your agent's name"
                 />
                 {showAgentNameSuggestions && agentNameSuggestions.length > 0 && (
