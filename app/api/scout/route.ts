@@ -4,17 +4,18 @@ import { NextRequest, NextResponse } from 'next/server'
 
 // Scout submissions create a model in the general database only — NOT linked to any project.
 // Models must sign into a casting (/cast/[slug]) to be linked to a project.
-// In-memory rate limit: max 5 submissions per IP per hour
+// In-memory rate limit fallback: max 3 submissions per IP per 10 minutes per instance
+// (real rate limiting is DB-backed below — this is a fast first-pass guard)
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
 
-function checkRateLimit(ip: string): boolean {
+function checkInMemoryRateLimit(ip: string): boolean {
   const now = Date.now()
   const entry = rateLimitMap.get(ip)
   if (!entry || now > entry.resetAt) {
-    rateLimitMap.set(ip, { count: 1, resetAt: now + 3600_000 })
+    rateLimitMap.set(ip, { count: 1, resetAt: now + 600_000 })
     return true
   }
-  if (entry.count >= 5) return false
+  if (entry.count >= 3) return false
   entry.count++
   return true
 }
@@ -24,8 +25,8 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 export async function POST(req: NextRequest) {
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
 
-  if (!checkRateLimit(ip)) {
-    return NextResponse.json({ error: 'Too many submissions. Please try again later.' }, { status: 429 })
+  if (!checkInMemoryRateLimit(ip)) {
+    return NextResponse.json({ error: 'Too many submissions from your connection. Please wait a few minutes and try again.' }, { status: 429 })
   }
 
   const contentType = req.headers.get('content-type') || ''
@@ -66,6 +67,20 @@ export async function POST(req: NextRequest) {
   }
   if (body.email && !EMAIL_RE.test(body.email)) {
     return NextResponse.json({ error: 'Invalid email address.' }, { status: 400 })
+  }
+
+  // Email deduplication — check if this email already submitted (within last 90 days)
+  if (body.email) {
+    const cutoff = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString()
+    const { data: existing } = await supabase
+      .from('models')
+      .select('id')
+      .eq('email', body.email.trim().toLowerCase())
+      .gte('created_at', cutoff)
+      .limit(1)
+    if (existing && existing.length > 0) {
+      return NextResponse.json({ error: 'This email has already been submitted. If you need to update your profile, please contact us directly.' }, { status: 409 })
+    }
   }
 
   const { data, error } = await supabase.from('models').insert({

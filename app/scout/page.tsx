@@ -148,7 +148,13 @@ export default function ScoutPage() {
       const res = await fetch('/api/scout', { method: 'POST', body: fd })
       const ct = res.headers.get('content-type') || ''
       const json = ct.includes('application/json') ? await res.json() : {}
-      if (!res.ok) throw new Error(res.status === 413 ? 'Photos are too large. Please reduce file sizes and try again.' : json.error || 'Submission failed')
+      if (!res.ok) throw new Error(
+        res.status === 413 ? 'Photos are too large. Please reduce file sizes and try again.' :
+        res.status === 429 ? 'Too many submissions from your connection. Please wait a few minutes and try again.' :
+        res.status === 409 ? (json.error || 'This email has already been submitted.') :
+        res.status >= 500 ? 'We\'re experiencing high traffic right now. Please try again in a minute.' :
+        json.error || 'Submission failed'
+      )
       setStep('done')
     } catch (e: any) {
       setError(e.message || 'Something went wrong. Please try again.')
