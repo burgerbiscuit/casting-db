@@ -13,7 +13,8 @@ export default async function ConfirmationChartPage({ params, searchParams }: { 
   const { data: { user } } = await supabase.auth.getUser()
   const cookieStore = await cookies()
   const hasShareAccess = cookieStore.get(`share_${id}`)?.value === 'true'
-  if (!user && !hasShareAccess) redirect('/client/login')
+  const hasDemoAccess = cookieStore.get('demo_access')?.value === 'true'
+  if (!user && !hasShareAccess && !hasDemoAccess) redirect('/client/login')
 
   const serviceSupabase = await createServiceClient()
 
